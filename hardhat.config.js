@@ -23,7 +23,7 @@ module.exports = {
   networks: {
     hardhat: {
         forking: {
-            url: process.env.ALCHEMY_URL_MAINNET,
+            url: process.env.ALCHEMY_URL_KOVAN,
         },
         gas: "auto"
     },
