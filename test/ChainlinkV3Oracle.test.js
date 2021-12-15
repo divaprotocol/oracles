@@ -71,6 +71,15 @@ describe('ChainlinkV3Oracle', () => {
       chainlinkOracle = await chainlinkV3OracleAttachFixture(addresses[0])
     })
 
+    it('Should get the latest price', async () => {
+      const latestPrice = await chainlinkOracle.getLatestPrice()
+      console.log("roundId: " + latestPrice[0])
+      console.log("latest price: " + latestPrice[1]) // 3710.16527416, 408523104765
+      console.log("startedAt: " + latestPrice[2])
+      console.log("timestamp: " + latestPrice[3])
+      console.log("answeredInRound: " + latestPrice[4])
+    })
+
     it('Should set final reference value equal to inflection when triggered after submission period and no input provided', async () => {
       // QUESTION: Should it set the value to inflection? I thought that this happens at first redemption?
       let tx = await poolFacet.createContingentPool(
