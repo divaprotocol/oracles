@@ -29,8 +29,8 @@ contract ChainlinkV3Oracle {
 
         (uint80 returnedRoundId, uint256 historicalPrice, uint256 roundIdStartedAt, uint256 roundIdTimestamp, uint80 answeredInRound, uint8 decimals) = getHistoricalPrice(_roundId); //TODO: Consider adding timestamp check--DONE
 
-        // TODO: require((roundIdStartedAt <= expiryDate) && (expiryDate > roundIdTimestamp) , "ChainlinkV3Oracle: expiry date outside of round"); // Checking expiry date within 60 second window
-        // TODO: require(returnedRoundId == answeredInRound , "ChainlinkV3Oracle: round not equal to answered round");
+        require((roundIdStartedAt <= expiryDate) && (expiryDate > roundIdTimestamp) , "ChainlinkV3Oracle: expiry date outside of round"); // Checking expiry date within 60 second window
+        require(returnedRoundId == answeredInRound , "ChainlinkV3Oracle: round not equal to answered round");
         uint256 decimalAdjustedHistoricalPrice = historicalPrice * (10**(18-decimals));
         require(_DIVAFactory.setFinalReferenceValueById(_pooId, decimalAdjustedHistoricalPrice, false)); //passing on to diva, ultimate handover. Retain false bool. 
         emit SetFinalReferenceValue(_pooId, decimalAdjustedHistoricalPrice, expiryDate, _roundId);
