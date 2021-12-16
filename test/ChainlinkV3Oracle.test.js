@@ -38,15 +38,16 @@ describe('ChainlinkV3Oracle', () => {
       addresses = await chainlinkV3OracleFactory.getChainlinkV3Oracles();
   });
   
-  describe('getChainlinkOracleAddress', async () => {
-    it('Should return the oracle address of the oracle instance', async () => {
+  describe.only('Initialization', async () => {
+    it('Should initialize', async () => {
       const oracleContract = await chainlinkV3OracleAttachFixture(addresses[0])
-      const oracelAddresses = await oracleContract.getChainlinkOracleAddress();
-      expect(oracelAddresses).to.eq(chainlinkAddress)
+
+      expect(await oracleContract.challengeable()).to.be.false;
+      expect(await oracleContract.priceFeed()).to.eq(chainlinkAddress)
     })
   })
   
-  describe('getHistoricalPrice', async () => {
+  describe.only('getHistoricalPrice', async () => {
     it('Should return the price for a given round Id', async () => {
       const oracleContract = await chainlinkV3OracleAttachFixture(addresses[0])
       round_id = '36893488147419112854'
@@ -79,6 +80,8 @@ describe('ChainlinkV3Oracle', () => {
       console.log("timestamp: " + latestPrice[3])
       console.log("answeredInRound: " + latestPrice[4])
     })
+
+    // TODO: it should now allow to submit a negative value
 
     it('Should set final reference value equal to inflection when triggered after submission period and no input provided', async () => {
       // QUESTION: Should it set the value to inflection? I thought that this happens at first redemption?
