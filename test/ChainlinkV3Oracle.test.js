@@ -20,6 +20,8 @@ describe('ChainlinkV3Oracle', () => {
   let user2;
   let oracle;
   let getExpiryInSeconds;
+  let oracleAssetName;
+  let chainlinkOracle;
 
 
   getExpiryInSeconds = (offsetInSeconds) =>
@@ -32,56 +34,65 @@ describe('ChainlinkV3Oracle', () => {
       chainlinkV3OracleFactory = await chainlinkV3OracleFactoryDeployFixture();
       chainlinkAddress = '0x9326BFA02ADD2366b30bacB125260Af641031331'; // oracle address for ETH/USD on Kovan
       divaKovanAddress = '0x93640bd8fEa53919A102ad2EEA4c503E640eDDAd';
+      oracleAssetName = 'ETH/USD'
 
-      const txCreateOracle = await chainlinkV3OracleFactory.createChainlinkV3Oracle(chainlinkAddress);
+      const txCreateOracle = await chainlinkV3OracleFactory.createChainlinkV3Oracle(chainlinkAddress, oracleAssetName);
       await txCreateOracle.wait();
       addresses = await chainlinkV3OracleFactory.getChainlinkV3Oracles();
+      chainlinkOracle = await chainlinkV3OracleAttachFixture(addresses[0])
   });
   
-  describe.only('Initialization', async () => {
+  describe('Initialization', async () => {
     it('Should initialize', async () => {
-      const oracleContract = await chainlinkV3OracleAttachFixture(addresses[0])
+      // const chainlinkOracle = await chainlinkV3OracleAttachFixture(addresses[0])
 
-      expect(await oracleContract.challengeable()).to.be.false;
-      expect(await oracleContract.priceFeed()).to.eq(chainlinkAddress)
+      expect(await chainlinkOracle.challengeable()).to.be.false;
+      expect(await chainlinkOracle.priceFeed()).to.eq(chainlinkAddress);
+      expect(await chainlinkOracle.getAsset()).to.eq(oracleAssetName);
     })
   })
   
-  describe.only('getHistoricalPrice', async () => {
+  describe('getHistoricalPrice', async () => {
     it('Should return the price for a given round Id', async () => {
-      const oracleContract = await chainlinkV3OracleAttachFixture(addresses[0])
       round_id = '36893488147419112854'
       price = 412900500000
       
-      const historicalPrice = await oracleContract.getHistoricalPrice(round_id);
+      const historicalPrice = await chainlinkOracle.getHistoricalPrice(round_id);
       expect(historicalPrice[1]).to.eq(price);
     })
   })
 
-  describe('setFinalReferenceValueById', async () => {
-    // IMPORTANT: To test this, you have to remove the two require statements in the setFinalReferenceValueById part
-    let erc20;
-    let chainlinkOracle;
-
-    beforeEach(async () => {
-      poolFacet = await ethers.getContractAt(Pool_ABI, divaKovanAddress);
-      getterFacet = await ethers.getContractAt(Getter_ABI, divaKovanAddress)
-      erc20 = await erc20DeployFixture("DummyToken", "DCT", "1000000000000000000000000"); // 1mio tokens
-      const approveTx = await erc20.approve(poolFacet.address, "1000000000000000000000001");
-      await approveTx.wait();
-      chainlinkOracle = await chainlinkV3OracleAttachFixture(addresses[0])
-    })
-
+  describe('getLatestPrice', async () => {
     it('Should get the latest price', async () => {
       const latestPrice = await chainlinkOracle.getLatestPrice()
       console.log("roundId: " + latestPrice[0])
-      console.log("latest price: " + latestPrice[1]) // 3710.16527416, 408523104765
+      console.log("latest price: " + latestPrice[1])
       console.log("startedAt: " + latestPrice[2])
       console.log("timestamp: " + latestPrice[3])
       console.log("answeredInRound: " + latestPrice[4])
     })
+  })
+  
+  describe('setFinalReferenceValueById', async () => {
+    // IMPORTANT: To test this, you have to remove the two require statements in the setFinalReferenceValueById part
+    let erc20;
+    let chainlinkOracle;
+    let userStartCollateralTokenBalance;
+
+    beforeEach(async () => {
+      poolFacet = await ethers.getContractAt(Pool_ABI, divaKovanAddress);
+      getterFacet = await ethers.getContractAt(Getter_ABI, divaKovanAddress);
+      userStartCollateralTokenBalance = parseEther("1000000");
+      initialCollateralTokenAllowance = parseEther("1000000");
+      
+      erc20 = await erc20DeployFixture("DummyToken", "DCT", userStartCollateralTokenBalance); 
+      const approveTx = await erc20.approve(poolFacet.address, initialCollateralTokenAllowance);
+      await approveTx.wait();
+      chainlinkOracle = await chainlinkV3OracleAttachFixture(addresses[0])
+    })
 
     // TODO: it should now allow to submit a negative value
+    // TODO: it should not allow to submit a value that has more than 18 decimals
 
     it('Should set final reference value equal to inflection when triggered after submission period and no input provided', async () => {
       // QUESTION: Should it set the value to inflection? I thought that this happens at first redemption?

@@ -51,6 +51,12 @@ interface IChainlinkV3Oracle {
     function getLatestPrice() external view returns (uint80, int256, uint256, uint256, uint80);
 
     /**
+     * @dev Returns the asset name assigned to the respective oracle contract. Note that the 
+     * initially assigned value cannot be changed once the contract is deployed
+     */
+    function getAsset() external view returns (string memory);
+
+    /**
      * @notice Emitted when the final reference value is set.
      * @param poolId The Id of an existing derivatives contract
      * @param decimalAdjustedHistoricalPrice Chainlink price converted into 18 decimals
@@ -58,6 +64,5 @@ interface IChainlinkV3Oracle {
      * @param roundId Chainlink's round number that includes the expiry date                                                    
      */
     event FinalReferenceValueSet(uint256 indexed poolId, uint256 decimalAdjustedHistoricalPrice, uint256 indexed expiryDate, uint256 indexed roundId);
-
 
 }

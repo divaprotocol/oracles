@@ -8,13 +8,16 @@ import "./interfaces/IDIVA.sol";
 
 contract ChainlinkV3Oracle is IChainlinkV3Oracle {
 
+    string private _asset;
+    
     bool private _challengeable; 
     
     AggregatorV3Interface internal _priceFeed;
 
-    constructor(address _chainlinkAddress) {
+    constructor(address _chainlinkAddress, string memory _assetName) {
         _priceFeed = AggregatorV3Interface(_chainlinkAddress);
         _challengeable = false;
+        _asset = _assetName;
     }
 
     function setFinalReferenceValue(address _divaDiamond, uint80 _roundId, uint256 _pooId) external override {
@@ -68,6 +71,10 @@ contract ChainlinkV3Oracle is IChainlinkV3Oracle {
         ) = _priceFeed.latestRoundData();
         require(timeStamp > 0, "ChainlinkV3Oracle: Round not complete");
         return (roundId, price, startedAt, timeStamp, answeredInRound);
+    }
+
+    function getAsset() external view override returns (string memory) {
+        return _asset;
     }
 
 }

@@ -12,12 +12,15 @@ import "./ChainlinkV3Oracle.sol";
 contract ChainlinkV3OracleFactory is IChainlinkV3OracleFactory {
 
     address[] private _chainlinkV3Oracles;
+    mapping(address => bool) _exists;
     	
     // TODO: Use ENS name instead of address
-    function createChainlinkV3Oracle(address _chainlinkPriceFeed) external override {
+    // TODO: Add reference asset label
+    function createChainlinkV3Oracle(address _chainlinkPriceFeed, string memory _asset) external override {
         
-        ChainlinkV3Oracle chainlinkV3Oracle = new ChainlinkV3Oracle(_chainlinkPriceFeed);
+        ChainlinkV3Oracle chainlinkV3Oracle = new ChainlinkV3Oracle(_chainlinkPriceFeed, _asset);
         _chainlinkV3Oracles.push(address(chainlinkV3Oracle));
+        _exists[address(chainlinkV3Oracle)] = true;
 
         emit OracleCreated(address(chainlinkV3Oracle), _chainlinkPriceFeed, msg.sender);
     }
@@ -32,6 +35,10 @@ contract ChainlinkV3OracleFactory is IChainlinkV3OracleFactory {
 
     function getChainlinkV3OraclesLength() external view override returns (uint256) {
         return _chainlinkV3Oracles.length;
+    }
+
+    function exists(address _oracle) external view override returns (bool) {
+        return _exists[_oracle];
     }
 
 }
