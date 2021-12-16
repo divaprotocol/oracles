@@ -23,11 +23,8 @@ describe('ChainlinkV3Oracle', () => {
   let oracleAssetName;
   let chainlinkOracle;
 
-
   getExpiryInSeconds = (offsetInSeconds) =>
-        Math.floor(Date.now() / 1000 + offsetInSeconds).toString(); // 60*60 = 1h; 60*60*24 = 1d, 60*60*24*365 = 1y
-
-  // getPastExpiry = (secondsAgo) => Math.floor(Date.now() / 1000 - secondsAgo).toString();
+        Math.floor(Date.now() / 1000 + offsetInSeconds).toString(); 
 
   beforeEach(async () => {
       [deployer, user1, user2, oracle] = await ethers.getSigners();
@@ -44,8 +41,6 @@ describe('ChainlinkV3Oracle', () => {
   
   describe('Initialization', async () => {
     it('Should initialize', async () => {
-      // const chainlinkOracle = await chainlinkV3OracleAttachFixture(addresses[0])
-
       expect(await chainlinkOracle.challengeable()).to.be.false;
       expect(await chainlinkOracle.priceFeed()).to.eq(chainlinkAddress);
       expect(await chainlinkOracle.getAsset()).to.eq(oracleAssetName);
@@ -91,11 +86,7 @@ describe('ChainlinkV3Oracle', () => {
       chainlinkOracle = await chainlinkV3OracleAttachFixture(addresses[0])
     })
 
-    // TODO: it should now allow to submit a negative value
-    // TODO: it should not allow to submit a value that has more than 18 decimals
-
-    it('Should set final reference value equal to inflection when triggered after submission period and no input provided', async () => {
-      // QUESTION: Should it set the value to inflection? I thought that this happens at first redemption?
+    it('Should set final reference value equal to inflection when triggered after submission period and no was input provided', async () => {
       let tx = await poolFacet.createContingentPool(
         [
           parseEther("17"), // inflection
@@ -187,8 +178,9 @@ describe('ChainlinkV3Oracle', () => {
     }) 
 
     // TODO: Test where it's DIVA's turn to provide the value after submission period expired without any input
+    // TODO: it should now allow to submit a negative value
+    // TODO: it should not allow to submit a value that has more than 18 decimals
+
   })
-  
-  
-  
+    
 });

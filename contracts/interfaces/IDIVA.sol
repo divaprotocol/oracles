@@ -60,7 +60,6 @@ interface IDIVA {
     ) 
         external returns (bool); 
 
-    
     /** 
      * @notice Returns the pool parameters for a given pool Id
      * @param _poolId Id of the pool
