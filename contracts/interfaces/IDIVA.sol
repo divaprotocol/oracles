@@ -67,4 +67,4 @@ interface IDIVA {
      */
     function getPoolParametersById(uint256 _poolId) external view returns (Pool memory);
 
-  }
+}

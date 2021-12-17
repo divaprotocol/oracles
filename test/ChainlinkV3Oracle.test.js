@@ -2,18 +2,15 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { chainlinkV3OracleAttachFixture } = require("./fixtures/ChainlinkV3OracleFixture")
 const { chainlinkV3OracleFactoryDeployFixture } = require("./fixtures/ChainlinkV3OracleFactoryFixture")
-const { erc20DeployFixture, erc20AttachFixture } = require("./fixtures/ERC20TokenFixture")
+const { erc20DeployFixture, erc20AttachFixture } = require("./fixtures/MockERC20Fixture")
 const { BigNumber, providers } = require('ethers')
 const { parseEther } = require('@ethersproject/units')
-
-const { abi: Pool_ABI } = require('../contracts/abi/PoolFacet.json');
-const { abi: Getter_ABI } = require('../contracts/abi/GetterFacet.json');
+const Diamond_ABI = require('../contracts/abi/Diamond.json');
 
 describe('ChainlinkV3Oracle', () => {
   let chainlinkV3OracleFactory;
   let addresses;
   let chainlinkAddress;
-  let poolFacet;
   let divaKovanAddress;
   let deployer;
   let user1;
@@ -22,6 +19,7 @@ describe('ChainlinkV3Oracle', () => {
   let getExpiryInSeconds;
   let oracleAssetName;
   let chainlinkOracle;
+  let divaDiamond;
 
   getExpiryInSeconds = (offsetInSeconds) =>
         Math.floor(Date.now() / 1000 + offsetInSeconds).toString(); 
@@ -75,19 +73,18 @@ describe('ChainlinkV3Oracle', () => {
     let userStartCollateralTokenBalance;
 
     beforeEach(async () => {
-      poolFacet = await ethers.getContractAt(Pool_ABI, divaKovanAddress);
-      getterFacet = await ethers.getContractAt(Getter_ABI, divaKovanAddress);
+      divaDiamond = await ethers.getContractAt(Diamond_ABI, divaKovanAddress);
       userStartCollateralTokenBalance = parseEther("1000000");
       initialCollateralTokenAllowance = parseEther("1000000");
       
       erc20 = await erc20DeployFixture("DummyToken", "DCT", userStartCollateralTokenBalance); 
-      const approveTx = await erc20.approve(poolFacet.address, initialCollateralTokenAllowance);
+      const approveTx = await erc20.approve(divaDiamond.address, initialCollateralTokenAllowance);
       await approveTx.wait();
       chainlinkOracle = await chainlinkV3OracleAttachFixture(addresses[0])
     })
 
     it('Should set final reference value equal to inflection when triggered after submission period and no was input provided', async () => {
-      let tx = await poolFacet.createContingentPool(
+      let tx = await divaDiamond.createContingentPool(
         [
           parseEther("17"), // inflection
           parseEther("33"), // cap
@@ -103,21 +100,21 @@ describe('ChainlinkV3Oracle', () => {
         ] 
       ); 
       await tx.wait();
-      const latestPoolId = await getterFacet.getLatestPoolId()
-      const poolParamsBefore = await getterFacet.getPoolParametersById(latestPoolId)
+      const latestPoolId = await divaDiamond.getLatestPoolId()
+      const poolParamsBefore = await divaDiamond.getPoolParametersById(latestPoolId)
       expect(poolParamsBefore.statusFinalReferenceValue).to.eq(0)
       expect(poolParamsBefore.finalReferenceValue).to.eq(0)
       
       // Random user (here user1) sets final reference value
       await chainlinkOracle.connect(user1).setFinalReferenceValue(divaKovanAddress, '36893488147419112854', latestPoolId) // roundId = '36893488147419112854' => price 412900500000 (4'129.005)
 
-      const poolParamsAfter = await getterFacet.getPoolParametersById(latestPoolId)
+      const poolParamsAfter = await divaDiamond.getPoolParametersById(latestPoolId)
       expect(poolParamsAfter.statusFinalReferenceValue).to.eq(3)
       expect(poolParamsAfter.finalReferenceValue).to.eq(parseEther("17")) // 412900500000000000000000
     })  
 
     it('Should set final reference value equal to 4129.005 when triggered within the submission period', async () => {
-      let tx = await poolFacet.createContingentPool(
+      let tx = await divaDiamond.createContingentPool(
         [
           parseEther("17"), // inflection
           parseEther("33"), // cap
@@ -133,15 +130,15 @@ describe('ChainlinkV3Oracle', () => {
         ] 
       ); 
       await tx.wait();
-      const latestPoolId = await getterFacet.getLatestPoolId()
-      const poolParamsBefore = await getterFacet.getPoolParametersById(latestPoolId)
+      const latestPoolId = await divaDiamond.getLatestPoolId()
+      const poolParamsBefore = await divaDiamond.getPoolParametersById(latestPoolId)
       expect(poolParamsBefore.statusFinalReferenceValue).to.eq(0)
       expect(poolParamsBefore.finalReferenceValue).to.eq(0)
 
       // Random user (here user1) triggers setFinalReferenceValue
       await chainlinkOracle.connect(user1).setFinalReferenceValue(divaKovanAddress, '36893488147419112854', latestPoolId) // roundId = '36893488147419112854' => price 412900500000 (4'129.005)
 
-      const poolParamsAfter = await getterFacet.getPoolParametersById(latestPoolId)
+      const poolParamsAfter = await divaDiamond.getPoolParametersById(latestPoolId)
       expect(poolParamsAfter.statusFinalReferenceValue).to.eq(3)
       expect(poolParamsAfter.finalReferenceValue).to.eq(parseEther("4129.005")) 
 
@@ -150,7 +147,7 @@ describe('ChainlinkV3Oracle', () => {
     })   
 
     it('Should reverts with message "Settlement: No permission to set the reference value" if a pool that has different data feed provider was provided', async () => {
-      let tx = await poolFacet.createContingentPool(
+      let tx = await divaDiamond.createContingentPool(
         [
           parseEther("17"), // inflection
           parseEther("33"), // cap
@@ -166,8 +163,8 @@ describe('ChainlinkV3Oracle', () => {
         ] 
       ); 
       await tx.wait();
-      const latestPoolId = await getterFacet.getLatestPoolId()
-      const poolParamsBefore = await getterFacet.getPoolParametersById(latestPoolId)
+      const latestPoolId = await divaDiamond.getLatestPoolId()
+      const poolParamsBefore = await divaDiamond.getPoolParametersById(latestPoolId)
       expect(poolParamsBefore.statusFinalReferenceValue).to.eq(0)
       expect(poolParamsBefore.finalReferenceValue).to.eq(0)
       expect(poolParamsBefore.dataFeedProvider).to.not.eq(user1.address)

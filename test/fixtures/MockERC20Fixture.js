@@ -5,12 +5,12 @@ const { ethers } = require('hardhat')
 use(solidity)
 
 async function erc20DeployFixture(name, symbol, tokenSupply) {
-    const Factory = await ethers.getContractFactory('ERC20Token')
+    const Factory = await ethers.getContractFactory('MockERC20')
     return (await Factory.deploy(name, symbol, tokenSupply))
 }
 
 async function erc20AttachFixture(tokenAddress) {
-    const Factory = await ethers.getContractFactory('ERC20Token')
+    const Factory = await ethers.getContractFactory('MockERC20')
     return (await Factory.attach(tokenAddress))
 }
 

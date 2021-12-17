@@ -29,8 +29,8 @@ contract ChainlinkV3Oracle is IChainlinkV3Oracle {
         
         require(price >= 0, "ChainlinkV3Oracle: negative price");
         require(decimals <= 18, "ChainlinkV3Oracle: exceeds max allowed decimals"); // QUESTION: Needed?
-        require((roundIdStartedAt <= expiryDate) && (expiryDate <= roundIdTimestamp) , "ChainlinkV3Oracle: expiry time outside of round"); // Checking expiry date within 60 second window // QUESTION: expiryDate < roundIdTimestamp correct?
-        require(returnedRoundId == answeredInRound , "ChainlinkV3Oracle: round not equal to answered round");
+        // require((roundIdStartedAt <= expiryDate) && (expiryDate <= roundIdTimestamp) , "ChainlinkV3Oracle: expiry time outside of round"); // Checking expiry date within 60 second window 
+        // require(returnedRoundId == answeredInRound , "ChainlinkV3Oracle: round not equal to answered round");
 
         uint256 historicalPrice = uint256(price);
         uint256 decimalAdjustedHistoricalPrice = historicalPrice * (10**(18-decimals));
@@ -78,3 +78,4 @@ contract ChainlinkV3Oracle is IChainlinkV3Oracle {
     }
 
 }
+
