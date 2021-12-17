@@ -20,24 +20,24 @@ contract ChainlinkV3Oracle is IChainlinkV3Oracle {
         _asset = _assetName;
     }
 
-    function setFinalReferenceValue(address _divaDiamond, uint80 _roundId, uint256 _pooId) external override {
+    function setFinalReferenceValue(address _divaDiamond, uint80 _roundId, uint256 _poolId) external override {
         IDIVA _diva = IDIVA(_divaDiamond);
-        IDIVA.Pool memory params = _diva.getPoolParametersById(_pooId);
+        IDIVA.Pool memory params = _diva.getPoolParametersById(_poolId);
 
         uint256 expiryDate = params.expiryDate;
         (uint80 returnedRoundId, int256 price, uint256 roundIdStartedAt, uint256 roundIdTimestamp, uint80 answeredInRound, uint8 decimals) = getHistoricalPrice(_roundId); //TODO: Consider adding timestamp check--DONE
         
         require(price >= 0, "ChainlinkV3Oracle: negative price");
-        require(decimals <= 18, "ChainlinkV3Oracle: exceeds max allowed decimals");
-        require((roundIdStartedAt <= expiryDate) && (expiryDate > roundIdTimestamp) , "ChainlinkV3Oracle: expiry time outside of round"); // Checking expiry date within 60 second window
+        require(decimals <= 18, "ChainlinkV3Oracle: exceeds max allowed decimals"); // QUESTION: Needed?
+        require((roundIdStartedAt <= expiryDate) && (expiryDate < roundIdTimestamp) , "ChainlinkV3Oracle: expiry time outside of round"); // Checking expiry date within 60 second window // QUESTION: expiryDate < roundIdTimestamp correct?
         require(returnedRoundId == answeredInRound , "ChainlinkV3Oracle: round not equal to answered round");
 
         uint256 historicalPrice = uint256(price);
         uint256 decimalAdjustedHistoricalPrice = historicalPrice * (10**(18-decimals));
         
-        require(_diva.setFinalReferenceValueById(_pooId, decimalAdjustedHistoricalPrice, _challengeable)); 
+        require(_diva.setFinalReferenceValueById(_poolId, decimalAdjustedHistoricalPrice, _challengeable)); 
         
-        emit FinalReferenceValueSet(_pooId, decimalAdjustedHistoricalPrice, expiryDate, _roundId);
+        emit FinalReferenceValueSet(_poolId, decimalAdjustedHistoricalPrice, expiryDate, _roundId);
     }
 
     function challengeable() external view override returns (bool) {
