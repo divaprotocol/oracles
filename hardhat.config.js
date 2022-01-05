@@ -20,12 +20,12 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  */
 module.exports = {
   solidity: "0.8.4",
-  networks: {
-    hardhat: {
-        forking: {
-            url: process.env.ALCHEMY_URL_KOVAN,
-        },
-        gas: "auto"
-    },
-  }
+  // networks: {
+  //   hardhat: {
+  //       forking: {
+  //           url: process.env.ALCHEMY_URL_KOVAN,
+  //       },
+  //       gas: "auto"
+  //   },
+  // }
 };
