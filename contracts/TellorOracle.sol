@@ -6,7 +6,7 @@ import "usingtellor/contracts/TellorPlayground.sol";
 
 import "hardhat/console.sol";
 
-contract TellorOracle {
+contract TellorOracle is UsingTellor{
     event SetFinalReferenceValue(uint256 indexed optionID, uint256 value, uint256 indexed expiryDate, uint256 indexed timestamp);
     
     address private _tellorAddress;
