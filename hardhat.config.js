@@ -24,6 +24,7 @@ module.exports = {
     hardhat: {
         forking: {
             url: process.env.ALCHEMY_URL_KOVAN,
+            blockNumber: 29134000 // Kovan block unix timestamp (UTC): 1641499424
         },
         gas: "auto"
     },

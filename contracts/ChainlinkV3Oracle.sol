@@ -4,8 +4,10 @@ pragma solidity 0.8.4;
 import "./interfaces/IChainlinkV3Oracle.sol";
 import "./interfaces/IDIVA.sol";
 
-// IMPORTANT: Activate the two require statements in setFinalReferenceValueById if you have deactivated them for testing!
-
+/**
+ * IMPORTANT: DO NOT use this contract in production as it's not straightforward to verify whether a given roundId is the closest
+ * to a given expiry timestamp.
+ */
 contract ChainlinkV3Oracle is IChainlinkV3Oracle {
 
     string private _asset;
@@ -25,12 +27,12 @@ contract ChainlinkV3Oracle is IChainlinkV3Oracle {
         IDIVA.Pool memory params = _diva.getPoolParametersById(_poolId);
 
         uint256 expiryDate = params.expiryDate;
-        (uint80 returnedRoundId, int256 price, uint256 roundIdStartedAt, uint256 roundIdTimestamp, uint80 answeredInRound, uint8 decimals) = getHistoricalPrice(_roundId); //TODO: Consider adding timestamp check--DONE
+        (uint80 returnedRoundId, int256 price, uint256 roundIdStartedAt, uint256 roundIdTimestamp, uint80 answeredInRound, uint8 decimals) = getHistoricalPrice(_roundId);
         
         require(price >= 0, "ChainlinkV3Oracle: negative price");
-        require(decimals <= 18, "ChainlinkV3Oracle: exceeds max allowed decimals"); // QUESTION: Needed?
-        // require((roundIdStartedAt <= expiryDate) && (expiryDate <= roundIdTimestamp) , "ChainlinkV3Oracle: expiry time outside of round"); // Checking expiry date within 60 second window 
-        // require(returnedRoundId == answeredInRound , "ChainlinkV3Oracle: round not equal to answered round");
+        require(decimals <= 18, "ChainlinkV3Oracle: exceeds max allowed decimals");
+        require((roundIdStartedAt <= expiryDate) && (expiryDate <= roundIdTimestamp) , "ChainlinkV3Oracle: expiry time outside of round");
+        require(returnedRoundId == answeredInRound , "ChainlinkV3Oracle: round not equal to answered round");
 
         uint256 historicalPrice = uint256(price);
         uint256 decimalAdjustedHistoricalPrice = historicalPrice * (10**(18-decimals));
@@ -69,7 +71,7 @@ contract ChainlinkV3Oracle is IChainlinkV3Oracle {
             uint256 timeStamp,
             uint80 answeredInRound
         ) = _priceFeed.latestRoundData();
-        require(timeStamp > 0, "ChainlinkV3Oracle: Round not complete");
+        require(timeStamp > 0, "ChainlinkV3Oracle: round not complete");
         return (roundId, price, startedAt, timeStamp, answeredInRound);
     }
 

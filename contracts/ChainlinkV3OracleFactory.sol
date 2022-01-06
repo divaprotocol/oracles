@@ -6,6 +6,11 @@ import "./interfaces/IChainlinkV3OracleFactory.sol";
 import "./ChainlinkV3Oracle.sol";
 
 /**
+ * IMPORTANT: DO NOT use this contract in production as it's not straightforward to verify whether a given roundId is the closest
+ * to a given expiry timestamp (see ChainlinkV3Oracle.sol) 
+ */
+
+/**
  * @notice Main contract to create DIVA specific Chainlink v3 oracles.
  * @dev Implementation of the {IChainlinkV3OracleFactory} interface.
  */
