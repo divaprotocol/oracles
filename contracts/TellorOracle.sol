@@ -1,8 +1,9 @@
  // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.3;
 
 import "usingtellor/contracts/UsingTellor.sol";
 import "usingtellor/contracts/TellorPlayground.sol";
+import "./interfaces/IDIVA.sol";
 
 import "hardhat/console.sol";
 
@@ -11,7 +12,7 @@ contract TellorOracle is UsingTellor{
     
     address private _tellorAddress;
 
-    constructor(address tellorAddress_) {
+    constructor(address tellorAddress_) usingTellor(tellorAddress){
         _tellorAddress = tellorAddress_;
     }
 
@@ -21,12 +22,12 @@ contract TellorOracle is UsingTellor{
         // _DIVAFactory.Pool storage params = _DIVAFactory.getPoolParametersById(_optionId);
         IDIVA.Pool memory params = _DIVAFactory.getPoolParametersById(_optionId);
         uint256 _expiryDate = params.expiryDate;
-        string memory _s = string(abi.encode({type:\"divaProtocolPolygon",\"","id:",_optionId,"}")
-        bytes32 _queryID = return keccak256(abi.encode(_s));
+        string memory _s = string(abi.encode("{type:","\"divaProtocolPolygon","\"","id:",_optionId,"}"));
+        bytes32 _queryID = keccak256(abi.encode(_s));
         bool _didRetrieve;
         bytes memory _value;
         uint256 _timestampRetrieved;
-        (_didRetrieve,_value,_timestampRetrieved) = getDataBefore(_s, now - 1 hour);
+        (_didRetrieve,_value,_timestampRetrieved) = getDataBefore(_s, now - 1 hours);
         require(_timestampRetrieved >= _expiryDate, "expiry date has not yest passed");
         require(_DIVAFactory.setFinalReferenceValueById(_optionId, _value, false)); //passing on to diva, ultimate handover. Retain false bool. 
         emit SetFinalReferenceValue(_optionId,_value,_expiryDate,_timestampRetrieved);
