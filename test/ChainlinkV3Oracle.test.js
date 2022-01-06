@@ -30,9 +30,9 @@ const Diamond_ABI = require('../contracts/abi/Diamond.json');
 
 
 /**
- * Note that this test assumes the special case where the expiry date of the contingent pools equals the timestamp implied by one of Chainlink's historical roundIds.
- * In reality, it's very unlikely that there will be a Chainlink data feed at exactly the expiry date of an option.
- * I didn't figure out how to check within the ChainlinkV3Oracle contract whether a given roundId is the closest to a given expiry timestamp.  
+ * Note that this test was constructed such that the expiry date of the contingent pools equals the timestamp implied by the given Chainlink roundId.
+ * In reality, it's very unlikely that there will be a Chainlink data point at exactly the expiry timestamp of the pool.
+ * It's not straightforward to verify whether a given roundId is the closest to a given expiry timestamp.   
  * Hence, DO NOT use the ChainlinkV3Oracle in production.
  */
 describe('ChainlinkV3Oracle', () => {
