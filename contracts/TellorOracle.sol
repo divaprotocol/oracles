@@ -1,8 +1,7 @@
  // SPDX-License-Identifier: MIT
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
-import "usingtellor/contracts/UsingTellor.sol";
-import "usingtellor/contracts/TellorPlayground.sol";
+import "./UsingTellor.sol";
 import "./interfaces/IDIVA.sol";
 
 import "hardhat/console.sol";
@@ -12,7 +11,7 @@ contract TellorOracle is UsingTellor{
     
     address private _tellorAddress;
 
-    constructor(address tellorAddress_) usingTellor(tellorAddress){
+    constructor(address payable tellorAddress_) UsingTellor(tellorAddress_){
         _tellorAddress = tellorAddress_;
     }
 
@@ -27,14 +26,29 @@ contract TellorOracle is UsingTellor{
         bool _didRetrieve;
         bytes memory _value;
         uint256 _timestampRetrieved;
-        (_didRetrieve,_value,_timestampRetrieved) = getDataBefore(_s, now - 1 hours);
+        (_didRetrieve,_value,_timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours);
         require(_timestampRetrieved >= _expiryDate, "expiry date has not yest passed");
-        require(_DIVAFactory.setFinalReferenceValueById(_optionId, _value, false)); //passing on to diva, ultimate handover. Retain false bool. 
-        emit SetFinalReferenceValue(_optionId,_value,_expiryDate,_timestampRetrieved);
+        uint256 _formattedValue = _sliceUint(_value);
+        require(_DIVAFactory.setFinalReferenceValueById(_optionId,_formattedValue, false)); //passing on to diva, ultimate handover. Retain false bool. 
+        emit SetFinalReferenceValue(_optionId,_formattedValue,_expiryDate,_timestampRetrieved);
         return true;
     }
 
     function getTellorOracleAddress() public view returns (address) {
         return _tellorAddress;
+    }
+
+        /**
+     * @dev Utilized to help slice a bytes variable into a uint
+     * @param _b is the bytes variable to be sliced
+     * @return _x of the sliced uint256
+     */
+    function _sliceUint(bytes memory _b) public pure returns (uint256 _x) {
+        uint256 _number = 0;
+        for (uint256 _i = 0; _i < _b.length; _i++) {
+            _number = _number * 2**8;
+            _number = _number + uint8(_b[_i]);
+        }
+        return _number;
     }
 }
