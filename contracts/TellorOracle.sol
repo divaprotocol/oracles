@@ -36,10 +36,10 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         uint256 _timestampRetrieved;
 
         (_didRetrieve, _value, _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours); // QUESTION: What if someone calls this functino 23 after expiry? Which value will be returned? Still the last one before expiry? 
-        require(_timestampRetrieved >= _expiryDate, "Tellor: expiry date has not yest passed");
+        require(_timestampRetrieved >= _expiryDate, "Tellor: expiry date has not yet passed");
         uint256 _formattedValue = _sliceUint(_value); // QUESTION: Is _formattedValue scaled to 18 decimals (e.g., in Chainlink, ETH/USD price has 8 decimals only)?
         
-        // Send value to DIVA contract
+        // Forward value to DIVA contract
         require(_diva.setFinalReferenceValueById(_poolId, _formattedValue, _challengeable)); 
         
         emit FinalReferenceValueSet(_poolId, _formattedValue, _expiryDate, _timestampRetrieved);
