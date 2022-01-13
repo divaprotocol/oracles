@@ -18,24 +18,23 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
-module.exports = {
-  solidity: {
-    compilers: [
-      {
-        version: "0.8.3"
-      },
-      {
-        version: "0.8.4"
-      },
-    ]
-  },
-  networks: {
-    hardhat: {
-        forking: {
-            url: process.env.ALCHEMY_URL_KOVAN,
-            blockNumber: 29134000 // Kovan block unix timestamp (UTC): 1641499424
-        },
-        gas: "auto"
-    },
-  }
+ module.exports = {
+     solidity: {
+       compilers: [
+         {
+           version: "0.8.3"
+         },
+         {
+           version: "0.8.4"
+         },
+       ]
+     },
+   networks: {
+     hardhat: {
+         forking: {
+             url: process.env.ALCHEMY_URL_KOVAN,
+         }//,
+         // gas: "auto"
+     }//,
+   }
 };
