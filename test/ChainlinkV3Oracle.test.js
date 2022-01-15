@@ -6,7 +6,7 @@ const { erc20DeployFixture, erc20AttachFixture } = require("./fixtures/MockERC20
 const { BigNumber, providers } = require('ethers')
 // import { mineBlock } from './utils'
 const { parseEther } = require('@ethersproject/units')
-const Diamond_ABI = require('../contracts/abi/Diamond.json');
+const Diamond_ABI = require('../contracts/abi/DIVA.json');
 
 // Config for testing
 // KOVAN (ETH/USD)

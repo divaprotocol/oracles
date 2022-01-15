@@ -41,6 +41,7 @@ interface IDIVA {
         address dataFeedProvider;
         uint256 redemptionFee; 
         uint256 settlementFee;
+        uint256 capacity;
     }   
 
     /**
@@ -53,18 +54,18 @@ interface IDIVA {
      * will immediately go into confirmed status, challenge will not be possible. This parameter was introduced
      * to allow automated oracles (e.g., Uniswap v3 or Chainlink) to settle without dispute
      */ 
-    function setFinalReferenceValueById(
+    function setFinalReferenceValue(
         uint256 _poolId, 
         uint256 _finalReferenceValue, 
         bool _allowChallenge
     ) 
-        external returns (bool); 
+        external;  
 
     /** 
      * @notice Returns the pool parameters for a given pool Id
      * @param _poolId Id of the pool
      * @return Pool struct
      */
-    function getPoolParametersById(uint256 _poolId) external view returns (Pool memory);
+    function getPoolParameters(uint256 _poolId) external view returns (Pool memory);
 
 }

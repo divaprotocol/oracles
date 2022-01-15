@@ -39,7 +39,7 @@
       }
     ],
     "name": "claimFees",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -54,9 +54,51 @@
       { "internalType": "uint256", "name": "_amount", "type": "uint256" }
     ],
     "name": "transferFeeClaim",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "facetAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "enum IDiamondCut.FacetCutAction",
+            "name": "action",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes4[]",
+            "name": "functionSelectors",
+            "type": "bytes4[]"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct IDiamondCut.FacetCut[]",
+        "name": "_diamondCut",
+        "type": "tuple[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_init",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "_calldata",
+        "type": "bytes"
+      }
+    ],
+    "name": "DiamondCut",
+    "type": "event"
   },
   {
     "inputs": [
@@ -160,6 +202,15 @@
   },
   {
     "inputs": [
+      { "internalType": "bytes4", "name": "_interfaceId", "type": "bytes4" }
+    ],
+    "name": "supportsInterface",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
         "internalType": "address",
         "name": "_collateralToken",
@@ -208,7 +259,12 @@
             "name": "finalReferenceValueDIVASubmissionPeriod",
             "type": "uint256"
           },
-          { "internalType": "address", "name": "treasury", "type": "address" }
+          { "internalType": "address", "name": "treasury", "type": "address" },
+          {
+            "internalType": "address",
+            "name": "fallbackDataFeedProvider",
+            "type": "address"
+          }
         ],
         "internalType": "struct LibDiamond.GovernanceStorage",
         "name": "",
@@ -222,6 +278,132 @@
     "inputs": [],
     "name": "getLatestPoolId",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_poolId", "type": "uint256" }
+    ],
+    "name": "getPoolParameters",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "referenceAsset",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "inflection",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "cap", "type": "uint256" },
+          { "internalType": "uint256", "name": "floor", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "supplyShortInitial",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "supplyLongInitial",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "supplyShort",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "supplyLong",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expiryDate",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "collateralToken",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceShortInitial",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceLongInitial",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceShort",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceLong",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "shortToken",
+            "type": "address"
+          },
+          { "internalType": "address", "name": "longToken", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "finalReferenceValue",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum LibDiamond.Status",
+            "name": "statusFinalReferenceValue",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "redemptionAmountLongToken",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "redemptionAmountShortToken",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "statusTimestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "dataFeedProvider",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "redemptionFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "settlementFee",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" }
+        ],
+        "internalType": "struct LibDiamond.Pool",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -323,7 +505,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "statusTimeStamp",
+            "name": "statusTimestamp",
             "type": "uint256"
           },
           {
@@ -340,132 +522,8 @@
             "internalType": "uint256",
             "name": "settlementFee",
             "type": "uint256"
-          }
-        ],
-        "internalType": "struct LibDiamond.Pool",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "_poolId", "type": "uint256" }
-    ],
-    "name": "getPoolParametersById",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "referenceAsset",
-            "type": "string"
           },
-          {
-            "internalType": "uint256",
-            "name": "inflection",
-            "type": "uint256"
-          },
-          { "internalType": "uint256", "name": "cap", "type": "uint256" },
-          { "internalType": "uint256", "name": "floor", "type": "uint256" },
-          {
-            "internalType": "uint256",
-            "name": "supplyShortInitial",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "supplyLongInitial",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "supplyShort",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "supplyLong",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "expiryDate",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "collateralToken",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "collateralBalanceShortInitial",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "collateralBalanceLongInitial",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "collateralBalanceShort",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "collateralBalanceLong",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "shortToken",
-            "type": "address"
-          },
-          { "internalType": "address", "name": "longToken", "type": "address" },
-          {
-            "internalType": "uint256",
-            "name": "finalReferenceValue",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum LibDiamond.Status",
-            "name": "statusFinalReferenceValue",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint256",
-            "name": "redemptionAmountLongToken",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "redemptionAmountShortToken",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "statusTimeStamp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "dataFeedProvider",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "redemptionFee",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "settlementFee",
-            "type": "uint256"
-          }
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" }
         ],
         "internalType": "struct LibDiamond.Pool",
         "name": "",
@@ -481,6 +539,25 @@
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "fallbackDataFeedProvider",
+        "type": "address"
+      }
+    ],
+    "name": "FallbackDataFeedProviderSet",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -618,13 +695,26 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_newFallbackDataFeedProvider",
+        "type": "address"
+      }
+    ],
+    "name": "setFallbackDataFeedProvider",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_finalReferenceValueChallengePeriod",
         "type": "uint256"
       }
     ],
     "name": "setFinalReferenceValueChallengePeriod",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -637,7 +727,7 @@
       }
     ],
     "name": "setFinalReferenceValueDIVASubmissionPeriod",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -650,7 +740,7 @@
       }
     ],
     "name": "setFinalReferenceValueReviewPeriod",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -663,7 +753,7 @@
       }
     ],
     "name": "setFinalReferenceValueSubmissionPeriod",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -672,7 +762,7 @@
       { "internalType": "uint256", "name": "_redemptionFee", "type": "uint256" }
     ],
     "name": "setRedemptionFee",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -681,7 +771,7 @@
       { "internalType": "uint256", "name": "_settlementFee", "type": "uint256" }
     ],
     "name": "setSettlementFee",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -690,9 +780,28 @@
       { "internalType": "address", "name": "_newTreasury", "type": "address" }
     ],
     "name": "setTreasuryAddress",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
   },
   {
     "inputs": [],
@@ -774,14 +883,14 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "shortToken",
+        "name": "from",
         "type": "address"
       },
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "longToken",
-        "type": "address"
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "collateralAmount",
+        "type": "uint256"
       }
     ],
     "name": "PoolIssued",
@@ -797,7 +906,7 @@
       }
     ],
     "name": "addLiquidity",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -851,7 +960,8 @@
             "internalType": "address",
             "name": "dataFeedProvider",
             "type": "address"
-          }
+          },
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" }
         ],
         "internalType": "struct IPool.PoolParams",
         "name": "_poolParams",
@@ -859,7 +969,7 @@
       }
     ],
     "name": "createContingentPool",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -873,7 +983,7 @@
       { "internalType": "uint256", "name": "_amount", "type": "uint256" }
     ],
     "name": "redeemPositionToken",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -887,7 +997,7 @@
       }
     ],
     "name": "removeLiquidity",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -900,8 +1010,8 @@
         "type": "uint256"
       }
     ],
-    "name": "challengeFinalReferenceValueById",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "name": "challengeFinalReferenceValue",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -915,8 +1025,8 @@
       },
       { "internalType": "bool", "name": "_allowChallenge", "type": "bool" }
     ],
-    "name": "setFinalReferenceValueById",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "name": "setFinalReferenceValue",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -932,15 +1042,6 @@
     ],
     "name": "TestEvent",
     "type": "event"
-  },
-  {
-    "inputs": [
-      { "internalType": "bytes4", "name": "_interfaceID", "type": "bytes4" }
-    ],
-    "name": "supportsInterface",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
-    "type": "function"
   },
   {
     "inputs": [],
@@ -1226,67 +1327,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "facetAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "enum IDiamondCut.FacetCutAction",
-            "name": "action",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bytes4[]",
-            "name": "functionSelectors",
-            "type": "bytes4[]"
-          }
-        ],
-        "indexed": false,
-        "internalType": "struct IDiamondCut.FacetCut[]",
-        "name": "_diamondCut",
-        "type": "tuple[]"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "_init",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "_calldata",
-        "type": "bytes"
-      }
-    ],
-    "name": "DiamondCut",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": true,
         "internalType": "enum LibDiamond.Status",
         "name": "settlementStatus",
@@ -1295,7 +1335,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "dataFeedProvider",
+        "name": "by",
         "type": "address"
       },
       {

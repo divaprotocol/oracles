@@ -21,23 +21,21 @@ contract TellorOracle is UsingTellor, ITellorOracle {
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override {
         IDIVA _diva = IDIVA(_divaDiamond);
-        IDIVA.Pool memory _params = _diva.getPoolParametersById(_poolId);
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         uint256 _expiryDate = _params.expiryDate;
 
         // Tellor query
-        bytes memory _b = abi.encode("divaProtocolPolygon", _poolId); // QUESTION: Aren't there commas missing? Is this string Polygon specific? On Arbitrum it would be different?
+        bytes memory _b = abi.encode("divaProtocolPolygon", _poolId); 
 
         bytes32 _queryID = keccak256(_b);
 
-        // QUESTION: Is it necessary to define below values given that the output types are already defined in the getDataBefore function?
-
-        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours); // QUESTION: What if someone calls this functino 23 after expiry? Which value will be returned? Still the last one before expiry?
-        require(_timestampRetrieved >= _expiryDate, "Tellor: expiry date has not yet passed");
-        uint256 _formattedValue = _sliceUint(_value); // QUESTION: Is _formattedValue scaled to 18 decimals (e.g., in Chainlink, ETH/USD price has 8 decimals only)?
+        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours); 
+        require(_timestampRetrieved >= _expiryDate, "Tellor: value at expiration not yet available");
+        uint256 _formattedValue = _sliceUint(_value);
 
         // Forward value to DIVA contract
-        require(_diva.setFinalReferenceValueById(_poolId, _formattedValue, _challengeable));
+        _diva.setFinalReferenceValue(_poolId, _formattedValue, _challengeable);
 
         emit FinalReferenceValueSet(_poolId, _formattedValue, _expiryDate, _timestampRetrieved);
     }

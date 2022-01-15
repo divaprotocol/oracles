@@ -59,7 +59,7 @@ contract TellorPlayground {
     }
 
     /**
-     * @dev Approves amount that an address is alowed to spend of behalf of another
+     * @dev Approves amount that an address is allowed to spend on behalf of another
      * @param _spender The address which is allowed to spend the tokens
      * @param _amount The amount that msg.sender is allowing spender to use
      * @return bool Whether the transaction succeeded
@@ -206,7 +206,7 @@ contract TellorPlayground {
 
     // Getters
     /**
-     * @dev Returns the amount that an address is alowed to spend of behalf of another
+     * @dev Returns the amount that an address is allowed to spend on behalf of another
      * @param _owner The address which owns the tokens
      * @param _spender The address that will use the tokens
      * @return uint256 The amount of allowed tokens
