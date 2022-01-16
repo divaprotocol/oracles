@@ -5,6 +5,8 @@ import "./UsingTellor.sol";
 import "./interfaces/ITellorOracle.sol";
 import "./interfaces/IDIVA.sol";
 
+import "hardhat/console.sol";
+
 contract TellorOracle is UsingTellor, ITellorOracle {
 
     string private _asset;
@@ -31,6 +33,8 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         bytes32 _queryID = keccak256(_b);
 
         (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours); 
+        // console.log("**** _value ****", _value);
+        // console.log("**** _timestampRetrieved ****", _timestampRetrieved);
         require(_timestampRetrieved >= _expiryDate, "Tellor: value at expiration not yet available");
         uint256 _formattedValue = _sliceUint(_value);
 
