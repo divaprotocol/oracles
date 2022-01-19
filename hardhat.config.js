@@ -32,7 +32,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
    networks: {
      hardhat: {
          forking: {
-             url: process.env.ALCHEMY_URL_KOVAN,
+             url: process.env.ALCHEMY_URL_ROPSTEN,
          }//,
          // gas: "auto"
      }//,

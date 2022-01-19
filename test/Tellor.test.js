@@ -10,10 +10,9 @@ const { parseEther } = require('@ethersproject/units')
 describe('TellorOracle', () => {
   let tellorOracle;
   let tellorPlayground;
-  let tellorPlaygroundAddress = '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa'; // deployed in Kovan block 29245508
-  let divaKovanAddress = '0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba'; // deployed in Kovan block 29190631
+  let tellorPlaygroundAddress = '0xF281e2De3bB71dE348040b10B420615104359c10' // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
+  let divaAddress = '0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf' // Kovan: '0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba'; deployed in Kovan block 29190631, Ropsten: '0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf', deployed in Ropsten block n/a (10 Jan 2022, before block 11812205) 
   let oracleAssetName = 'ETH/USD';
-  let poolId = 1;
   let accounts;
 
   beforeEach(async () => {
@@ -22,7 +21,7 @@ describe('TellorOracle', () => {
       method: "hardhat_reset",
       params: [{forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
-            blockNumber:29245720
+            blockNumber: 11840999// 11834224 // Kovan: 29245720 (212 blocks after playground contract deployment)
           },},],
     });
 
@@ -36,22 +35,19 @@ describe('TellorOracle', () => {
     let erc20;
     let userStartCollateralTokenBalance;
     let initialCollateralTokenAllowance;
+    let currentBlockTimestamp;
+    let latestPoolId;
+    let poolParams;  
 
     beforeEach(async () => {
-        diva = await ethers.getContractAt(DIVA_ABI, divaKovanAddress);
+        diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
         userStartCollateralTokenBalance = parseEther("1000000");
         initialCollateralTokenAllowance = parseEther("1000000");
         erc20 = await erc20DeployFixture("DummyToken", "DCT", userStartCollateralTokenBalance);         
         await erc20.approve(diva.address, initialCollateralTokenAllowance);
-    })
 
-    it('Should add a value to TellorPlayground and retrieve value through TellorOracle contract', async () => {               
-        // Create an already expired contingent pool using Tellor Oracle as the data provider
-        // console.log(await ethers.provider.getBlockNumber())
-        let currentBlockTimestamp
+        // Create a contingent pool that already expired using Tellor as the oracle
         currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
-
-        console.log("current block timestamp: " + currentBlockTimestamp)
         await diva.createContingentPool(
             [
               parseEther("43000"),      // inflection
@@ -68,23 +64,27 @@ describe('TellorOracle', () => {
               0                         // capacity
             ] 
           );
-        const latestPoolId = await diva.getLatestPoolId()
-        const poolParamsBefore = await diva.getPoolParameters(latestPoolId)
-        expect(poolParamsBefore.statusFinalReferenceValue).to.eq(0)
-        expect(poolParamsBefore.finalReferenceValue).to.eq(0) 
+          latestPoolId = await diva.getLatestPoolId()
+          poolParams = await diva.getPoolParameters(latestPoolId) 
+    })
+
+    it('Should add a value to TellorPlayground and retrieve value through TellorOracle contract', async () => {                
+        expect(poolParams.finalReferenceValue).to.eq(0) 
+        expect(poolParams.statusFinalReferenceValue).to.eq(0)
 
         // Submit value to Tellor contract
-        queryData = ethers.utils.solidityPack(['string','uint256'], ['divaProtocolPolygon', poolId])
+        abiCoder = new ethers.utils.AbiCoder
+        queryData = abiCoder.encode(['string','uint256'], ['divaProtocolPolygon', latestPoolId])
         queryId = ethers.utils.keccak256(queryData)
-        oracleValue = 200000000000 // QUESTION: Doesn't seem to accept value 43000000000000000000000, i.e. 43'000 with 18 decimals
+        oracleValue = abiCoder.encode(['uint256'],['43000000000000000000000']) 
         await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
         
-        // Debugging
         const tellorDataTimestamp = await tellorPlayground.timestamps(queryId, 0); // 0 is array index
         const tellorValue = await tellorPlayground.values(queryId, tellorDataTimestamp);
+        
         console.log("Tellor data timestamp: " + tellorDataTimestamp)
         console.log("Tellor value: " + tellorValue)
-
+        
         currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
         console.log("Block timestamp which includes the submitValue tx: " + currentBlockTimestamp)
         
@@ -93,7 +93,12 @@ describe('TellorOracle', () => {
         currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
         console.log("Block timestamp next block: " + currentBlockTimestamp)
         
-        await tellorOracle.setFinalReferenceValue(divaKovanAddress, poolId)
+        await tellorOracle.setFinalReferenceValue(divaAddress, latestPoolId)
+        poolParams = await diva.getPoolParameters(latestPoolId)
+        finalReferenceValue = poolParams.finalReferenceValue
+        statusFinalReferenceValue = poolParams.statusFinalReferenceValue
+        expect(finalReferenceValue).to.eq(parseEther("43000"))
+        expect(statusFinalReferenceValue).to.eq(3)
     });
   })
 
