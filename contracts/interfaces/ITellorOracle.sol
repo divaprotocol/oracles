@@ -20,13 +20,12 @@ interface ITellorOracle {
     /**
      * @dev Returns Tellor's oracle address  
      */
-    function getTellorOracleAddress() external view returns (address);
+    function getTellorAddress() external view returns (address);
 
     /**
-     * @dev Returns the asset name assigned to the respective oracle contract. Note that the 
-     * initially assigned value cannot be changed once the contract is deployed
+     * @dev Returns the settlement fee recipient 
      */
-    function getAsset() external view returns (string memory);
+    function getSettlementFeeRecipient() external view returns (address);
 
     /**
      * @notice Emitted when the final reference value is set.

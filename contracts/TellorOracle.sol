@@ -1,24 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./UsingTellor.sol";
 import "./interfaces/ITellorOracle.sol";
 import "./interfaces/IDIVA.sol";
 
-import "hardhat/console.sol";
-
 contract TellorOracle is UsingTellor, ITellorOracle {
 
-    string private _asset;
-
     bool private _challengeable;
-
     address private _tellorAddress;
+    address private _settlementFeeRecipient;
 
-    constructor(address payable tellorAddress_, string memory _assetName) UsingTellor(tellorAddress_) {
+    constructor(address payable tellorAddress_, address settlementFeeRecipient_) UsingTellor(tellorAddress_) { 
         _tellorAddress = tellorAddress_;
         _challengeable = false;
-        _asset = _assetName;
+        _settlementFeeRecipient = settlementFeeRecipient_;
     }
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override {
@@ -26,20 +23,21 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         uint256 _expiryDate = _params.expiryDate;
+        IERC20 _collateralToken = IERC20(_params.collateralToken);
 
         // Tellor query
         bytes memory _b = abi.encode("divaProtocolPolygon", _poolId); 
-
         bytes32 _queryID = keccak256(_b);
-
         (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours); 
-        // console.log("**** _value ****", _value);
-        // console.log("**** _timestampRetrieved ****", _timestampRetrieved);
+
         require(_timestampRetrieved >= _expiryDate, "Tellor: value at expiration not yet available");
         uint256 _formattedValue = _sliceUint(_value);
 
         // Forward value to DIVA contract
         _diva.setFinalReferenceValue(_poolId, _formattedValue, _challengeable);
+        
+        // Transfer fee claim from this contract's address to Tellor's payment contract address
+        _diva.transferFeeClaim(_settlementFeeRecipient, _params.collateralToken, _collateralToken.balanceOf(address(this)));
 
         emit FinalReferenceValueSet(_poolId, _formattedValue, _expiryDate, _timestampRetrieved);
     }
@@ -48,12 +46,12 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         return _challengeable;
     }
 
-    function getTellorOracleAddress() external view override returns (address) {
+    function getTellorAddress() external view override returns (address) {
         return _tellorAddress;
     }
 
-    function getAsset() external view override returns (string memory) {
-        return _asset;
+    function getSettlementFeeRecipient() external view override returns (address) {
+        return _settlementFeeRecipient;
     }
 
     /**

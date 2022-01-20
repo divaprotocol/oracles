@@ -68,4 +68,13 @@ interface IDIVA {
      */
     function getPoolParameters(uint256 _poolId) external view returns (Pool memory);
 
+    /**
+     * @notice Function to transfer fee claims to another account. To be called by oracle contract after a user has triggered the reference value feed and settlement fees were assigned
+     * @dev msg.sender has to have a fee claim allocation in order to initiate the transfer  
+     * @param _recipient Recipient address of the fee claim
+     * @param _collateralToken Collateral token address
+     * @param _amount Amount expressed in collateral token to transfer to recipient
+     */
+    function transferFeeClaim(address _recipient, address _collateralToken, uint256 _amount) external; 
+
 }
