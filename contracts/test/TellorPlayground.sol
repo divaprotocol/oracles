@@ -53,9 +53,9 @@ contract TellorPlayground {
         _name = "TellorPlayground";
         _symbol = "TRBP";
         _decimals = 18;
-        addresses[keccak256(
-            abi.encodePacked("_GOVERNANCE_CONTRACT")
-        )] = address(this);
+        addresses[
+            keccak256(abi.encodePacked("_GOVERNANCE_CONTRACT"))
+        ] = address(this);
     }
 
     /**
@@ -190,11 +190,11 @@ contract TellorPlayground {
      * @param _amount The quantity of tokens to transfer
      * @return bool Whether the transfer succeeded
      */
-    function transferFrom(address _sender, address _recipient, uint256 _amount)
-        public
-        virtual
-        returns (bool)
-    {
+    function transferFrom(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    ) public virtual returns (bool) {
         _transfer(_sender, _recipient, _amount);
         _approve(
             _sender,
@@ -344,10 +344,11 @@ contract TellorPlayground {
      * @param _spender The address which is allowed to spend the tokens
      * @param _amount The amount that msg.sender is allowing spender to use
      */
-    function _approve(address _owner, address _spender, uint256 _amount)
-        internal
-        virtual
-    {
+    function _approve(
+        address _owner,
+        address _spender,
+        uint256 _amount
+    ) internal virtual {
         require(_owner != address(0), "ERC20: approve from the zero address");
         require(_spender != address(0), "ERC20: approve to the zero address");
         _allowances[_owner][_spender] = _amount;
@@ -384,10 +385,11 @@ contract TellorPlayground {
      * @param _recipient The destination address
      * @param _amount The quantity of tokens to transfer
      */
-    function _transfer(address _sender, address _recipient, uint256 _amount)
-        internal
-        virtual
-    {
+    function _transfer(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    ) internal virtual {
         require(_sender != address(0), "ERC20: transfer from the zero address");
         require(
             _recipient != address(0),

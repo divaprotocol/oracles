@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "sl": "yarn prettier --write contracts/**/*.sol",
+    "sh": "solhint -f table contracts/**/*.sol",
+    "t": "yarn hardhat test",
+    "c": "yarn hardhat compile",
+    "size": "yarn hardhat size-contracts"
   },
   "repository": {
     "type": "git",
@@ -24,6 +28,10 @@
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.5.2",
     "hardhat": "^2.8.0",
+    "prettier": "^2.5.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "solhint": "^3.3.6",
+    "solhint-plugin-prettier": "^0.0.5",
     "typescript": "^4.5.4"
   },
   "dependencies": {

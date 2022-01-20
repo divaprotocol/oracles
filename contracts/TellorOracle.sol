@@ -33,7 +33,7 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         require(_timestampRetrieved >= _expiryDate, "Tellor: value at expiration not yet available");
         uint256 _formattedValue = _sliceUint(_value);
 
-        // Forward value to DIVA contract
+        // Forward final value to DIVA contract
         _diva.setFinalReferenceValue(_poolId, _formattedValue, _challengeable);
         
         // Transfer fee claim from this contract's address to Tellor's payment contract address
