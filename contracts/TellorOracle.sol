@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./UsingTellor.sol";
 import "./interfaces/ITellorOracle.sol";
 import "./interfaces/IDIVA.sol";
@@ -23,7 +22,7 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         uint256 _expiryDate = _params.expiryDate;
-        IERC20 _collateralToken = IERC20(_params.collateralToken);
+        address _collateralToken = _params.collateralToken;
 
         // Tellor query
         bytes memory _b = abi.encode("divaProtocolPolygon", _poolId); 
@@ -37,7 +36,8 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         _diva.setFinalReferenceValue(_poolId, _formattedValue, _challengeable);
         
         // Transfer fee claim from this contract's address to Tellor's payment contract address
-        _diva.transferFeeClaim(_settlementFeeRecipient, _params.collateralToken, _collateralToken.balanceOf(address(this)));
+        uint256 _feeClaimAmount = _diva.getClaims(_collateralToken, address(this));
+        _diva.transferFeeClaim(_settlementFeeRecipient, _params.collateralToken, _feeClaimAmount);
 
         emit FinalReferenceValueSet(_poolId, _formattedValue, _expiryDate, _timestampRetrieved);
     }

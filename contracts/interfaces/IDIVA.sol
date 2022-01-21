@@ -88,4 +88,12 @@ interface IDIVA {
         external
         view
         returns (Pool memory);
+
+    /**
+    * @dev Returns the claims by collateral tokens for a given account
+    * @param _recipient Account address
+    * @param _collateralToken Collateral token address
+    * @return Array of Claim structs
+    */
+    function getClaims(address _collateralToken, address _recipient) external view returns (uint256);
 }
