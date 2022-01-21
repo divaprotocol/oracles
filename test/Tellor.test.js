@@ -3,8 +3,7 @@ const { ethers } = require("hardhat");
 const web3 = require('web3');
 const DIVA_ABI = require('../contracts/abi/DIVA.json');
 const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture")
-const { parseEther } = require('@ethersproject/units')
-
+const { parseEther } = require('@ethersproject/units');
 
 describe('TellorOracle', () => {
   let tellorOracle;
@@ -12,7 +11,8 @@ describe('TellorOracle', () => {
   let tellorPlaygroundAddress = '0xF281e2De3bB71dE348040b10B420615104359c10' // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
   let divaAddress = '0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf' // Kovan: '0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba' deployed in Kovan block 29190631, Ropsten: '0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf' deployed in Ropsten block n/a (10 Jan 2022, before block 11812205) 
   let settlementFeeRecipient;
-  let referenceAsset = "ETH/USD";
+  let referenceAsset = "BTC/USD";
+  let finalReferenceValue = '43000000000000000000000'
 
   beforeEach(async () => {
     [settlementFeeRecipient] = await ethers.getSigners();
@@ -66,42 +66,46 @@ describe('TellorOracle', () => {
           latestPoolId = await diva.getLatestPoolId()
           poolParams = await diva.getPoolParameters(latestPoolId) 
           
-
     })
 
-    it('Should add a value to TellorPlayground and retrieve value through TellorOracle contract', async () => {                
-        expect(poolParams.finalReferenceValue).to.eq(0) 
-        expect(poolParams.statusFinalReferenceValue).to.eq(0)
+    describe('setFinalReferenceValue', () => {
+      it('Should add a value to TellorPlayground and retrieve value through TellorOracle contract', async () => {                
+          expect(poolParams.finalReferenceValue).to.eq(0) 
+          expect(poolParams.statusFinalReferenceValue).to.eq(0)
 
-        // Submit value to Tellor playground contract
-        abiCoder = new ethers.utils.AbiCoder
-        queryData = abiCoder.encode(['string','uint256'], ['divaProtocolPolygon', latestPoolId])
-        queryId = ethers.utils.keccak256(queryData)
-        oracleValue = abiCoder.encode(['uint256'],['43000000000000000000000']) 
-        await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
-        
-        const tellorDataTimestamp = await tellorPlayground.timestamps(queryId, 0); // 0 is array index
-        const tellorValue = await tellorPlayground.values(queryId, tellorDataTimestamp);
-        console.log("Tellor data timestamp: " + tellorDataTimestamp)
-        console.log("Tellor value: " + tellorValue)
-        
-        currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
-        console.log("Block timestamp which includes the submitValue tx: " + currentBlockTimestamp)
-        
-        await advanceTime(7200) // 2 hours
-        
-        currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
-        console.log("Block timestamp next block: " + currentBlockTimestamp)
-        
-        await tellorOracle.setFinalReferenceValue(divaAddress, latestPoolId)
-        poolParams = await diva.getPoolParameters(latestPoolId)
-        finalReferenceValue = poolParams.finalReferenceValue
-        statusFinalReferenceValue = poolParams.statusFinalReferenceValue
-        expect(finalReferenceValue).to.eq(parseEther("43000"))
-        expect(statusFinalReferenceValue).to.eq(3)
+          // Submit value to Tellor playground contract
+          abiCoder = new ethers.utils.AbiCoder
+          queryData = abiCoder.encode(['string','uint256'], ['divaProtocolPolygon', latestPoolId])
+          queryId = ethers.utils.keccak256(queryData)
+          oracleValue = abiCoder.encode(['uint256'],[finalReferenceValue]) 
+          await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
+          
+          const tellorDataTimestamp = await tellorPlayground.timestamps(queryId, 0); // 0 is array index
+          const tellorValue = await tellorPlayground.values(queryId, tellorDataTimestamp);
+          console.log("Tellor data timestamp: " + tellorDataTimestamp)
+          console.log("Tellor value: " + tellorValue)
+          
+          currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
+          console.log("Block timestamp which includes the submitValue tx: " + currentBlockTimestamp)
+          
+          await advanceTime(7200) // 2 hours
+          
+          currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
+          console.log("Block timestamp next block: " + currentBlockTimestamp)
+          
+          await tellorOracle.setFinalReferenceValue(divaAddress, latestPoolId)
+          poolParams = await diva.getPoolParameters(latestPoolId)
+          expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue)
+          expect(poolParams.statusFinalReferenceValue).to.eq(3) // 3 = Confirmed
+      });
+
+      it('Should transfer the fee claim to the settlementFeeRecipientAddress', async () => {     
+          
+      });  
     });
-  })
 
+    
+  });
 });
 
 advanceTime = async (time) =>{
