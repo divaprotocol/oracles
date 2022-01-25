@@ -11,7 +11,7 @@ contract TellorOracle is UsingTellor, ITellorOracle {
     address private _tellorAddress;
     address private _settlementFeeRecipient;
 
-    constructor(address payable tellorAddress_, address settlementFeeRecipient_) UsingTellor(tellorAddress_) { 
+    constructor(address payable tellorAddress_, address settlementFeeRecipient_) UsingTellor(tellorAddress_) {
         _tellorAddress = tellorAddress_;
         _challengeable = false;
         _settlementFeeRecipient = settlementFeeRecipient_;
@@ -25,16 +25,16 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         address _collateralToken = _params.collateralToken;
 
         // Tellor query
-        bytes memory _b = abi.encode("divaProtocolPolygon", _poolId); 
+        bytes memory _b = abi.encode("divaProtocolPolygon", abi.encode(_poolId)); 
         bytes32 _queryID = keccak256(_b);
-        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours); 
+        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours);
 
         require(_timestampRetrieved >= _expiryDate, "Tellor: value at expiration not yet available");
         uint256 _formattedValue = _sliceUint(_value);
 
         // Forward final value to DIVA contract
         _diva.setFinalReferenceValue(_poolId, _formattedValue, _challengeable);
-        
+
         // Transfer fee claim from this contract's address to Tellor's payment contract address
         uint256 _feeClaimAmount = _diva.getClaims(_collateralToken, address(this));
         _diva.transferFeeClaim(_settlementFeeRecipient, _params.collateralToken, _feeClaimAmount);
