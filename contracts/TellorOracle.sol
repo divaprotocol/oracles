@@ -27,21 +27,31 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         // Tellor query
         bytes memory _b = abi.encode("divaProtocolPolygon", abi.encode(_poolId)); 
         bytes32 _queryID = keccak256(_b);
-        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours);
+        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours); // takes the latest value that is undisputed for at least an hour
 
-        require(_timestampRetrieved >= _expiryDate, "Tellor: value at expiration not yet available");
+        require(_timestampRetrieved >= _expiryDate, "Tellor: value set before expiry"); // if value disputed, timestampRetrieved will be 0 and hence this test will not pass, hence _ifRetrieve = true check not needed
         uint256 _formattedValue = _sliceUint(_value);
 
         // Forward final value to DIVA contract
         _diva.setFinalReferenceValue(_poolId, _formattedValue, _challengeable);
 
-        // Transfer fee claim from this contract's address to Tellor's payment contract address
-        uint256 _feeClaimAmount = _diva.getClaims(_collateralToken, address(this));
-        _diva.transferFeeClaim(_settlementFeeRecipient, _params.collateralToken, _feeClaimAmount);
-
         emit FinalReferenceValueSet(_poolId, _formattedValue, _expiryDate, _timestampRetrieved);
     }
 
+    function transferFeeClaim(address _divaDiamond, address _collateralToken) external override {
+        
+        // Get fee amount allocated to this contract for the provided collateral token
+        uint256 _feeClaimAmount = getClaims(_divaDiamond, _collateralToken); 
+        
+        // Transfer fee claim from this contract's address to Tellor's payment contract address
+        IDIVA(_divaDiamond).transferFeeClaim(_settlementFeeRecipient, _collateralToken, _feeClaimAmount);
+    }
+
+    function getClaims(address _divaDiamond, address _collateralToken) public override returns (uint256) {
+        uint256 _feeClaimAmount = IDIVA(_divaDiamond).getClaims(_collateralToken, address(this)); 
+        return _feeClaimAmount;
+    }
+    
     function challengeable() external view override returns (bool) {
         return _challengeable;
     }
