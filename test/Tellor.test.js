@@ -111,6 +111,7 @@ describe('TellorOracle', () => {
           expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue)
           expect(poolParams.statusFinalReferenceValue).to.eq(3) // 3 = Confirmed
       });
+
     });
     
     describe('transferFeeClaim', () => {
