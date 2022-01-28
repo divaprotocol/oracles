@@ -4,7 +4,7 @@ const web3 = require('web3');
 const DIVA_ABI = require('../contracts/abi/DIVA.json');
 const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture")
 const { parseEther, parseUnits } = require('@ethersproject/units');
-const { advanceTime } = require('./utils.js')
+const { advanceTime, ONE_HOUR } = require('./utils.js')
 
 describe('TellorOracle', () => {
   let tellorOracle;
@@ -26,7 +26,7 @@ describe('TellorOracle', () => {
     });
 
     const tellorOracleFactory = await ethers.getContractFactory("TellorOracle");
-    tellorOracle = await tellorOracleFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient.address);
+    tellorOracle = await tellorOracleFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient.address, ONE_HOUR);
     tellorPlayground = await ethers.getContractAt("TellorPlayground", tellorPlaygroundAddress);
   });
 

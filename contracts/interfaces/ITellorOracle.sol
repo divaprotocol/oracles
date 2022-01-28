@@ -39,6 +39,13 @@ interface ITellorOracle {
         external;
 
     /**
+     * @dev Function to update `minPeriodUndisputed` with minimum value of  
+     * 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds).
+     * @param _newMinPeriodUndisputed New `minPeriodUndisputed` in seconds.
+     */
+    function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external;
+
+    /**
      * @dev Returns whether the oracle's data feed is challengeable or not.
      * Will return false in that implementation.
      */
@@ -53,4 +60,10 @@ interface ITellorOracle {
      * @dev Returns the settlement fee recipient
      */
     function getSettlementFeeRecipient() external view returns (address);
+
+    /**
+     * @dev Returns the minimum period (in seconds) a value has to remain 
+     * undisputed in order to be considered valid 
+     */
+    function getMinPeriodUndisputed() external view returns (uint32);
 }

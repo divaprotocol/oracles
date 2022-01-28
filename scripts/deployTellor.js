@@ -4,9 +4,10 @@ async function main() {
 
   let tellorPlaygroundAddress = '0xF281e2De3bB71dE348040b10B420615104359c10' // Ropsten 
   let settlementFeeRecipient = '0x9AdEFeb576dcF52F5220709c1B267d89d5208D78' // temporary address
+  let periodMinPeriodUndisputed = 3600; // 1 hour 
 
   const tellorOracleFactory = await hre.ethers.getContractFactory("TellorOracle");
-  tellorOracle = await tellorOracleFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient);
+  tellorOracle = await tellorOracleFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient, periodMinPeriodUndisputed);
   
   await tellorOracle.deployed();
 

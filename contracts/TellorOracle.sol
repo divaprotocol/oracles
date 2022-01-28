@@ -10,11 +10,13 @@ contract TellorOracle is UsingTellor, ITellorOracle {
     bool private _challengeable;
     address private _tellorAddress;
     address private _settlementFeeRecipient;
+    uint32 private _minPeriodUndisputed;
 
-    constructor(address payable tellorAddress_, address settlementFeeRecipient_) UsingTellor(tellorAddress_) {
+    constructor(address payable tellorAddress_, address settlementFeeRecipient_, uint32 minPeriodUndisputed_) UsingTellor(tellorAddress_) {
         _tellorAddress = tellorAddress_;
         _challengeable = false;
         _settlementFeeRecipient = settlementFeeRecipient_;
+        _minPeriodUndisputed = minPeriodUndisputed_;
     }
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override {
@@ -26,7 +28,7 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         // Tellor query
         bytes memory _b = abi.encode("divaProtocolPolygon", abi.encode(_poolId)); 
         bytes32 _queryID = keccak256(_b);
-        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - 1 hours); // takes the latest value that is undisputed for at least an hour
+        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - _minPeriodUndisputed); // takes the latest value that is undisputed for at least an hour
 
         require(_timestampRetrieved >= _expiryDate, "Tellor: value set before expiry"); // if value disputed, timestampRetrieved will be 0 and hence this test will not pass, hence _ifRetrieve = true check not needed
         uint256 _formattedValue = _sliceUint(_value);
@@ -47,6 +49,11 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         // Transfer fee claim from this contract's address to Tellor's payment contract address
         _diva.transferFeeClaim(_settlementFeeRecipient, _collateralToken, _amount);
     }
+
+    function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override {
+        require(_newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800, "Tellor: out of range");
+        _minPeriodUndisputed = _newMinPeriodUndisputed;
+    }
     
     function challengeable() external view override returns (bool) {
         return _challengeable;
@@ -58,6 +65,10 @@ contract TellorOracle is UsingTellor, ITellorOracle {
 
     function getSettlementFeeRecipient() external view override returns (address) {
         return _settlementFeeRecipient;
+    }
+
+    function getMinPeriodUndisputed() external view override returns (uint32) {
+        return _minPeriodUndisputed;
     }
 
     /**
