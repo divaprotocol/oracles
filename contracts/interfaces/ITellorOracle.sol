@@ -33,18 +33,10 @@ interface ITellorOracle {
      * @param _divaDiamond Address of the diva smart contract that stores
      * the fee claims.
      * @param _collateralToken Collateral token in which fees are denominated.
+     * @param _amount Amount to be transferred.
      */
-    function transferFeeClaim(address _divaDiamond, address _collateralToken) 
+    function transferFeeClaim(address _divaDiamond, address _collateralToken, uint256 _amount) 
         external;
-
-    /**
-     * @dev Function to get the current fee claim balance for `msg.sender` 
-     * (i.e. this contract) stored in the diva smart contract. 
-     * @param _divaDiamond Address of the diva smart contract that stores
-     * the fee claims.
-     * @param _collateralToken Collateral token in which fees were paid.
-     */
-    function getClaims(address _divaDiamond, address _collateralToken) external returns (uint256);
 
     /**
      * @dev Returns whether the oracle's data feed is challengeable or not.

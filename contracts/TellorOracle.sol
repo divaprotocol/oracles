@@ -22,7 +22,6 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         uint256 _expiryDate = _params.expiryDate;
-        address _collateralToken = _params.collateralToken;
 
         // Tellor query
         bytes memory _b = abi.encode("divaProtocolPolygon", abi.encode(_poolId)); 
@@ -38,18 +37,15 @@ contract TellorOracle is UsingTellor, ITellorOracle {
         emit FinalReferenceValueSet(_poolId, _formattedValue, _expiryDate, _timestampRetrieved);
     }
 
-    function transferFeeClaim(address _divaDiamond, address _collateralToken) external override {
-        
+    function transferFeeClaim(address _divaDiamond, address _collateralToken, uint256 _amount) external override {
+        IDIVA _diva = IDIVA(_divaDiamond);
+
         // Get fee amount allocated to this contract for the provided collateral token
-        uint256 _feeClaimAmount = getClaims(_divaDiamond, _collateralToken); 
+        uint256 _feeClaimAmount = _diva.getClaims(_collateralToken, address(this)); 
+        require(_amount <= _feeClaimAmount, "Tellor: amount exceeds claimable amount");
         
         // Transfer fee claim from this contract's address to Tellor's payment contract address
-        IDIVA(_divaDiamond).transferFeeClaim(_settlementFeeRecipient, _collateralToken, _feeClaimAmount);
-    }
-
-    function getClaims(address _divaDiamond, address _collateralToken) public override returns (uint256) {
-        uint256 _feeClaimAmount = IDIVA(_divaDiamond).getClaims(_collateralToken, address(this)); 
-        return _feeClaimAmount;
+        _diva.transferFeeClaim(_settlementFeeRecipient, _collateralToken, _amount);
     }
     
     function challengeable() external view override returns (bool) {
