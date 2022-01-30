@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./UsingTellor.sol";
 import "./interfaces/ITellorOracle.sol";
 import "./interfaces/IDIVA.sol";
 
-contract TellorOracle is UsingTellor, ITellorOracle {
+contract TellorOracle is UsingTellor, ITellorOracle, Ownable {
 
     bool private _challengeable;
     address private _tellorAddress;
@@ -40,17 +41,11 @@ contract TellorOracle is UsingTellor, ITellorOracle {
     }
 
     function transferFeeClaim(address _divaDiamond, address _collateralToken, uint256 _amount) external override {
-        IDIVA _diva = IDIVA(_divaDiamond);
-
-        // Get fee amount allocated to this contract for the provided collateral token
-        uint256 _feeClaimAmount = _diva.getClaims(_collateralToken, address(this)); 
-        require(_amount <= _feeClaimAmount, "Tellor: amount exceeds claimable amount");
-        
-        // Transfer fee claim from this contract's address to Tellor's payment contract address
-        _diva.transferFeeClaim(_settlementFeeRecipient, _collateralToken, _amount);
+        // Throws within DIVA contract if `_amount` exceeds the available fee claim
+        IDIVA(_divaDiamond).transferFeeClaim(_settlementFeeRecipient, _collateralToken, _amount);
     }
 
-    function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override {
+    function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override onlyOwner {
         require(_newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800, "Tellor: out of range");
         _minPeriodUndisputed = _newMinPeriodUndisputed;
     }

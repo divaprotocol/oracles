@@ -28,12 +28,14 @@ interface ITellorOracle {
 
     /**
      * @dev Function to transfer existing fee claims from the original 
-     * settlement fee recipient (this contract) to a new settlement fee 
-     * recipient `_settlementFeeRecipient`. 
+     * settlement fee recipient (this contract) to a new  
+     * recipient `_settlementFeeRecipient`. DIVA contract  
+     * will throw if `_amount` exceeds the available fee claim. 
      * @param _divaDiamond Address of the diva smart contract that stores
      * the fee claims.
      * @param _collateralToken Collateral token in which fees are denominated.
-     * @param _amount Amount to be transferred.
+     * @param _amount Amount to be transferred. Retrieved available amount
+     * from DIVA contract via `getClaims` function.
      */
     function transferFeeClaim(address _divaDiamond, address _collateralToken, uint256 _amount) 
         external;
