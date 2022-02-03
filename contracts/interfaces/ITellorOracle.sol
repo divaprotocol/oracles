@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-interface ITellorOracle {
+interface IDIVAOracleTellor {
     /**
      * @notice Emitted when the final reference value is set.
      * @param poolId The Id of an existing derivatives pool

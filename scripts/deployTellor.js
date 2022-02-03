@@ -6,12 +6,12 @@ async function main() {
   let settlementFeeRecipient = '0x9AdEFeb576dcF52F5220709c1B267d89d5208D78' // temporary address
   let periodMinPeriodUndisputed = 3600; // 1 hour 
 
-  const tellorOracleFactory = await hre.ethers.getContractFactory("TellorOracle");
-  tellorOracle = await tellorOracleFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient, periodMinPeriodUndisputed);
+  const divaOracleTellorFactory = await hre.ethers.getContractFactory("DIVAOracleTellor");
+  divaOracleTellor = await divaOracleTellorFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient, periodMinPeriodUndisputed);
   
-  await tellorOracle.deployed();
+  await divaOracleTellor.deployed();
 
-  console.log("Tellor oracle deployed to:", tellorOracle.address);
+  console.log("Tellor oracle deployed to:", divaOracleTellor.address);
 }
 
 main()

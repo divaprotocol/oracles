@@ -3,10 +3,10 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./UsingTellor.sol";
-import "./interfaces/ITellorOracle.sol";
+import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
 
-contract TellorOracle is UsingTellor, ITellorOracle, Ownable {
+contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
 
     bool private _challengeable;
     address private _tellorAddress;
