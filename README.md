@@ -1,25 +1,14 @@
-# Basic Sample Hardhat Project
+# How to get started
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
-
-Try running some of the following tasks:
-
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+Scripts:
+1. `yarn install` to install dependencies
+1. `yarn compile` to compile contracts
+2. `yarn hardhat test` to run tests (includes compilation of contracts)
+3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `DIVAOracleTellor.test.js` within the `test` folder
 
 
-
-
-
-## DIVA Queries
-Pool parameters including expiration time and reference asset are stored at the time of pool creation and can be queried in two ways:
+# DIVA Queries
+Pool parameters including expiration time and reference asset are stored at the time of pool creation and can be queried by calling a smart contract function or via the DIVA subgraph. 
 
 ### DIVA Smart contract
 Function with `poolId` as argument:
@@ -201,41 +190,52 @@ Example response:
   capacity: BigNumber { value: "0" }
 ```
 
-Parameters relevant for reports are listed below:
+Parameters relevant for reporters are listed below:
 
 |Parameter|Description|
 |:---|:---|
-| `referenceAsset` | Reference asset of the underlying pool (e.g., "ETH/USD", "BTC/USD", "ETH Gas Price (Wei)", "TVL locked in DeFi"). |
+| `referenceAsset` | Reference asset of the underlying pool (e.g., "ETH/USD", "BTC/USD", "ETH Gas Price (Wei)", "TVL locked in DeFi", etc.). |
 | `expiryDate` | Expiration time of the pool expressed as a unix timestamp in seconds. |
-| `dataFeedProvider` | Address of the Ethereum account that is supposed to report the final value of the reference asset| 
+| `dataFeedProvider` | Address that is supposed to report the final value of the reference asset.| 
 
-Note that Tellor reporters are expected to provide values only for pools where the Tellor oracle contract is specified as the data feed provider. Refer to the [address section](#tellor-oracle-address) for the corresponding address.
+Note that oracles are expected to provide values only for pools where they are selected as the data provider. 
 
-The following two parameters specify the range that the pool is tracking and can be helpful when implementing sanity checks on the reporter side:
+The following two parameters specify the range that the pool is tracking and can be helpful when implementing sanity checks on the oracle side:
 |Parameter|Description|
 |:---|:---|
-| `floor` | The lower bound of the range that the reference asset is tracking. A final reference asset value that is equal to or smaller than the floor will result in a zero payoff for the long side and maximum payoff for the short side|
-| `cap` | The upper bound of the range that the reference asset is tracking. A final reference asset value that is equal to or larger than the cap will result in a zero payoff for the short side and maximum payoff for the long side|
+| `floor` | The lower bound of the range that the reference asset is tracking. A final reference asset value that is equal to or smaller than the floor will result in a zero payoff for the long side and maximum payoff for the short side.|
+| `cap` | The upper bound of the range that the reference asset is tracking. A final reference asset value that is equal to or larger than the cap will result in a zero payoff for the short side and maximum payoff for the long side.|
 
 ### DIVA pool subgraph 
-Contains the same parameters as those returned by the `getPoolParameters` functions.
+Includes all information that is returned from the `getPoolParameters` function.
 Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
+Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
+Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-kovan
+Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-mumbai
 Polygon: n/a
+Mainnet: n/a
 
 ## DIVA whitelist subgraph
-Whitelist of data providers and their corresponding data feeds. Tellor oracle contract address will be included in DIVA's whitelist and selecteable in DIVA's pool creation process. Tellor data feeds will be added by DIVA governance after thorough due diligence. Refer to the following subgraph to see which data feeds are listed for Tellor oracle: 
+Whitelist of data providers and data feeds. Users are presented the list of whitelisted data providers and data feeds during the pool creation process in the app. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process. 
 Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-ropsten
+Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-rinkeby
+Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-kovan
+Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-mumbai
 Polygon: n/a
-
-## Tellor oracle address
-Proxy contract that pulls the price from Tellor and submits it to DIVA. Can be triggered by anyone following pool expiration.  
-Ropsten: n/a
-Polygon: n/a
+Mainnet: n/a
 
 ## DIVA addresses
 * DIVA protocol:
    * Ropsten: 0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf
+   * Rinkeby: 0x5EB926AdbE39029be962acD8D27130073C50A0e5
+   * Kovan: 0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba
+   * Mumbai: 0xCDc415B8DEA4d348ccCa42Aa178611F1dbCD2f69 
    * Polygon: n/a 
+   * Mainnet: n/a
 * DIVA whitelist:
    * Ropsten: 0x50D327C638B09d0A434185d63E7193060E6271B2
+   * Rinkeby: 0xF1a36B324AB5d549824a805ccd04Fa4d2e598E6b
+   * Kovan: 0xe3343218CAa73AE523D40936D64E7f335AfDe8f9
+   * Mumbai: 0xcA65fcD37fA8BA5f79f5CB3E68F4fCD426ccE5ef 
    * Polygon: n/a
+   * Mainnet: n/a
