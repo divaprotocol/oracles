@@ -6,8 +6,8 @@ const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture")
 const { parseEther, parseUnits } = require('@ethersproject/units');
 const { advanceTime, ONE_HOUR } = require('./utils.js')
 
-describe('TellorOracle', () => {
-  let tellorOracle;
+describe('DIVAOracleTellor', () => {
+  let divaOracleTellor;
   let tellorPlayground;
   let tellorPlaygroundAddress = '0xF281e2De3bB71dE348040b10B420615104359c10' // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
   let divaAddress = '0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf' // Kovan: '0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba' deployed in Kovan block 29190631, Ropsten: '0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf' deployed in Ropsten block n/a (10 Jan 2022, before block 11812205)
@@ -25,8 +25,8 @@ describe('TellorOracle', () => {
           },},],
     });
 
-    const tellorOracleFactory = await ethers.getContractFactory("TellorOracle");
-    tellorOracle = await tellorOracleFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient.address, ONE_HOUR);
+    const divaOracleTellorFactory = await ethers.getContractFactory("DIVAOracleTellor");
+    divaOracleTellor = await divaOracleTellorFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient.address, ONE_HOUR);
     tellorPlayground = await ethers.getContractAt("TellorPlayground", tellorPlaygroundAddress);
   });
 
@@ -62,7 +62,7 @@ describe('TellorOracle', () => {
               parseEther("200"),                // long token supply
               referenceAsset,                   // reference asset
               erc20.address,                    // collateral token
-              tellorOracle.address,             // data feed provider
+              divaOracleTellor.address,             // data feed provider
               0                                 // capacity
             ]
           );
@@ -86,7 +86,7 @@ describe('TellorOracle', () => {
     })
 
     describe('setFinalReferenceValue', () => {
-      it('Should add a value to TellorPlayground and retrieve value through TellorOracle contract', async () => {
+      it('Should add a value to TellorPlayground and retrieve value through DIVAOracleTellor contract', async () => {
           expect(poolParams.finalReferenceValue).to.eq(0)
           expect(poolParams.statusFinalReferenceValue).to.eq(0)
 
@@ -106,7 +106,7 @@ describe('TellorOracle', () => {
           currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
           console.log("Block timestamp next block: " + currentBlockTimestamp)
 
-          await tellorOracle.setFinalReferenceValue(divaAddress, latestPoolId)
+          await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
           poolParams = await diva.getPoolParameters(latestPoolId)
           expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue)
           expect(poolParams.statusFinalReferenceValue).to.eq(3) // 3 = Confirmed
@@ -116,41 +116,41 @@ describe('TellorOracle', () => {
     
     describe('transferFeeClaim', () => {
       it('Should transfer __all__ the fee claim to the settlementFeeRecipientAddress', async () => {
-        let claimsTellorOracle = await diva.getClaims(erc20.address, tellorOracle.address)
+        let claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
         let claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
-        expect(claimsTellorOracle).to.eq(0)
+        expect(claimsDIVAOracleTellor).to.eq(0)
         expect(claimsSettlementFeeRecipient).to.eq(0)
 
         await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
         await advanceTime(7200) // 2 hours
-        await tellorOracle.setFinalReferenceValue(divaAddress, latestPoolId)
-        claimsTellorOracle = await diva.getClaims(erc20.address, tellorOracle.address)
+        await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
+        claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
         claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
-        expect(claimsTellorOracle).to.eq(settlementFeeAmount);
+        expect(claimsDIVAOracleTellor).to.eq(settlementFeeAmount);
         expect(claimsSettlementFeeRecipient).to.eq(0);
 
-        await tellorOracle.transferFeeClaim(divaAddress, erc20.address, claimsTellorOracle)
-        claimsTellorOracle = await diva.getClaims(erc20.address, tellorOracle.address)
+        await divaOracleTellor.transferFeeClaim(divaAddress, erc20.address, claimsDIVAOracleTellor)
+        claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
         claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
-        expect(claimsTellorOracle).to.eq(0);
+        expect(claimsDIVAOracleTellor).to.eq(0);
         expect(claimsSettlementFeeRecipient).to.eq(settlementFeeAmount);
       });
 
       it('Should transfer a __partial__ fee claim to the settlementFeeRecipientAddress', async () => {
-        let claimsTellorOracle = await diva.getClaims(erc20.address, tellorOracle.address)
+        let claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
         let claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
-        expect(claimsTellorOracle).to.eq(0)
+        expect(claimsDIVAOracleTellor).to.eq(0)
         expect(claimsSettlementFeeRecipient).to.eq(0)
 
         await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
         await advanceTime(7200) // 2 hours
-        await tellorOracle.setFinalReferenceValue(divaAddress, latestPoolId)
-        claimsTellorOracle = await diva.getClaims(erc20.address, tellorOracle.address)
+        await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
+        claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
 
-        await tellorOracle.transferFeeClaim(divaAddress, erc20.address, claimsTellorOracle.sub(1))
-        claimsTellorOracle = await diva.getClaims(erc20.address, tellorOracle.address)
+        await divaOracleTellor.transferFeeClaim(divaAddress, erc20.address, claimsDIVAOracleTellor.sub(1))
+        claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
         claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
-        expect(claimsTellorOracle).to.eq(1);
+        expect(claimsDIVAOracleTellor).to.eq(1);
         expect(claimsSettlementFeeRecipient).to.eq(settlementFeeAmount.sub(1));
       });
     });
