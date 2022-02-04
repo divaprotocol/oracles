@@ -6,12 +6,16 @@ Scripts:
 2. `yarn hardhat test` to run tests (includes compilation of contracts)
 3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `DIVAOracleTellor.test.js` within the `test` folder
 
+# Last updated
+4 February 2022
 
 # DIVA Queries
-Pool parameters including expiration time and reference asset are stored at the time of pool creation and can be queried by calling a smart contract function or via the DIVA subgraph. 
+Pool parameters are stored at the time of pool creation and can be queried in the following two ways:
+1. `getPoolParameters` function within the DIVA smart contract 
+1. DIVA subgraph
 
 ### DIVA Smart contract
-Function with `poolId` as argument:
+To query pool parameters from the smart contract, call the following function using the `poolId` as argument:
 ```s
 `getPoolParameters(poolId)`
 ```
@@ -190,7 +194,7 @@ Example response:
   capacity: BigNumber { value: "0" }
 ```
 
-Parameters relevant for reporters are listed below:
+Relevant parameters for data providers include:
 
 |Parameter|Description|
 |:---|:---|
@@ -208,21 +212,27 @@ The following two parameters specify the range that the pool is tracking and can
 
 ### DIVA pool subgraph 
 Includes all information that is returned from the `getPoolParameters` function.
-Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
-Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
-Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-kovan
-Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-mumbai
-Polygon: n/a
-Mainnet: n/a
+* Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
+* Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
+* Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-kovan
+* Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-mumbai
+* Polygon: n/a
+* Mainnet: n/a
 
 ## DIVA whitelist subgraph
 Whitelist of data providers and data feeds. Users are presented the list of whitelisted data providers and data feeds during the pool creation process in the app. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process. 
-Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-ropsten
-Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-rinkeby
-Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-kovan
-Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-mumbai
-Polygon: n/a
-Mainnet: n/a
+* Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-ropsten
+* Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-rinkeby
+* Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-kovan
+* Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-mumbai
+* Polygon: n/a
+* Mainnet: n/a
+
+The DIVA subgraph includes two fields that refer to the reference asset: 
+1. referenceAsset
+2. referenceAssetUnified
+
+Latter is used to consolidate different labels for the same asset (e.g., XBT/USD, BTC-USD) into one unified label (e.g., BTC/USD).
 
 ## DIVA addresses
 * DIVA protocol:
