@@ -244,7 +244,7 @@ Data providers can also query the DIVA subgraph for the relevant information.
 * Polygon: n/a
 * Mainnet: n/a
 
-The DIVA subgraph includes additional information that cannot be obained via [`getPoolParameters`](#diva-smart-contract). In particular, it stores the challenge specific information such as the challenger address and the value proposed by the challenger among others. 
+The DIVA subgraph includes additional information that cannot be obained via [`getPoolParameters`](#diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful where DIVA's dispute mechanism is activated. 
 
 ## Submit final reference value
 Data providers can submit the final value to the DIVA smart contract for pools they were assigned to do so by calling the following function after `expiryDate` has passed:
@@ -255,6 +255,10 @@ setFinalReferenceValue(
     bool _allowChallenge
 )
 ```
+where: 
+* `_poolId` is the id of the pool that is to be resolved
+* `_finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
+* `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
 
 ABI:
 ```json
@@ -282,21 +286,10 @@ ABI:
     "type": "function"
 }
 ```
+Once a value has been submitted, `statusFinalReferenceValue` switches to `1` = Submitted if the dispute mechanism is activated or `3` = Confirmed if it is deactivated. No second value can be submitted unless the status changes to `2` = Challenged which is only possible when the dispute mechanism is activated. Once the value reaches Confirmed stage, the value is considered final and no changes can be made anymore.
 
-where: 
-* `_poolId` is the id of the pool that is to be resolved
-* `_finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
-* `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
-
-If the data provider is a smart contract, it needs to implement this function as part of the smart contract. 
-
-* A data provider cannot submit a second value when the status switches to "Submitted".
-* Data providers are expected to provide values only for pools where they were assigned as the data provider.  
-
-check out the corresponding specifications . If the `dataFeedProvider` is a smart contract, this flag can be pre-set for every user to see before creating the pool.
-
-Examples:
-* Tellor contract
+### Challengeable
+A data provider can indicate at the time of submission whether the submitted value can be challenged or not. We recommend wrapping the `setFinalReferenceValue` function into a smart contract that hard-codes the `_allowChallenge` flag and makes it transparent to everyone before the fact.
 
 ## Settlement fees
 Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral and can be claimed and transferred by the corresponding data provider at any point in time. 
