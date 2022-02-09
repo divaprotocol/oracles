@@ -13,14 +13,16 @@ Scripts:
 * `expiryDate` will be renamed to `expiryTime`
 
 # Settlement process in DIVA
-Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) to learn about oracles and the settlement process in DIVA.
+DIVA protocol expects one value input following pool expiration. The purpose of this specification is to describe how data providers can access the relevant data.
+
+Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) for more details about oracles and the settlement process in DIVA.
 
 # DIVA Queries
 Pool parameters are stored at the time of pool creation and can be queried in the following two ways:
 1. DIVA smart contract via the `getPoolParameters` function 
 1. DIVA subgraph
 
-The specifications for both ways are provided below.
+The specifications for both are provided below.
 
 ### DIVA Smart contract
 To query pool parameters from the smart contract, call the following function using the `poolId` (incremental unsigned integer) as argument:
@@ -174,7 +176,7 @@ ABI:
 ```
 
 The following Pool struct is returned when `getPoolParameters` is called:
-
+```
 struct Pool {
     string referenceAsset;                      // Reference asset string (e.g., "BTC/USD", "ETH Gas Price (Wei)", "TVL Locked in DeFi", etc.)
     uint256 inflection;                         // Threshold for rebalancing between the long and the short side of the pool
@@ -184,7 +186,7 @@ struct Pool {
     uint256 supplyLongInitial;                  // Long token supply at pool creation
     uint256 supplyShort;                        // Current short token supply
     uint256 supplyLong;                         // Current long token supply
-    uint256 expiryDate;                         // Expiration time of the pool expressed as a unix timestamp in seconds
+    uint256 expiryDate;                         // Expiration time of the pool and as of time of final value expressed as a unix timestamp in seconds
     address collateralToken;                    // Address of ERC20 collateral token
     uint256 collateralBalanceShortInitial;      // Collateral balance of short side at pool creation
     uint256 collateralBalanceLongInitial;       // Collateral balance of long side at pool creation
@@ -233,10 +235,21 @@ Example response:
   capacity: BigNumber { value: "0" }
 ```
 
+### DIVA pool subgraph 
+Alternatively, data providers can query the DIVA subgraphs for the relevant information.
+* Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
+* Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
+* Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-kovan
+* Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-mumbai
+* Polygon: n/a
+* Mainnet: n/a
+
+## Process details
 Relevant parameters for data providers include:
 * `referenceAsset`
 * `expiryDate` 
 * `dataFeedProvider` 
+* `finalReferenceValue`
 * `statusFinalReferenceValue`
 
 Once the value was submitted by the `dataFeedProvider`, the following two fields will be updated:
@@ -257,14 +270,9 @@ The following two parameters specify the range that the pool is tracking and can
 #### Optional dispute mechanism
 The `dataFeedProvider` indicates at the time of the submission whether a challenge is allowed or not by setting the `_allowChallenge` in `setFinalReferenceValue` . If the `dataFeedProvider` is a smart contract, this flag can be pre-set for everyone to see before the pool is created avoiding any surprises. 
 
-### DIVA pool subgraph 
-Includes all information that is returned from the `getPoolParameters` function.
-* Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
-* Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
-* Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-kovan
-* Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-mumbai
-* Polygon: n/a
-* Mainnet: n/a
+#### Other remarks
+DIVA does not prevent users to create pools with an expiry date in the past. Data providers have to outline in their data provision policy how those cases will be handled.
+
 
 ## DIVA whitelist subgraph
 Whitelist of data providers and data feeds. Users are presented the list of whitelisted data providers and data feeds during the pool creation process in the app. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process. 
