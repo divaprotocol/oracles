@@ -1,5 +1,8 @@
-# Last updated
-9 February 2022
+# Version overview
+|Last updated on|Key changes|Updated by|
+|:---|:---|:---|
+|9 February 2022||
+|Upcoming|`expiryDate` will be renamed to `expiryTime`, `createdAt` will be added to subgraph||
 
 # How to get started
 
@@ -9,11 +12,8 @@ Scripts:
 2. `yarn hardhat test` to run tests (includes compilation of contracts)
 3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `test/DIVAOracleTellor.test.js`
 
-# Upcoming changes
-* `expiryDate` will be renamed to `expiryTime`
-
 # Settlement process in DIVA
-DIVA protocol expects one value input following pool expiration. The purpose of this specification is to describe how data providers can access the relevant data and submit their value.
+DIVA protocol expects one value input following pool expiration. The purpose of this specification is to describe how data providers can access the relevant data and submit the final value.
 
 Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) for more details about oracles and the settlement process in DIVA.
 
@@ -22,13 +22,13 @@ Pool parameters are stored at the time of pool creation and can be queried in th
 1. DIVA smart contract via the `getPoolParameters` function 
 1. DIVA subgraph
 
-The specifications for both are provided below.
-
-### DIVA Smart contract
-To query pool parameters from the smart contract, call the following function using the `poolId` (incremental unsigned integer) as argument:
+### DIVA smart contract
+Pool parameters can be queried from the smart contract by calling the following function using the `poolId` as argument:
 ```s
 `getPoolParameters(poolId)`
 ```
+
+The `poolId` is a unique identifier, more precisely, an unsigned integer of type `uint256` that starts at 1 and increments by 1, that is assigned to each pool at pool creation.
 
 ABI:
 ```json
@@ -206,7 +206,7 @@ struct Pool {
 }   
 ```
 
-Example response:
+Example response with values:
 ```
   referenceAsset: 'ETH/USDT',
   inflection: BigNumber { value: "22000000000000000000" },
@@ -243,6 +243,8 @@ Alternatively, data providers can query the DIVA subgraphs for the relevant info
 * Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-mumbai
 * Polygon: n/a
 * Mainnet: n/a
+
+The DIVA subgraph includes additional information that cannot be obained via `getPoolParameters`. In particular, it stores the challenger address as well as the value proposed by the challenger in the Challenge entity.
 
 ## Submit final reference value
 Data providers can submit their final reference asset value directly to DIVA by calling the following function:
@@ -287,7 +289,8 @@ The following two parameters specify the range that the pool is tracking and can
 | `floor` | The lower bound of the range that the reference asset is tracking. A final reference asset value that is equal to or smaller than the floor will result in a zero payoff for the long side and maximum payoff for the short side.|
 | `cap` | The upper bound of the range that the reference asset is tracking. A final reference asset value that is equal to or larger than the cap will result in a zero payoff for the short side and maximum payoff for the long side.|
 
-
+### Challenges
+IMPORTANT: Note that a value submitted during a challenge by a position token holder IS NOT STORED in the contract. Instead it is emitted as part of the `StatusChanged` event and indexed in the subgraph.
 
 #### Other remarks
 DIVA does not prevent users to create pools with an expiry date in the past. Data providers have to outline in their data provision policy how those cases will be handled.
