@@ -13,7 +13,7 @@ Scripts:
 * `expiryDate` will be renamed to `expiryTime`
 
 # Settlement process in DIVA
-DIVA protocol expects one value input following pool expiration. The purpose of this specification is to describe how data providers can access the relevant data.
+DIVA protocol expects one value input following pool expiration. The purpose of this specification is to describe how data providers can access the relevant data and submit their value.
 
 Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) for more details about oracles and the settlement process in DIVA.
 
@@ -244,6 +244,26 @@ Alternatively, data providers can query the DIVA subgraphs for the relevant info
 * Polygon: n/a
 * Mainnet: n/a
 
+## Submit final reference value
+Data providers can submit their final reference asset value directly to DIVA by calling the following function:
+```
+setFinalReferenceValue(
+    uint256 _poolId, 
+    uint256 _finalReferenceValue, 
+    bool _allowChallenge
+)
+```
+where: 
+* `poolId` is the id of the pool that is to be resolved
+* `_finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
+* `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not. 
+
+If the data provider is a smart contract, check out the corresponding specifications . If the `dataFeedProvider` is a smart contract, this flag can be pre-set for every user to see before creating the pool.
+
+Examples:
+* Tellor contract
+  
+
 ## Process details
 Relevant parameters for data providers include:
 * `referenceAsset`
@@ -267,8 +287,7 @@ The following two parameters specify the range that the pool is tracking and can
 | `floor` | The lower bound of the range that the reference asset is tracking. A final reference asset value that is equal to or smaller than the floor will result in a zero payoff for the long side and maximum payoff for the short side.|
 | `cap` | The upper bound of the range that the reference asset is tracking. A final reference asset value that is equal to or larger than the cap will result in a zero payoff for the short side and maximum payoff for the long side.|
 
-#### Optional dispute mechanism
-The `dataFeedProvider` indicates at the time of the submission whether a challenge is allowed or not by setting the `_allowChallenge` in `setFinalReferenceValue` . If the `dataFeedProvider` is a smart contract, this flag can be pre-set for everyone to see before the pool is created avoiding any surprises. 
+
 
 #### Other remarks
 DIVA does not prevent users to create pools with an expiry date in the past. Data providers have to outline in their data provision policy how those cases will be handled.
