@@ -246,6 +246,24 @@ Pool information can also be obtained by querying the DIVA subgraph:
 
 The DIVA subgraph includes additional information that cannot be obained via [`getPoolParameters`](#diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful when DIVA's dispute mechanism is activated. 
 
+An overview of the relevant parameters for data providers is provided below:
+* `referenceAsset`
+* `expiryDate` 
+* `dataFeedProvider` 
+* `finalReferenceValue`
+* `statusFinalReferenceValue`
+* `collateralToken`
+* `settlementFee`
+* `collateralTokenName` (in subgraph only)
+* `collateralSymbol` (in subgraph only)
+* `collateralDecimals` (in subgraph only)
+* `challengedBy` (in subgraph only)
+* `proposedFinalReferenceValue` (in subgraph only)
+
+Additional parameters that may be helpful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets are tracking. 
+
+It's worth highlighting that DIVA does not prevent users to create pools with an expiry date in the past. Data providers have to outline in their data provision policy how those cases will be handled.
+
 ## Submit final reference value
 Data providers can submit the final value to the DIVA smart contract for pools they were assigned to do so by calling the following function after `expiryDate` has passed:
 ```
@@ -286,15 +304,18 @@ ABI:
     "type": "function"
 }
 ```
-Once a value has been submitted, `statusFinalReferenceValue` switches to `1` = Submitted if the dispute mechanism is activated or `3` = Confirmed if it is deactivated. No second value can be submitted unless the status changes to `2` = Challenged which is only possible when the dispute mechanism is activated. Once the value reaches Confirmed stage, the value is considered final and no changes can be made anymore.
+Once a value has been submitted, `statusFinalReferenceValue` switches to `1` = Submitted or `3` = Confirmed depending on whether the [dispute mechanism](#optional-dispute-mechanism) is activated or not. No second value can be submitted unless the status changes to `2` = Challenged which is only possible when the dispute mechanism is activated. Once the value reaches Confirmed stage, the value is considered final and no changes can be made anymore.
+
+### Challenges
+IMPORTANT: Note that
 
 ### Challengeable
-A data provider can indicate at the time of submission whether the submitted value can be challenged or not. Ideally, data providers wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be disputed or not.
+A data provider can indicate at the time of submission whether the submitted value can be challenged or not. Ideally, data providers wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be challenged or not. 
+
+Further, note that a value submitted during a challenge by a position token holder is not stored in the smart contract but emitted as part of the `StatusChanged` event (which is indexed in the subgraph).
 
 ## Settlement fees
-Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral and can be claimed and transferred by the corresponding data provider at any point in time. 
-
-It is important to highlight that users pay the settlement fee also during early removal of liquidity. In an extreme scenario all liquidity is removed from the pool prior to expiration.  TODOOOOO
+Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool and can be claimed and transferred by the corresponding data provider at any point in time. 
 
 ### Get fee claim
 The claimable fee amount for a given `_collateralToken` and `_recipient` can be obtained by calling the following function:
@@ -333,13 +354,14 @@ ABI:
 }
 ```
 
+The `_collateralToken` address can be obtained via via [`getPoolParameters`](#diva-smart-contract) function or via the [subgraph](#diva-subgraph). 
 
 ### Claim fees
-The settlement fee is paid in collateral token and can be claimed by the entitled data provider via the following function:
+The settlement fee is paid in collateral token and can be claimed by the entitled data provider by calling the following function:
 ```
 claimFees(address _collateralToken)
 ```
-where `_collateralToken` is the address of the collateral token in which the fee is denominated. The collateral token address can be obtained via the [`getPoolParameters`](#diva-smart-contract) function or the [DIVA subgraph](#diva-subgraph).
+where `_collateralToken` is the address of the collateral token in which the fee is denominated. The collateral token address can be obtained via the [`getPoolParameters`](#diva-smart-contract) function or the [DIVA subgraph](#diva-subgraph). Note that partial claims are not possible.
 
 ABI:
 ```json
@@ -359,7 +381,7 @@ ABI:
 ```
 
 ### Transfer fee claim
-In general, the `msg.sender` is entitled to the fee payment. If the data provider is a smart contract, the smart contract will be entitled to claim the fee. The contract needs to implement a logic who to transfer the fee payment to by using the following function: 
+By default, the account reporting the final vlaue is entitled to claim the fee. If the data provider is a smart contract, the smart contract will be entitled to claim that fee. Additional logic needs to be implemented within such contracts to transfer the fee payment by using the following function: 
 ```
 transferFeeClaim(
     address _recipient, 
@@ -368,7 +390,7 @@ transferFeeClaim(
 )
 ```
 where:
-* `_recipient` is the address of the new recipient
+* `_recipient` is the address of the new fee claim recipient
 * `_collateralToken` is the address of the collateral token in which the fee is denominated
 * `_amount` is the fee amount to be transferred
 
@@ -398,41 +420,6 @@ ABI:
     "type": "function"
 }
 ```
-
-
-
-
-## Process details
-Relevant parameters for data providers include:
-* `referenceAsset`
-* `expiryDate` 
-* `dataFeedProvider` 
-* `finalReferenceValue`
-* `statusFinalReferenceValue`
-* `collateralToken`
-* `collateralTokenName`
-* `collateralSymbol`
-* `collateralDecimals`
-
-Once the value was submitted by the `dataFeedProvider`, the following two fields will be updated:
-* `finalReferenceValue`: set equal to the submitted value 
-* `statusFinalReferenceValue`: set to `1` = Submitted, `2` = Challenged, or `3` = Confirmed, depending on whether the [dispute mechanism](#optional-dispute-mechanism) was activated or not. If the dispute mechanism was deactivated (e.g., in case of automated oracles like Tellor or Chainlink or custom oracle smart contracts that implement their own dispute mechanism), the first submitted value will set the status to "Confirmed" and users can start redeeming their position tokens. 
-
-Other important notes:
-* As Solidity cannot handle floating numbers, the final reference value should be submitted as an integer with 18 decimals (e.g., 18500000000000000000 for 18.5).  
-
-
-The following two parameters specify the range that the pool is tracking and can be helpful when implementing sanity checks on the oracle side:
-|Parameter|Description|
-|:---|:---|
-| `floor` | The lower bound of the range that the reference asset is tracking. A final reference asset value that is equal to or smaller than the floor will result in a zero payoff for the long side and maximum payoff for the short side.|
-| `cap` | The upper bound of the range that the reference asset is tracking. A final reference asset value that is equal to or larger than the cap will result in a zero payoff for the short side and maximum payoff for the long side.|
-
-### Challenges
-IMPORTANT: Note that a value submitted during a challenge by a position token holder IS NOT STORED in the contract. Instead it is emitted as part of the `StatusChanged` event and indexed in the subgraph.
-
-#### Other remarks
-DIVA does not prevent users to create pools with an expiry date in the past. Data providers have to outline in their data provision policy how those cases will be handled.
 
 
 ## DIVA whitelist subgraph
