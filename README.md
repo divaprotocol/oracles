@@ -1,21 +1,26 @@
+# Last updated
+9 February 2022
+
 # How to get started
 
 Scripts:
 1. `yarn install` to install dependencies
 1. `yarn compile` to compile contracts
 2. `yarn hardhat test` to run tests (includes compilation of contracts)
-3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `DIVAOracleTellor.test.js` within the `test` folder
+3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `test/DIVAOracleTellor.test.js`
 
-# Last updated
-4 February 2022
+# Upcoming changes
+* `expiryDate` will be renamed to `expiryTime`
 
 # DIVA Queries
 Pool parameters are stored at the time of pool creation and can be queried in the following two ways:
-1. `getPoolParameters` function within the DIVA smart contract 
+1. DIVA smart contract via the `getPoolParameters` function 
 1. DIVA subgraph
 
+The specifications for both ways are provided below.
+
 ### DIVA Smart contract
-To query pool parameters from the smart contract, call the following function using the `poolId` as argument:
+To query pool parameters from the smart contract, call the following function using the `poolId` (incremental unsigned integer) as argument:
 ```s
 `getPoolParameters(poolId)`
 ```
@@ -165,6 +170,37 @@ ABI:
   }
 ```
 
+The following Pool struct is returned when `getPoolParameters` is called:
+
+struct Pool {
+    string referenceAsset;                      // Reference asset string (e.g., "BTC/USD", "ETH Gas Price (Wei)", "TVL Locked in DeFi", etc.)
+    uint256 inflection;                         // Threshold for rebalancing between the long and the short side of the pool
+    uint256 cap;                                // Reference asset value at or above which all collateral will end up in the long pool
+    uint256 floor;                              // Reference asset value at or below which all collateral will end up in the short pool 
+    uint256 supplyShortInitial;                 // Short token supply at pool creation
+    uint256 supplyLongInitial;                  // Long token supply at pool creation
+    uint256 supplyShort;                        // Current short token supply
+    uint256 supplyLong;                         // Current long token supply
+    uint256 expiryDate;                         // Expiration time of the pool expressed as a unix timestamp in seconds
+    address collateralToken;                    // Address of ERC20 collateral token
+    uint256 collateralBalanceShortInitial;      // Collateral balance of short side at pool creation
+    uint256 collateralBalanceLongInitial;       // Collateral balance of long side at pool creation
+    uint256 collateralBalanceShort;             // Current collateral balance of short side
+    uint256 collateralBalanceLong;              // Current collateral balance of long side
+    address shortToken;                         // Short position token address
+    address longToken;                          // Long position token address
+    uint256 finalReferenceValue;                // Reference asset value at the time of expiration
+    Status statusFinalReferenceValue;           // Status of final reference price (0 = Open, 1 = Submitted, 2 = Challenged, 3 = Confirmed)
+    uint256 redemptionAmountLongToken;          // Payout amount per long position token
+    uint256 redemptionAmountShortToken;         // Payout amount per short position token
+    uint256 statusTimestamp;                    // Timestamp of status change
+    address dataFeedProvider;                   // Address of data feed provider
+    uint256 redemptionFee;                      // Redemption fee prevailing at the time of pool creation
+    uint256 settlementFee;                      // Settlement fee prevailing at the time of pool creation
+    uint256 capacity;                           // Maximum collateral that the pool can accept; 0 for unlimited
+}   
+```
+
 Example response:
 ```
   referenceAsset: 'ETH/USDT',
@@ -195,20 +231,24 @@ Example response:
 ```
 
 Relevant parameters for data providers include:
+* `referenceAsset`
+* `expiryDate` 
+* `dataFeedProvider` 
 
-|Parameter|Description|
-|:---|:---|
-| `referenceAsset` | Reference asset of the underlying pool (e.g., "ETH/USD", "BTC/USD", "ETH Gas Price (Wei)", "TVL locked in DeFi", etc.). |
-| `expiryDate` | Expiration time of the pool expressed as a unix timestamp in seconds. |
-| `dataFeedProvider` | Address that is supposed to report the final value of the reference asset.| 
+Once the value was submitted by the `dataFeedProvider`, the following two fields will be updated:
+* `finalReferenceValue`: set equal to the submitted value 
+* `statusFinalReferenceValue`: set to `1` = Submitted, `2` = Challenged, or `3` = Confirmed, depending on whether the [dispute mechanism](#optional-dispute-mechanism) was activated or not. If the dispute mechanism was deactivated (e.g., in case of automated oracles like Tellor or Chainlink or custom oracle smart contracts that implement their own dispute mechanism), the first submitted value will immediately set the status to Confirmed and users can start redeeming their position tokens. 
 
-Note that oracles are expected to provide values only for pools where they are selected as the data provider. 
+Note that oracles are expected to provide values only for pools where they are selected as the data provider, i.e. their address is displayed in `dataFeedProvider`. 
 
 The following two parameters specify the range that the pool is tracking and can be helpful when implementing sanity checks on the oracle side:
 |Parameter|Description|
 |:---|:---|
 | `floor` | The lower bound of the range that the reference asset is tracking. A final reference asset value that is equal to or smaller than the floor will result in a zero payoff for the long side and maximum payoff for the short side.|
 | `cap` | The upper bound of the range that the reference asset is tracking. A final reference asset value that is equal to or larger than the cap will result in a zero payoff for the short side and maximum payoff for the long side.|
+
+#### Optional dispute mechanism
+The `dataFeedProvider` indicates at the time of the submission whether a challenge is allowed or not by setting the `_allowChallenge` in `setFinalReferenceValue` . If the `dataFeedProvider` is a smart contract, this flag can be pre-set for everyone to see before the pool is created avoiding any surprises. 
 
 ### DIVA pool subgraph 
 Includes all information that is returned from the `getPoolParameters` function.
