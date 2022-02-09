@@ -1,34 +1,34 @@
-# Version overview
+# DIVA oracle data specifications
+
+## Version overview
 |Last updated on|Key changes|Updated by|
 |:---|:---|:---|
 |9 February 2022| Additional information added |@Walodja1987|
 |_Upcoming_|_`expiryDate` will be renamed to `expiryTime`, `createdAt` will be added to subgraph_||
 
 # How to get started
-
 Scripts:
 1. `yarn install` to install dependencies
 1. `yarn compile` to compile contracts
 2. `yarn hardhat test` to run tests (includes compilation of contracts)
 3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `test/DIVAOracleTellor.test.js`
 
-# Settlement process in DIVA
-DIVA protocol expects one value input following pool expiration. The purpose of this specification is to describe how data providers can access the relevant data and interact with the protocol (e.g., to submit the final value).
+# Intro
+Contingent pools created on DIVA expect one value input following expiration. The purpose of this specification is to describe how data providers can access the relevant data and interact with the protocol (e.g., to submit the final value).
 
 Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) for more details about oracles and the settlement process in DIVA.
 
 # DIVA Queries
-Pool parameters are stored at the time of pool creation and can be queried in the following two ways:
+Pool parameters are stored within the DIVA smart contract at the time of pool creation and can be queried from two sources:
 1. DIVA smart contract via the `getPoolParameters` function 
 1. DIVA subgraph
 
 ### DIVA smart contract
-Pool parameters can be queried from the smart contract by calling the following function using the `poolId` as argument:
+Pool parameters can be queried from the DIVA smart contract by calling the following function:
 ```s
 `getPoolParameters(uint256 poolId)`
 ```
-
-The `poolId` is a unique identifier, more precisely, an unsigned integer of type `uint256` that starts at 1 and increments by 1, that is assigned to each pool at pool creation.
+where `poolId` is a unique identifier of a pool (an integer that starts at 1 and increments by 1) that is assigned at pool creation.
 
 ABI:
 ```json
@@ -236,7 +236,7 @@ Example response with values:
 ```
 
 ### DIVA subgraph 
-Data providers can also query the DIVA subgraph for the relevant information.
+Pool information can also be obtained by querying the DIVA subgraph:
 * Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
 * Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
 * Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-kovan
@@ -244,7 +244,7 @@ Data providers can also query the DIVA subgraph for the relevant information.
 * Polygon: n/a
 * Mainnet: n/a
 
-The DIVA subgraph includes additional information that cannot be obained via [`getPoolParameters`](#diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful where DIVA's dispute mechanism is activated. 
+The DIVA subgraph includes additional information that cannot be obained via [`getPoolParameters`](#diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful when DIVA's dispute mechanism is activated. 
 
 ## Submit final reference value
 Data providers can submit the final value to the DIVA smart contract for pools they were assigned to do so by calling the following function after `expiryDate` has passed:
@@ -256,7 +256,7 @@ setFinalReferenceValue(
 )
 ```
 where: 
-* `_poolId` is the id of the pool that is to be resolved
+* `_poolId` is the id of the pool that is to be settled
 * `_finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
 * `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
 
@@ -289,12 +289,12 @@ ABI:
 Once a value has been submitted, `statusFinalReferenceValue` switches to `1` = Submitted if the dispute mechanism is activated or `3` = Confirmed if it is deactivated. No second value can be submitted unless the status changes to `2` = Challenged which is only possible when the dispute mechanism is activated. Once the value reaches Confirmed stage, the value is considered final and no changes can be made anymore.
 
 ### Challengeable
-A data provider can indicate at the time of submission whether the submitted value can be challenged or not. We recommend wrapping the `setFinalReferenceValue` function into a smart contract that hard-codes the `_allowChallenge` flag and makes it transparent to everyone before the fact.
+A data provider can indicate at the time of submission whether the submitted value can be challenged or not. Ideally, data providers wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be disputed or not.
 
 ## Settlement fees
 Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral and can be claimed and transferred by the corresponding data provider at any point in time. 
 
-It is important to highlight that users pay the settlement fee also during early removal of liquidity. In an extreme scenario all liquidity is removed from the pool prior to expiration.  
+It is important to highlight that users pay the settlement fee also during early removal of liquidity. In an extreme scenario all liquidity is removed from the pool prior to expiration.  TODOOOOO
 
 ### Get fee claim
 The claimable fee amount for a given `_collateralToken` and `_recipient` can be obtained by calling the following function:
