@@ -14,11 +14,11 @@ Scripts:
 3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `test/DIVAOracleTellor.test.js`
 
 # Intro
-Contingent pools created on DIVA expect one value input following expiration. The purpose of this specification is to describe how data providers can access the relevant data and interact with the protocol (e.g., to submit the final value).
+Contingent pools created on DIVA expect one value input following expiration. This document is meant for data providers and describes how they can access the relevant data and interact with the protocol (e.g., to submit the final value).
 
 Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) for more details about oracles and the settlement process in DIVA.
 
-# DIVA Queries
+# DIVA queries
 Pool parameters are stored within the DIVA smart contract at the time of pool creation and can be queried from two sources:
 1. DIVA smart contract via the `getPoolParameters` function 
 1. DIVA subgraph
@@ -28,7 +28,7 @@ Pool parameters can be queried from the DIVA smart contract by calling the follo
 ```s
 `getPoolParameters(uint256 poolId)`
 ```
-where `poolId` is a unique identifier of a pool (an integer that starts at 1 and increments by 1) that is assigned at pool creation.
+where `poolId` is a unique identifier of a pool, more precisely, an integer that starts at 1 and increments by 1, that is assigned at pool creation.
 
 ABI:
 ```json
@@ -244,9 +244,9 @@ Pool information can also be obtained by querying the DIVA subgraph:
 * Polygon: n/a
 * Mainnet: n/a
 
-The DIVA subgraph includes additional information that cannot be obained via [`getPoolParameters`](#diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful when DIVA's dispute mechanism is activated. 
+The DIVA subgraph includes additional information that is not returned by [`getPoolParameters`](#diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful when a data provider has enabled the challenge functionality. 
 
-An overview of the relevant parameters for data providers is provided below:
+Key parameters relevant for data providers include:
 * `referenceAsset`
 * `expiryDate` 
 * `dataFeedProvider` 
@@ -260,7 +260,7 @@ An overview of the relevant parameters for data providers is provided below:
 * `challengedBy` (in subgraph only)
 * `proposedFinalReferenceValue` (in subgraph only)
 
-Additional parameters that may be helpful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets are tracking. 
+Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets are tracking. 
 
 It's worth highlighting that DIVA does not prevent users to create pools with an expiry date in the past. Data providers have to outline in their data provision policy how those cases will be handled.
 
