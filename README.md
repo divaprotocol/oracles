@@ -172,7 +172,7 @@ ABI:
     ],
     "stateMutability": "view",
     "type": "function"
-  }
+}
 ```
 
 The following Pool struct is returned when `getPoolParameters` is called:
@@ -208,31 +208,31 @@ struct Pool {
 
 Example response with values:
 ```
-  referenceAsset: 'ETH/USDT',
-  inflection: BigNumber { value: "22000000000000000000" },
-  cap: BigNumber { value: "27000000000000000000" },
-  floor: BigNumber { value: "17000000000000000000" },
-  supplyShortInitial: BigNumber { value: "105000000000000000000" },
-  supplyLongInitial: BigNumber { value: "105000000000000000000" },
-  supplyShort: BigNumber { value: "105000000000000000000" },
-  supplyLong: BigNumber { value: "105000000000000000000" },
-  expiryDate: BigNumber { value: "1642021490" },
-  collateralToken: '0xaD6D458402F60fD3Bd25163575031ACDce07538D',
-  collateralBalanceShortInitial: BigNumber { value: "20000000000000000" },
-  collateralBalanceLongInitial: BigNumber { value: "10000000000000000" },
-  collateralBalanceShort: BigNumber { value: "20000000000000000" },
-  collateralBalanceLong: BigNumber { value: "10000000000000000" },
-  shortToken: '0x43a9f0adaa48F4D42BdFd0A4761611a468733A3d',
-  longToken: '0x0881c26507867d5020531b744D285778432c7DAc',
-  finalReferenceValue: BigNumber { value: "85000000000000000000" },
-  statusFinalReferenceValue: 3,
-  redemptionAmountLongToken: BigNumber { value: "284857142857142" },
-  redemptionAmountShortToken: BigNumber { value: "0" },
-  statusTimestamp: BigNumber { value: "1642075118" },
-  dataFeedProvider: '0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b',
-  redemptionFee: BigNumber { value: "2500000000000000" },
-  settlementFee: BigNumber { value: "500000000000000" },
-  capacity: BigNumber { value: "0" }
+    referenceAsset: 'ETH/USDT',
+    inflection: BigNumber { value: "22000000000000000000" },
+    cap: BigNumber { value: "27000000000000000000" },
+    floor: BigNumber { value: "17000000000000000000" },
+    supplyShortInitial: BigNumber { value: "105000000000000000000" },
+    supplyLongInitial: BigNumber { value: "105000000000000000000" },
+    supplyShort: BigNumber { value: "105000000000000000000" },
+    supplyLong: BigNumber { value: "105000000000000000000" },
+    expiryDate: BigNumber { value: "1642021490" },
+    collateralToken: '0xaD6D458402F60fD3Bd25163575031ACDce07538D',
+    collateralBalanceShortInitial: BigNumber { value: "20000000000000000" },
+    collateralBalanceLongInitial: BigNumber { value: "10000000000000000" },
+    collateralBalanceShort: BigNumber { value: "20000000000000000" },
+    collateralBalanceLong: BigNumber { value: "10000000000000000" },
+    shortToken: '0x43a9f0adaa48F4D42BdFd0A4761611a468733A3d',
+    longToken: '0x0881c26507867d5020531b744D285778432c7DAc',
+    finalReferenceValue: BigNumber { value: "85000000000000000000" },
+    statusFinalReferenceValue: 3,
+    redemptionAmountLongToken: BigNumber { value: "284857142857142" },
+    redemptionAmountShortToken: BigNumber { value: "0" },
+    statusTimestamp: BigNumber { value: "1642075118" },
+    dataFeedProvider: '0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b',
+    redemptionFee: BigNumber { value: "2500000000000000" },
+    settlementFee: BigNumber { value: "500000000000000" },
+    capacity: BigNumber { value: "0" }
 ```
 
 ### DIVA subgraph 
@@ -259,7 +259,7 @@ setFinalReferenceValue(
 ABI:
 ```json
 {
-  "inputs": [
+    "inputs": [
     {
       "internalType": "uint256",
       "name": "_poolId",
@@ -275,11 +275,11 @@ ABI:
       "name": "_allowChallenge",
       "type": "bool"
     }
-  ],
-  "name": "setFinalReferenceValue",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
+    ],
+    "name": "setFinalReferenceValue",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
 }
 ```
 
@@ -299,9 +299,49 @@ Examples:
 * Tellor contract
 
 ## Settlement fees
-Selected data providers are rewarded with a settlement fee of 0.05% of the collateral locked in the pool (updateable by DIVA governance). Users pay the settlement fee following redemption and early removal of liquidity. 
+Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral and can be claimed and transferred by the corresponding data provider at any point in time. 
+
+It is important to highlight that users pay the settlement fee also during early removal of liquidity. In an extreme scenario all liquidity is removed from the pool prior to expiration.  
 
 ### Get fee claim
+The claimable fee amount for a given `_collateralToken` and `_recipient` can be obtained by calling the following function:
+```
+getClaims(
+    address _collateralToken, 
+    address _recipient
+)
+```
+
+ABI:
+```json
+{
+    "inputs": [
+    {
+      "internalType": "address",
+      "name": "_collateralToken",
+      "type": "address"
+    },
+    {
+      "internalType": "address",
+      "name": "_recipient",
+      "type": "address"
+    }
+    ],
+    "name": "getClaims",
+    "outputs": [
+    {
+      "internalType": "uint256",
+      "name": "",
+      "type": "uint256"
+    }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+```
+
+
+### Claim fees
 The settlement fee is paid in collateral token and can be claimed by the entitled data provider via the following function:
 ```
 claimFees(address _collateralToken)
@@ -311,17 +351,17 @@ where `_collateralToken` is the address of the collateral token in which the fee
 ABI:
 ```json
 {
-  "inputs": [
+    "inputs": [
     {
       "internalType": "address",
       "name": "_collateralToken",
       "type": "address"
     }
-  ],
-  "name": "claimFees",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
+    ],
+    "name": "claimFees",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
 }
 ```
 
@@ -342,7 +382,7 @@ where:
 ABI:
 ```json
 {
-  "inputs": [
+    "inputs": [
     {
       "internalType": "address",
       "name": "_recipient",
@@ -358,22 +398,16 @@ ABI:
       "name": "_amount",
       "type": "uint256"
     }
-  ],
-  "name": "transferFeeClaim",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
+    ],
+    "name": "transferFeeClaim",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
 }
 ```
 
 
-The claimable fee amount for a given `collateralToken` and `recipient` address can be obtained by calling the following function:
-```
-getClaims(
-    address collateralToken, 
-    address recipient
-)
-```
+
 
 ## Process details
 Relevant parameters for data providers include:
