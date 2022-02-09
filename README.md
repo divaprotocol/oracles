@@ -1,8 +1,8 @@
 # Version overview
 |Last updated on|Key changes|Updated by|
 |:---|:---|:---|
-|9 February 2022|  |@Walodja1987|
-|Upcoming|`expiryDate` will be renamed to `expiryTime`, `createdAt` will be added to subgraph||
+|9 February 2022| Additional information added |@Walodja1987|
+|_Upcoming_|_`expiryDate` will be renamed to `expiryTime`, `createdAt` will be added to subgraph_||
 
 # How to get started
 
@@ -13,7 +13,7 @@ Scripts:
 3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `test/DIVAOracleTellor.test.js`
 
 # Settlement process in DIVA
-DIVA protocol expects one value input following pool expiration. The purpose of this specification is to describe how data providers can access the relevant data and submit the final value.
+DIVA protocol expects one value input following pool expiration. The purpose of this specification is to describe how data providers can access the relevant data and interact with the protocol (e.g., to submit the final value).
 
 Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) for more details about oracles and the settlement process in DIVA.
 
@@ -236,7 +236,7 @@ Example response with values:
 ```
 
 ### DIVA subgraph 
-Alternatively, data providers can query the DIVA subgraphs for the relevant information.
+Data providers can also query the DIVA subgraph for the relevant information.
 * Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
 * Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
 * Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-kovan
@@ -244,23 +244,54 @@ Alternatively, data providers can query the DIVA subgraphs for the relevant info
 * Polygon: n/a
 * Mainnet: n/a
 
-The DIVA subgraph includes additional information that cannot be obained via `getPoolParameters`. In particular, it stores the challenger address as well as the value proposed by the challenger in the Challenge entity. This is only relevant for manual oracles.
+The DIVA subgraph includes additional information that cannot be obained via [`getPoolParameters`](#diva-smart-contract). In particular, it stores the challenge specific information such as the challenger address and the value proposed by the challenger among others. 
 
 ## Submit final reference value
-Data providers can submit the final value to the DIVA smart contract by calling the following function after `expiryDate` has passed:
+Data providers can submit the final value to the DIVA smart contract for pools they were assigned to do so by calling the following function after `expiryDate` has passed:
 ```
 setFinalReferenceValue(
-    uint256 poolId, 
-    uint256 finalReferenceValue, 
-    bool allowChallenge
+    uint256 _poolId, 
+    uint256 _finalReferenceValue, 
+    bool _allowChallenge
 )
 ```
+
+ABI:
+```json
+{
+  "inputs": [
+    {
+      "internalType": "uint256",
+      "name": "_poolId",
+      "type": "uint256"
+    },
+    {
+      "internalType": "uint256",
+      "name": "_finalReferenceValue",
+      "type": "uint256"
+    },
+    {
+      "internalType": "bool",
+      "name": "_allowChallenge",
+      "type": "bool"
+    }
+  ],
+  "name": "setFinalReferenceValue",
+  "outputs": [],
+  "stateMutability": "nonpayable",
+  "type": "function"
+}
+```
+
 where: 
-* `poolId` is the id of the pool that is to be resolved
-* `finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
-* `allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
+* `_poolId` is the id of the pool that is to be resolved
+* `_finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
+* `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
 
 If the data provider is a smart contract, it needs to implement this function as part of the smart contract. 
+
+* A data provider cannot submit a second value when the status switches to "Submitted".
+* Data providers are expected to provide values only for pools where they were assigned as the data provider.  
 
 check out the corresponding specifications . If the `dataFeedProvider` is a smart contract, this flag can be pre-set for every user to see before creating the pool.
 
@@ -268,25 +299,72 @@ Examples:
 * Tellor contract
 
 ## Settlement fees
-Selected data providers are rewarded with a settlement fee of 0.05% of the collateral locked in the pool. Users pay the settlement fee following redemption and early removal of liquidity. The settlement fee is paid in collateral token and can be claimed by the entitled data provider via the following function:
-```
-claimFees(address collateralToken)
-```
-where `collateralToken` is the address of the collateral token in which the fee is denominated. The collateral token address can be obtained via the [`getPoolParameters`](#diva-smart-contract) function or the [DIVA subgraph](#diva-subgraph).
+Selected data providers are rewarded with a settlement fee of 0.05% of the collateral locked in the pool (updateable by DIVA governance). Users pay the settlement fee following redemption and early removal of liquidity. 
 
+### Get fee claim
+The settlement fee is paid in collateral token and can be claimed by the entitled data provider via the following function:
+```
+claimFees(address _collateralToken)
+```
+where `_collateralToken` is the address of the collateral token in which the fee is denominated. The collateral token address can be obtained via the [`getPoolParameters`](#diva-smart-contract) function or the [DIVA subgraph](#diva-subgraph).
 
+ABI:
+```json
+{
+  "inputs": [
+    {
+      "internalType": "address",
+      "name": "_collateralToken",
+      "type": "address"
+    }
+  ],
+  "name": "claimFees",
+  "outputs": [],
+  "stateMutability": "nonpayable",
+  "type": "function"
+}
+```
+
+### Transfer fee claim
 In general, the `msg.sender` is entitled to the fee payment. If the data provider is a smart contract, the smart contract will be entitled to claim the fee. The contract needs to implement a logic who to transfer the fee payment to by using the following function: 
 ```
 transferFeeClaim(
-    address recipient, 
-    address collateralToken, 
-    uint256 amount
+    address _recipient, 
+    address _collateralToken, 
+    uint256 _amount
 )
 ```
 where:
-* `recipient` is the address of the new recipient
-* `collateralToken` is the address of the collateral token in which the fee is denominated
-* `amount` is the fee amount to be transferred
+* `_recipient` is the address of the new recipient
+* `_collateralToken` is the address of the collateral token in which the fee is denominated
+* `_amount` is the fee amount to be transferred
+
+ABI:
+```json
+{
+  "inputs": [
+    {
+      "internalType": "address",
+      "name": "_recipient",
+      "type": "address"
+    },
+    {
+      "internalType": "address",
+      "name": "_collateralToken",
+      "type": "address"
+    },
+    {
+      "internalType": "uint256",
+      "name": "_amount",
+      "type": "uint256"
+    }
+  ],
+  "name": "transferFeeClaim",
+  "outputs": [],
+  "stateMutability": "nonpayable",
+  "type": "function"
+}
+```
 
 
 The claimable fee amount for a given `collateralToken` and `recipient` address can be obtained by calling the following function:
@@ -315,8 +393,7 @@ Once the value was submitted by the `dataFeedProvider`, the following two fields
 
 Other important notes:
 * As Solidity cannot handle floating numbers, the final reference value should be submitted as an integer with 18 decimals (e.g., 18500000000000000000 for 18.5).  
-* A data provider cannot submit a second value when the status switches to "Submitted".
-* Data providers are expected to provide values only for pools where they were assigned as the data provider.  
+
 
 The following two parameters specify the range that the pool is tracking and can be helpful when implementing sanity checks on the oracle side:
 |Parameter|Description|
