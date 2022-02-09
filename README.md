@@ -25,7 +25,7 @@ Pool parameters are stored at the time of pool creation and can be queried in th
 ### DIVA smart contract
 Pool parameters can be queried from the smart contract by calling the following function using the `poolId` as argument:
 ```s
-`getPoolParameters(poolId)`
+`getPoolParameters(uint256 poolId)`
 ```
 
 The `poolId` is a unique identifier, more precisely, an unsigned integer of type `uint256` that starts at 1 and increments by 1, that is assigned to each pool at pool creation.
@@ -250,15 +250,15 @@ The DIVA subgraph includes additional information that cannot be obained via `ge
 Data providers can submit the final value to the DIVA smart contract by calling the following function after `expiryDate` has passed:
 ```
 setFinalReferenceValue(
-    uint256 _poolId, 
-    uint256 _finalReferenceValue, 
-    bool _allowChallenge
+    uint256 poolId, 
+    uint256 finalReferenceValue, 
+    bool allowChallenge
 )
 ```
 where: 
 * `poolId` is the id of the pool that is to be resolved
-* `_finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
-* `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
+* `finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
+* `allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
 
 If the data provider is a smart contract, it needs to implement this function as part of the smart contract. 
 
@@ -270,24 +270,31 @@ Examples:
 ## Settlement fees
 Selected data providers are rewarded with a settlement fee of 0.05% of the collateral locked in the pool. Users pay the settlement fee following redemption and early removal of liquidity. The settlement fee is paid in collateral token and can be claimed by the entitled data provider via the following function:
 ```
-claimFees(_collateralToken)
+claimFees(address collateralToken)
 ```
-where `_collateralToken` is the address of the collateral token in which the fee is denominated. The collateral token address can be obtained via the [`getPoolParameters`](#diva-smart-contract) function or the [DIVA subgraph](#diva-subgraph).
+where `collateralToken` is the address of the collateral token in which the fee is denominated. The collateral token address can be obtained via the [`getPoolParameters`](#diva-smart-contract) function or the [DIVA subgraph](#diva-subgraph).
 
 
 In general, the `msg.sender` is entitled to the fee payment. If the data provider is a smart contract, the smart contract will be entitled to claim the fee. The contract needs to implement a logic who to transfer the fee payment to by using the following function: 
 ```
-transferFeeClaim(_recipient, _collateralToken, uint256 _amount)
+transferFeeClaim(
+    address recipient, 
+    address collateralToken, 
+    uint256 amount
+)
 ```
 where:
-* `_recipient` is the address of the new recipient
-* `_collateralToken` is the address of the collateral token in which the fee is denominated
-* `_amount` is the fee amount to be transferred
+* `recipient` is the address of the new recipient
+* `collateralToken` is the address of the collateral token in which the fee is denominated
+* `amount` is the fee amount to be transferred
 
 
 The claimable fee amount for a given `collateralToken` and `recipient` address can be obtained by calling the following function:
 ```
-getClaims(_collateralToken, _recipient)
+getClaims(
+    address collateralToken, 
+    address recipient
+)
 ```
 
 ## Process details
