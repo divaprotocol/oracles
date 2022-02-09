@@ -12,6 +12,9 @@ Scripts:
 # Upcoming changes
 * `expiryDate` will be renamed to `expiryTime`
 
+# Settlement process in DIVA
+Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) to learn about oracles and the settlement process in DIVA.
+
 # DIVA Queries
 Pool parameters are stored at the time of pool creation and can be queried in the following two ways:
 1. DIVA smart contract via the `getPoolParameters` function 
@@ -234,12 +237,16 @@ Relevant parameters for data providers include:
 * `referenceAsset`
 * `expiryDate` 
 * `dataFeedProvider` 
+* `statusFinalReferenceValue`
 
 Once the value was submitted by the `dataFeedProvider`, the following two fields will be updated:
 * `finalReferenceValue`: set equal to the submitted value 
-* `statusFinalReferenceValue`: set to `1` = Submitted, `2` = Challenged, or `3` = Confirmed, depending on whether the [dispute mechanism](#optional-dispute-mechanism) was activated or not. If the dispute mechanism was deactivated (e.g., in case of automated oracles like Tellor or Chainlink or custom oracle smart contracts that implement their own dispute mechanism), the first submitted value will immediately set the status to Confirmed and users can start redeeming their position tokens. 
+* `statusFinalReferenceValue`: set to `1` = Submitted, `2` = Challenged, or `3` = Confirmed, depending on whether the [dispute mechanism](#optional-dispute-mechanism) was activated or not. If the dispute mechanism was deactivated (e.g., in case of automated oracles like Tellor or Chainlink or custom oracle smart contracts that implement their own dispute mechanism), the first submitted value will set the status to "Confirmed" and users can start redeeming their position tokens. 
 
-Note that oracles are expected to provide values only for pools where they are selected as the data provider, i.e. their address is displayed in `dataFeedProvider`. 
+Other important notes:
+* As Solidity cannot handle floating numbers, the final reference value should be submitted as an integer with 18 decimals (e.g., 18500000000000000000 for 18.5).  
+* A data provider cannot submit a second value when the status switches to "Submitted".
+* Data providers are expected to provide values only for pools where they were assigned as the data provider.  
 
 The following two parameters specify the range that the pool is tracking and can be helpful when implementing sanity checks on the oracle side:
 |Parameter|Description|
