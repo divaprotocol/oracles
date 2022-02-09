@@ -1,7 +1,7 @@
 # Version overview
 |Last updated on|Key changes|Updated by|
 |:---|:---|:---|
-|9 February 2022||
+|9 February 2022|  |@Walodja1987|
 |Upcoming|`expiryDate` will be renamed to `expiryTime`, `createdAt` will be added to subgraph||
 
 # How to get started
@@ -235,7 +235,7 @@ Example response with values:
   capacity: BigNumber { value: "0" }
 ```
 
-### DIVA pool subgraph 
+### DIVA subgraph 
 Alternatively, data providers can query the DIVA subgraphs for the relevant information.
 * Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
 * Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
@@ -244,10 +244,10 @@ Alternatively, data providers can query the DIVA subgraphs for the relevant info
 * Polygon: n/a
 * Mainnet: n/a
 
-The DIVA subgraph includes additional information that cannot be obained via `getPoolParameters`. In particular, it stores the challenger address as well as the value proposed by the challenger in the Challenge entity.
+The DIVA subgraph includes additional information that cannot be obained via `getPoolParameters`. In particular, it stores the challenger address as well as the value proposed by the challenger in the Challenge entity. This is only relevant for manual oracles.
 
 ## Submit final reference value
-Data providers can submit their final reference asset value directly to DIVA by calling the following function:
+Data providers can submit the final value to the DIVA smart contract by calling the following function after `expiryDate` has passed:
 ```
 setFinalReferenceValue(
     uint256 _poolId, 
@@ -258,13 +258,37 @@ setFinalReferenceValue(
 where: 
 * `poolId` is the id of the pool that is to be resolved
 * `_finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
-* `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not. 
+* `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
 
-If the data provider is a smart contract, check out the corresponding specifications . If the `dataFeedProvider` is a smart contract, this flag can be pre-set for every user to see before creating the pool.
+If the data provider is a smart contract, it needs to implement this function as part of the smart contract. 
+
+check out the corresponding specifications . If the `dataFeedProvider` is a smart contract, this flag can be pre-set for every user to see before creating the pool.
 
 Examples:
 * Tellor contract
-  
+
+## Settlement fees
+Selected data providers are rewarded with a settlement fee of 0.05% of the collateral locked in the pool. Users pay the settlement fee following redemption and early removal of liquidity. The settlement fee is paid in collateral token and can be claimed by the entitled data provider via the following function:
+```
+claimFees(_collateralToken)
+```
+where `_collateralToken` is the address of the collateral token in which the fee is denominated. The collateral token address can be obtained via the [`getPoolParameters`](#diva-smart-contract) function or the [DIVA subgraph](#diva-subgraph).
+
+
+In general, the `msg.sender` is entitled to the fee payment. If the data provider is a smart contract, the smart contract will be entitled to claim the fee. The contract needs to implement a logic who to transfer the fee payment to by using the following function: 
+```
+transferFeeClaim(_recipient, _collateralToken, uint256 _amount)
+```
+where:
+* `_recipient` is the address of the new recipient
+* `_collateralToken` is the address of the collateral token in which the fee is denominated
+* `_amount` is the fee amount to be transferred
+
+
+The claimable fee amount for a given `collateralToken` and `recipient` address can be obtained by calling the following function:
+```
+getClaims(_collateralToken, _recipient)
+```
 
 ## Process details
 Relevant parameters for data providers include:
@@ -273,6 +297,10 @@ Relevant parameters for data providers include:
 * `dataFeedProvider` 
 * `finalReferenceValue`
 * `statusFinalReferenceValue`
+* `collateralToken`
+* `collateralTokenName`
+* `collateralSymbol`
+* `collateralDecimals`
 
 Once the value was submitted by the `dataFeedProvider`, the following two fields will be updated:
 * `finalReferenceValue`: set equal to the submitted value 
