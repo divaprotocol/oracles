@@ -13,13 +13,19 @@ Scripts:
 2. `yarn hardhat test` to run tests (includes compilation of contracts)
 3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `test/DIVAOracleTellor.test.js`
 
+If you have `node` version 17 or higher installed, you may need to downgrade it to 16.13.0, for instance, to make it work. 
+1. `node --version` to check the node version
+2. `nvm use 16.13.0` to downgrade the node version
+
+If you don't have `nvm` installed yet, check out their [repo](https://github.com/nvm-sh/nvm).
+
 # Intro
-Contingent pools created on DIVA expect one value input following expiration. This document is meant for data providers and describes how they can access the relevant data and interact with the protocol (e.g., to submit the final value).
+Contingent pools created on DIVA expect one value input following pool expiration. This document describes how data providers can access the relevant data and interact with the protocol.
 
 Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) for more details about oracles and the settlement process in DIVA.
 
 # DIVA queries
-Pool parameters are stored within the DIVA smart contract at the time of pool creation and can be queried from two sources:
+Pool parameters are stored within the DIVA smart contract at the time of pool creation and can be queried in two ways:
 1. DIVA smart contract via the `getPoolParameters` function 
 1. DIVA subgraph
 
@@ -28,7 +34,7 @@ Pool parameters can be queried from the DIVA smart contract by calling the follo
 ```s
 `getPoolParameters(uint256 poolId)`
 ```
-where `poolId` is a unique identifier of a pool, more precisely, an integer that starts at 1 and increments by 1, that is assigned at pool creation.
+where `poolId` is a unique identifier (more precisely, an integer that starts at 1 and increments by 1) that is assigned to a pool at the time of creation.
 
 ABI:
 ```json
@@ -244,9 +250,9 @@ Pool information can also be obtained by querying the DIVA subgraph:
 * Polygon: n/a
 * Mainnet: n/a
 
-The DIVA subgraph includes additional information that is not returned by [`getPoolParameters`](#diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful when a data provider has enabled the challenge functionality. 
+The DIVA subgraph has additional information that is not included in [`getPoolParameters`](#diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful when a data provider has enabled the challenge functionality. 
 
-Key parameters relevant for data providers include:
+The following fields include relevant information for data providers:
 * `referenceAsset`
 * `expiryDate` 
 * `dataFeedProvider` 
@@ -260,9 +266,7 @@ Key parameters relevant for data providers include:
 * `challengedBy` (in subgraph only)
 * `proposedFinalReferenceValue` (in subgraph only)
 
-Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets are tracking. 
-
-It's worth highlighting that DIVA does not prevent users to create pools with an expiry date in the past. Data providers have to outline in their data provision policy how those cases will be handled.
+Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets linked to the pool are tracking. 
 
 ## Submit final reference value
 Data providers can submit the final value to the DIVA smart contract for pools they were assigned to do so by calling the following function after `expiryDate` has passed:
@@ -276,7 +280,7 @@ setFinalReferenceValue(
 where: 
 * `_poolId` is the id of the pool that is to be settled
 * `_finalReferenceValue` is an 18 decimal integer representation of the final value (e.g., 18500000000000000000 for 18.5)
-* `_allowChallenge` is a `bool` that indicates whether the submitted value can be challenged or not 
+* `_allowChallenge` is a true/false flag that indicates whether the submitted value can be challenged or not 
 
 ABI:
 ```json
@@ -304,27 +308,30 @@ ABI:
     "type": "function"
 }
 ```
-Once a value has been submitted, `statusFinalReferenceValue` switches to `1` = Submitted or `3` = Confirmed depending on whether the [dispute mechanism](#optional-dispute-mechanism) is activated or not. No second value can be submitted unless the status changes to `2` = Challenged which is only possible when the dispute mechanism is activated. Once the value reaches Confirmed stage, the value is considered final and no changes can be made anymore.
 
-### Challenges
-IMPORTANT: Note that
+Once a value has been submitted, `statusFinalReferenceValue` switches from `0` (Open) to `1` (Submitted) or `3` (Confirmed) depending on whether the [dispute mechanism](#optional-dispute-mechanism) was activated or not. The data provider cannot submit a second value unless the status changes to `2` (Challenged) which is only possible when the dispute mechanism was activated. Once the value reaches Confirmed stage, the value is considered final and no changes can be made anymore.
 
-### Challengeable
-A data provider can indicate at the time of submission whether the submitted value can be challenged or not. Ideally, data providers wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be challenged or not. 
+Note that DIVA does not prevent users from creating pools with an expiry date in the past. Whitelisted data providers can but are not expected to provide any value for such pools. The time of pool creation will be made available in the subgraph in the next release.
 
-Further, note that a value submitted during a challenge by a position token holder is not stored in the smart contract but emitted as part of the `StatusChanged` event (which is indexed in the subgraph).
+## Challenges
+DIVA integrates an optional dispute/challenge mechanism which can be activated on demand (e.g., when manual oracles such as a human reporter are used). A data provider can indicate via `_allowChallenge` parameter at the time of submission whether the submitted value can be challenged or not. To avoid surprises for users, data providers can wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be challenged or not. 
+
+Each position token holder of a pool can submit a challenge including a value that they deem correct. This value is not stored in the DIVA smart contract but emitted as part of the `StatusChanged` event and indexed in the subgraph. Data providers should leverage this information as part of their review process. 
 
 ## Settlement fees
-Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool and can be claimed and transferred by the corresponding data provider at any point in time. 
+Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool and can be claimed by the corresponding data provider at any point in time. The data provider can also transfer the fee claim to another recipient. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract.  
 
 ### Get fee claim
-The claimable fee amount for a given `_collateralToken` and `_recipient` can be obtained by calling the following function:
+The claimable fee amount can be obtained by calling the following function:
 ```
 getClaims(
     address _collateralToken, 
     address _recipient
 )
 ```
+where:
+* `_collateralToken` is the collateral token in which the fee was paid 
+* `_recipient` is the entitled data provider address
 
 ABI:
 ```json
@@ -354,7 +361,7 @@ ABI:
 }
 ```
 
-The `_collateralToken` address can be obtained via via [`getPoolParameters`](#diva-smart-contract) function or via the [subgraph](#diva-subgraph). 
+The `_collateralToken` address can be obtained via [`getPoolParameters`](#diva-smart-contract) function or the [DIVA subgraph](#diva-subgraph). 
 
 ### Claim fees
 The settlement fee is paid in collateral token and can be claimed by the entitled data provider by calling the following function:
@@ -421,9 +428,23 @@ ABI:
 }
 ```
 
+## DIVA whitelist 
+To protect users from malicious pools, DIVA token holders will maintain a whitelist of trusted and credible data providers which users can reference at pool creation. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process.
 
-## DIVA whitelist subgraph
-Whitelist of data providers and data feeds. Users are presented the list of whitelisted data providers and data feeds during the pool creation process in the app. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process. 
+* Data providers
+* Data feeds
+* Collateral tokens
+
+* DIVA whitelist contract addresses:
+   * Ropsten: 0x50D327C638B09d0A434185d63E7193060E6271B2
+   * Rinkeby: 0xF1a36B324AB5d549824a805ccd04Fa4d2e598E6b
+   * Kovan: 0xe3343218CAa73AE523D40936D64E7f335AfDe8f9
+   * Mumbai: 0xcA65fcD37fA8BA5f79f5CB3E68F4fCD426ccE5ef 
+   * Polygon: n/a
+   * Mainnet: n/a
+
+### Whitelist subgraph
+Whitelisted data providers, data feeds and collateral tokens can be accessed via the whitelist subgraph.  
 * Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-ropsten
 * Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-rinkeby
 * Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-kovan
@@ -431,11 +452,9 @@ Whitelist of data providers and data feeds. Users are presented the list of whit
 * Polygon: n/a
 * Mainnet: n/a
 
-The DIVA subgraph includes two fields that refer to the reference asset: 
-1. referenceAsset
-2. referenceAssetUnified
-
-Latter is used to consolidate different labels for the same asset (e.g., XBT/USD, BTC-USD) into one unified label (e.g., BTC/USD).
+Two fields merit additional comment: 
+1. `referenceAsset` is the name provided by the data provider to be used as an identifier on their side 
+2. `referenceAssetUnified` is set by DIVA governance to consolidate different labels for the same asset (e.g., XBT/USD, BTC-USD) into one unified label (e.g., BTC/USD)
 
 ## DIVA addresses
 * DIVA protocol:
@@ -445,10 +464,4 @@ Latter is used to consolidate different labels for the same asset (e.g., XBT/USD
    * Mumbai: 0xCDc415B8DEA4d348ccCa42Aa178611F1dbCD2f69 
    * Polygon: n/a 
    * Mainnet: n/a
-* DIVA whitelist:
-   * Ropsten: 0x50D327C638B09d0A434185d63E7193060E6271B2
-   * Rinkeby: 0xF1a36B324AB5d549824a805ccd04Fa4d2e598E6b
-   * Kovan: 0xe3343218CAa73AE523D40936D64E7f335AfDe8f9
-   * Mumbai: 0xcA65fcD37fA8BA5f79f5CB3E68F4fCD426ccE5ef 
-   * Polygon: n/a
-   * Mainnet: n/a
+
