@@ -1,5 +1,18 @@
-# DIVA oracle data specifications
+# How to get started
+Scripts:
+1. `yarn install` to install dependencies
+1. `yarn compile` to compile contracts
+2. `yarn hardhat test` to run tests (includes compilation of contracts)
+3. `yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `test/DIVAOracleTellor.test.js`
 
+If you have `node` version 17 or higher installed, you may need to downgrade it to 16.13.0, for instance, to make it work. 
+1. `node --version` to check the node version
+2. `nvm use 16.13.0` to downgrade the node version
+
+If you don't have `nvm` installed yet, check out their [repo](https://github.com/nvm-sh/nvm).
+
+
+# DIVA oracle data specifications
 
 |Last updated on|Key changes|Updated by|
 |:---|:---|:---|
