@@ -429,36 +429,130 @@ ABI:
 ```
 
 ## DIVA whitelist 
-To protect users from malicious pools, DIVA token holders will maintain a whitelist of trusted data providers along with the data feeds that they can provide whic users will be able to reference those at pool creation. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process. 
+To protect users from malicious pools, DIVA token holders maintain a whitelist of trusted data providers along with the data feeds that they can provide. Users will be able to reference those at pool creation. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process. 
 
-The whitelist also stores collateral tokens. Data providers are expected to report values for pools where those collateral tokens are used. For pools with non-whitelisted collateral tokens, whitelisted data providers are not expected to submit any values. This is to avoid that data providers are getting paid for their work with a worthless token.  
+In addition to data providers and data feeds, the whitelist contract also stores collateral tokens. Whitelisted data providers are expected to report values for pools where whitelisted collateral tokens are used. For pools with non-whitelisted collateral tokens, data providers are not expected to submit any values. This is to prevent that data providers are abused and paid in worthless tokens.  
 
-* DIVA whitelist contract addresses:
-   * Ropsten: 0x50D327C638B09d0A434185d63E7193060E6271B2
-   * Rinkeby: 0xF1a36B324AB5d549824a805ccd04Fa4d2e598E6b
-   * Kovan: 0xe3343218CAa73AE523D40936D64E7f335AfDe8f9
-   * Mumbai: 0xcA65fcD37fA8BA5f79f5CB3E68F4fCD426ccE5ef 
-   * Polygon: n/a
-   * Mainnet: n/a
+DIVA whitelist smart contract addresses:
+* Ropsten: 0x50D327C638B09d0A434185d63E7193060E6271B2
+* Rinkeby: 0xF1a36B324AB5d549824a805ccd04Fa4d2e598E6b
+* Kovan: 0xe3343218CAa73AE523D40936D64E7f335AfDe8f9
+* Mumbai: 0xcA65fcD37fA8BA5f79f5CB3E68F4fCD426ccE5ef 
+* Polygon: n/a
+* Mainnet: n/a
 
-### Getter functions
+### Whitelist getter functions
 Function to get the data provider name and whitelist status:
 ```
 getDataProvider(address _address)
 ```
 
+ABI:
+```json
+{
+    "inputs": [
+    {
+      "internalType": "address",
+      "name": "_address",
+      "type": "address"
+    }
+    ],
+    "name": "getDataProvider",
+    "outputs": [
+    {
+      "components": [
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "bool",
+          "name": "whitelisted",
+          "type": "bool"
+        }
+      ],
+      "internalType": "struct IWhitelist.DataProvider",
+      "name": "",
+      "type": "tuple"
+    }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+```
+This function returns the following `DataProvider` struct:
+```
+struct DataProvider {
+    string name;            // Name of data provider
+    bool whitelisted;       // Flag indicating whether a given address is whitelist or not
+}
+```
+
+
 Function to return the data feeds for a given data provider:
 ```
 getDataFeeds(address _address)
 ```
-which returns an array of `DataFeed` structs:
+
+ABI:
+```json
+{
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_address",
+          "type": "address"
+        }
+      ],
+      "name": "getDataFeeds",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "referenceAsset",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "referenceAssetUnified",
+              "type": "string"
+            },
+            {
+              "internalType": "uint8",
+              "name": "roundingDecimals",
+              "type": "uint8"
+            },
+            {
+              "internalType": "string",
+              "name": "dataSourceLink",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "active",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct IWhitelist.DataFeed[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+```
+
+This function returns an array of `DataFeed` structs:
 ```
 struct DataFeed {
-    string referenceAsset;
-    string referenceAssetUnified;
-    uint8 roundingDecimals;
-    string dataSourceLink;
-    bool active;
+    string referenceAsset;              // Name of the data feed provided by the data provider 
+    string referenceAssetUnified;       // Unified name for referenceAsset to account for different labels used for the same asset (e.g., XBT/USD, BTC-USD, BTCUSD)
+    uint8 roundingDecimals;             // The rounding precision that this data feed offers 
+    string dataSourceLink;              // Link to the data source description
+    bool active;                        // Flag indicating whether the data feed is active or not
 }
 ```
 
@@ -467,10 +561,88 @@ Function to return the data feed at a given index for a given data provider:
 getDataFeed(address _address, uint256 _index)
 ```
 
-Function to return whether a given collateral token:
+ABI:
+```json
+{
+    "inputs": [
+    {
+      "internalType": "address",
+      "name": "_address",
+      "type": "address"
+    },
+    {
+      "internalType": "uint256",
+      "name": "_index",
+      "type": "uint256"
+    }
+    ],
+    "name": "getDataFeed",
+    "outputs": [
+    {
+      "components": [
+        {
+          "internalType": "string",
+          "name": "referenceAsset",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "referenceAssetUnified",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "roundingDecimals",
+          "type": "uint8"
+        },
+        {
+          "internalType": "string",
+          "name": "dataSourceLink",
+          "type": "string"
+        },
+        {
+          "internalType": "bool",
+          "name": "active",
+          "type": "bool"
+        }
+      ],
+      "internalType": "struct IWhitelist.DataFeed",
+      "name": "",
+      "type": "tuple"
+    }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+```
+
+Function to return whether a given `_collateralToken` address is whitelisted or not:
 ```
 getCollateralToken(address _collateralToken)
 ```
+
+```json
+{
+    "inputs": [
+    {
+      "internalType": "address",
+      "name": "_collateralToken",
+      "type": "address"
+    }
+    ],
+    "name": "getCollateralToken",
+    "outputs": [
+    {
+      "internalType": "bool",
+      "name": "",
+      "type": "bool"
+    }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+```
+
 
 Two fields merit additional comment: 
 1. `referenceAsset` is the name provided by the data provider to be used as an identifier on their side 
