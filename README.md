@@ -429,11 +429,9 @@ ABI:
 ```
 
 ## DIVA whitelist 
-To protect users from malicious pools, DIVA token holders will maintain a whitelist of trusted and credible data providers which users can reference at pool creation. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process.
+To protect users from malicious pools, DIVA token holders will maintain a whitelist of trusted data providers along with the data feeds that they can provide whic users will be able to reference those at pool creation. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process. 
 
-* Data providers
-* Data feeds
-* Collateral tokens
+The whitelist also stores collateral tokens. Data providers are expected to report values for pools where those collateral tokens are used. For pools with non-whitelisted collateral tokens, whitelisted data providers are not expected to submit any values. This is to avoid that data providers are getting paid for their work with a worthless token.  
 
 * DIVA whitelist contract addresses:
    * Ropsten: 0x50D327C638B09d0A434185d63E7193060E6271B2
@@ -443,8 +441,43 @@ To protect users from malicious pools, DIVA token holders will maintain a whitel
    * Polygon: n/a
    * Mainnet: n/a
 
+### Getter functions
+Function to get the data provider name and whitelist status:
+```
+getDataProvider(address _address)
+```
+
+Function to return the data feeds for a given data provider:
+```
+getDataFeeds(address _address)
+```
+which returns an array of `DataFeed` structs:
+```
+struct DataFeed {
+    string referenceAsset;
+    string referenceAssetUnified;
+    uint8 roundingDecimals;
+    string dataSourceLink;
+    bool active;
+}
+```
+
+Function to return the data feed at a given index for a given data provider:
+```
+getDataFeed(address _address, uint256 _index)
+```
+
+Function to return whether a given collateral token:
+```
+getCollateralToken(address _collateralToken)
+```
+
+Two fields merit additional comment: 
+1. `referenceAsset` is the name provided by the data provider to be used as an identifier on their side 
+2. `referenceAssetUnified` is set by DIVA governance to consolidate different labels for the same asset (e.g., XBT/USD, BTC-USD) into one unified label (e.g., BTC/USD)
+
 ### Whitelist subgraph
-Whitelisted data providers, data feeds and collateral tokens can be accessed via the whitelist subgraph.  
+Whitelisted data providers, data feeds and collateral tokens can also be accessed via the whitelist subgraph.  
 * Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-ropsten
 * Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-rinkeby
 * Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-kovan
@@ -452,16 +485,10 @@ Whitelisted data providers, data feeds and collateral tokens can be accessed via
 * Polygon: n/a
 * Mainnet: n/a
 
-Two fields merit additional comment: 
-1. `referenceAsset` is the name provided by the data provider to be used as an identifier on their side 
-2. `referenceAssetUnified` is set by DIVA governance to consolidate different labels for the same asset (e.g., XBT/USD, BTC-USD) into one unified label (e.g., BTC/USD)
-
-## DIVA addresses
-* DIVA protocol:
-   * Ropsten: 0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf
-   * Rinkeby: 0x5EB926AdbE39029be962acD8D27130073C50A0e5
-   * Kovan: 0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba
-   * Mumbai: 0xCDc415B8DEA4d348ccCa42Aa178611F1dbCD2f69 
-   * Polygon: n/a 
-   * Mainnet: n/a
-
+## DIVA protocol addresses
+* Ropsten: 0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf
+* Rinkeby: 0x5EB926AdbE39029be962acD8D27130073C50A0e5
+* Kovan: 0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba
+* Mumbai: 0xCDc415B8DEA4d348ccCa42Aa178611F1dbCD2f69 
+* Polygon: n/a 
+* Mainnet: n/a
