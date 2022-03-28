@@ -16,8 +16,8 @@ If you don't have `nvm` installed yet, check out their [repo](https://github.com
 
 |Last updated on|Key changes|Updated by|
 |:---|:---|:---|
+|28 March 2022|Renamings and re-orderings as per [smart contract release notes](https://github.com/divaprotocol/diva-contracts/releases/tag/v0.9.0); ABIs updated; `createdAt` field added in subgraph to indicate time of pool creation; whitelist and DIVA smart contract addresses updated|@Walodja1987|
 |9 February 2022| Additional information added |@Walodja1987|
-|_Upcoming_|_`expiryDate` will be renamed to `expiryTime`, `createdAt` will be added to subgraph_||
 
 ## Table of contents
 1.  [Intro](#intro)
@@ -39,7 +39,7 @@ If you don't have `nvm` installed yet, check out their [repo](https://github.com
 # Intro
 Contingent pools created on DIVA expect one value input following pool expiration. This document describes how data providers can access the relevant data and interact with the protocol.
 
-Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) for more details about oracles and the settlement process in DIVA.
+Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) (still in DRAFT) for more details about oracles and the settlement process in DIVA.
 
 # DIVA queries
 Pool parameters are stored within the DIVA smart contract at the time of pool creation and can be queried in two ways:
@@ -58,8 +58,8 @@ ABI:
 {
     "inputs": [
       { "internalType": "uint256", 
-      "name": "_poolId", 
-      "type": "uint256" 
+        "name": "_poolId", 
+        "type": "uint256" 
       }
     ],
     "name": "getPoolParameters",
@@ -73,12 +73,8 @@ ABI:
           },
           {
             "internalType": "uint256",
-            "name": "inflection",
+            "name": "expiryTime",
             "type": "uint256"
-          },
-          { "internalType": "uint256", 
-            "name": "cap", 
-            "type": "uint256" 
           },
           { "internalType": "uint256", 
             "name": "floor", 
@@ -86,27 +82,16 @@ ABI:
           },
           {
             "internalType": "uint256",
-            "name": "supplyShortInitial",
+            "name": "inflection",
             "type": "uint256"
+          },
+          { "internalType": "uint256", 
+            "name": "cap", 
+            "type": "uint256" 
           },
           {
             "internalType": "uint256",
-            "name": "supplyLongInitial",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "supplyShort",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "supplyLong",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "expiryDate",
+            "name": "supplyInitial",
             "type": "uint256"
           },
           {
@@ -126,12 +111,7 @@ ABI:
           },
           {
             "internalType": "uint256",
-            "name": "collateralBalanceShort",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "collateralBalanceLong",
+            "name": "collateralBalance",
             "type": "uint256"
           },
           {
@@ -170,7 +150,7 @@ ABI:
           },
           {
             "internalType": "address",
-            "name": "dataFeedProvider",
+            "name": "dataProvider",
             "type": "address"
           },
           {
@@ -183,10 +163,7 @@ ABI:
             "name": "settlementFee",
             "type": "uint256"
           },
-          { "internalType": "uint256", 
-            "name": "capacity", 
-            "type": "uint256" 
-          }
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" }
         ],
         "internalType": "struct LibDiamond.Pool",
         "name": "",
@@ -195,26 +172,22 @@ ABI:
     ],
     "stateMutability": "view",
     "type": "function"
-}
+  }
 ```
 
 The following Pool struct is returned when `getPoolParameters` is called:
 ```
 struct Pool {
     string referenceAsset;                      // Reference asset string (e.g., "BTC/USD", "ETH Gas Price (Wei)", "TVL Locked in DeFi", etc.)
-    uint256 inflection;                         // Threshold for rebalancing between the long and the short side of the pool
-    uint256 cap;                                // Reference asset value at or above which all collateral will end up in the long pool
+    uint256 expiryTime;                         // Expiration time of the pool and as of time of final value expressed as a unix timestamp in seconds
     uint256 floor;                              // Reference asset value at or below which all collateral will end up in the short pool 
-    uint256 supplyShortInitial;                 // Short token supply at pool creation
-    uint256 supplyLongInitial;                  // Long token supply at pool creation
-    uint256 supplyShort;                        // Current short token supply
-    uint256 supplyLong;                         // Current long token supply
-    uint256 expiryDate;                         // Expiration time of the pool and as of time of final value expressed as a unix timestamp in seconds
+    uint256 inflection;                         // Threshold for rebalancing between the long and the short side of the pool
+    uint256 cap;                                // Reference asset value at or above which all collateral will end up in the long pool    
+    uint256 supplyInitial;                      // Initial short and long token supply
     address collateralToken;                    // Address of ERC20 collateral token
     uint256 collateralBalanceShortInitial;      // Collateral balance of short side at pool creation
     uint256 collateralBalanceLongInitial;       // Collateral balance of long side at pool creation
-    uint256 collateralBalanceShort;             // Current collateral balance of short side
-    uint256 collateralBalanceLong;              // Current collateral balance of long side
+    uint256 collateralBalance;                  // Current total pool collateral balance
     address shortToken;                         // Short position token address
     address longToken;                          // Long position token address
     uint256 finalReferenceValue;                // Reference asset value at the time of expiration
@@ -222,7 +195,7 @@ struct Pool {
     uint256 redemptionAmountLongToken;          // Payout amount per long position token
     uint256 redemptionAmountShortToken;         // Payout amount per short position token
     uint256 statusTimestamp;                    // Timestamp of status change
-    address dataFeedProvider;                   // Address of data feed provider
+    address dataProvider;                       // Address of data provider
     uint256 redemptionFee;                      // Redemption fee prevailing at the time of pool creation
     uint256 settlementFee;                      // Settlement fee prevailing at the time of pool creation
     uint256 capacity;                           // Maximum collateral that the pool can accept; 0 for unlimited
@@ -232,19 +205,15 @@ struct Pool {
 Example response with values:
 ```
     referenceAsset: 'ETH/USDT',
+    expiryTime: BigNumber { value: "1642021490" },
+    floor: BigNumber { value: "17000000000000000000" },
     inflection: BigNumber { value: "22000000000000000000" },
     cap: BigNumber { value: "27000000000000000000" },
-    floor: BigNumber { value: "17000000000000000000" },
-    supplyShortInitial: BigNumber { value: "105000000000000000000" },
-    supplyLongInitial: BigNumber { value: "105000000000000000000" },
-    supplyShort: BigNumber { value: "105000000000000000000" },
-    supplyLong: BigNumber { value: "105000000000000000000" },
-    expiryDate: BigNumber { value: "1642021490" },
+    supplyInitial: BigNumber { value: "210000000000000000000" },
     collateralToken: '0xaD6D458402F60fD3Bd25163575031ACDce07538D',
     collateralBalanceShortInitial: BigNumber { value: "20000000000000000" },
     collateralBalanceLongInitial: BigNumber { value: "10000000000000000" },
-    collateralBalanceShort: BigNumber { value: "20000000000000000" },
-    collateralBalanceLong: BigNumber { value: "10000000000000000" },
+    collateralBalance: BigNumber { value: "40000000000000000" },
     shortToken: '0x43a9f0adaa48F4D42BdFd0A4761611a468733A3d',
     longToken: '0x0881c26507867d5020531b744D285778432c7DAc',
     finalReferenceValue: BigNumber { value: "85000000000000000000" },
@@ -252,7 +221,7 @@ Example response with values:
     redemptionAmountLongToken: BigNumber { value: "284857142857142" },
     redemptionAmountShortToken: BigNumber { value: "0" },
     statusTimestamp: BigNumber { value: "1642075118" },
-    dataFeedProvider: '0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b',
+    dataProvider: '0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b',
     redemptionFee: BigNumber { value: "2500000000000000" },
     settlementFee: BigNumber { value: "500000000000000" },
     capacity: BigNumber { value: "0" }
@@ -271,8 +240,8 @@ The DIVA subgraph has additional information that is not included in [`getPoolPa
 
 The following fields include relevant information for data providers:
 * `referenceAsset`
-* `expiryDate` 
-* `dataFeedProvider` 
+* `expiryTime` 
+* `dataProvider` 
 * `finalReferenceValue`
 * `statusFinalReferenceValue`
 * `collateralToken`
@@ -282,6 +251,7 @@ The following fields include relevant information for data providers:
 * `collateralDecimals` (in subgraph only)
 * `challengedBy` (in subgraph only)
 * `proposedFinalReferenceValue` (in subgraph only)
+* `createdAt` (in subgraph only)
 
 Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets linked to the pool are tracking. 
 
@@ -328,12 +298,12 @@ ABI:
 
 Once a value has been submitted, `statusFinalReferenceValue` switches from `0` (Open) to `1` (Submitted) or `3` (Confirmed) depending on whether the [dispute mechanism](#optional-dispute-mechanism) was activated or not. The data provider cannot submit a second value unless the status changes to `2` (Challenged) which is only possible when the dispute mechanism was activated. Once the value reaches Confirmed stage, the value is considered final and no changes can be made anymore.
 
-Note that DIVA does not prevent users from creating pools with an expiry date in the past. Whitelisted data providers can but are not expected to provide any value for such pools. The time of pool creation will be made available in the subgraph in the next release.
+Note that DIVA does not prevent users from creating pools with an expiry time in the past. Whitelisted data providers can but are not expected to provide any value for such pools. The time of pool creation is available in the subgraph under the `createdAt` field.
 
 # Challenges
 DIVA integrates an optional dispute/challenge mechanism which can be activated on demand (e.g., when manual oracles such as a human reporter are used). A data provider can indicate via `_allowChallenge` parameter at the time of submission whether the submitted value can be challenged or not. To avoid surprises for users, data providers can wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be challenged or not. 
 
-Each position token holder of a pool can submit a challenge including a value that they deem correct. This value is not stored in the DIVA smart contract but emitted as part of the `StatusChanged` event and indexed in the subgraph. Data providers should leverage this information as part of their review process. 
+Each position token holder of a pool can submit a challenge including a value that they deem correct. This value is not stored in the DIVA smart contract but emitted as part of the `StatusChanged` event and indexed in the subgraph. Data providers should leverage this information as part of their review process (only relevant if challenge is enabled by the data provider). 
 
 # Settlement fees
 Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool and can be claimed by the corresponding data provider at any point in time. The data provider can also transfer the fee claim to another recipient. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract.  
@@ -342,7 +312,7 @@ Data providers are rewarded with a settlement fee of 0.05% of the total collater
 The claimable fee amount can be obtained by calling the following function:
 ```
 getClaims(
-    address _collateralToken, 
+    address _collateralToken,
     address _recipient
 )
 ```
@@ -445,16 +415,36 @@ ABI:
 }
 ```
 
+All fee claims are stored in the subgraph inside the `FeeRecipient` entity. Example subgraph query to get the fees claims for a given data provider address: 
+
+```json
+{
+	feeRecipients(where: {id: "0x9adefeb576dcf52f5220709c1b267d89d5208d78"}) {
+    id
+    collateralTokens {
+      amount
+      collateralToken {
+        id
+        name
+        symbol
+      }
+    }
+  }
+}
+```
+
+IMPORTANT: the `id` in the `where` condition represents the address of the fee recipient and needs to be in lower case without any capital letters.  
+
 # Whitelist queries
 To protect users from malicious pools, DIVA token holders maintain a whitelist of trusted data providers along with the data feeds that they can provide. Users will be able to reference those at pool creation. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process. 
 
 In addition to data providers and data feeds, the whitelist contract also stores collateral tokens. Whitelisted data providers are expected to report values for pools where whitelisted collateral tokens are used. For pools with non-whitelisted collateral tokens, data providers are not expected to submit any values. This is to prevent that data providers are abused and paid in worthless tokens.  
 
-DIVA whitelist smart contract addresses:
-* Ropsten: 0x50D327C638B09d0A434185d63E7193060E6271B2
-* Rinkeby: 0xF1a36B324AB5d549824a805ccd04Fa4d2e598E6b
-* Kovan: 0xe3343218CAa73AE523D40936D64E7f335AfDe8f9
-* Mumbai: 0xcA65fcD37fA8BA5f79f5CB3E68F4fCD426ccE5ef 
+DIVA whitelist smart contract addresses (same address across networks):
+* Ropsten: 0x2A5c18f001719f4663ab8d3E65E3E54182376B20
+* Rinkeby: 0x2A5c18f001719f4663ab8d3E65E3E54182376B20
+* Kovan: 0x2A5c18f001719f4663ab8d3E65E3E54182376B20
+* Mumbai: 0x2A5c18f001719f4663ab8d3E65E3E54182376B20 
 * Polygon: n/a
 * Mainnet: n/a
 
@@ -469,15 +459,15 @@ getDataProvider(address _address)
 ABI:
 ```json
 {
-    "inputs": [
+  "inputs": [
     {
       "internalType": "address",
-      "name": "_address",
+      "name": "_dataProvider",
       "type": "address"
     }
-    ],
-    "name": "getDataProvider",
-    "outputs": [
+  ],
+  "name": "getDataProvider",
+  "outputs": [
     {
       "components": [
         {
@@ -487,7 +477,7 @@ ABI:
         },
         {
           "internalType": "bool",
-          "name": "whitelisted",
+          "name": "publicTrigger",
           "type": "bool"
         }
       ],
@@ -495,16 +485,16 @@ ABI:
       "name": "",
       "type": "tuple"
     }
-    ],
-    "stateMutability": "view",
-    "type": "function"
+  ],
+  "stateMutability": "view",
+  "type": "function"
 }
 ```
 This function returns the following `DataProvider` struct:
 ```
 struct DataProvider {
     string name;            // Name of data provider
-    bool whitelisted;       // Flag indicating whether a given address is whitelist or not
+    bool publicTrigger;     // 1 if anyone can trigger the oracle to submit the final value, 0 if only the owner of the address can do it 
 }
 ```
 
@@ -517,51 +507,51 @@ getDataFeeds(address _address)
 ABI:
 ```json
 {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_address",
-          "type": "address"
-        }
-      ],
-      "name": "getDataFeeds",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "string",
-              "name": "referenceAsset",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "referenceAssetUnified",
-              "type": "string"
-            },
-            {
-              "internalType": "uint8",
-              "name": "roundingDecimals",
-              "type": "uint8"
-            },
-            {
-              "internalType": "string",
-              "name": "dataSourceLink",
-              "type": "string"
-            },
-            {
-              "internalType": "bool",
-              "name": "active",
-              "type": "bool"
-            }
-          ],
-          "internalType": "struct IWhitelist.DataFeed[]",
-          "name": "",
-          "type": "tuple[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
+  "inputs": [
+    {
+      "internalType": "address",
+      "name": "_dataProvider",
+      "type": "address"
     }
+  ],
+  "name": "getDataFeeds",
+  "outputs": [
+    {
+      "components": [
+        {
+          "internalType": "string",
+          "name": "referenceAsset",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "referenceAssetUnified",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "roundingDecimals",
+          "type": "uint8"
+        },
+        {
+          "internalType": "string",
+          "name": "dataSourceLink",
+          "type": "string"
+        },
+        {
+          "internalType": "bool",
+          "name": "active",
+          "type": "bool"
+        }
+      ],
+      "internalType": "struct IWhitelist.DataFeed[]",
+      "name": "",
+      "type": "tuple[]"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+}
 ```
 
 This function returns an array of `DataFeed` structs:
@@ -583,10 +573,10 @@ getDataFeed(address _address, uint256 _index)
 ABI:
 ```json
 {
-    "inputs": [
+  "inputs": [
     {
       "internalType": "address",
-      "name": "_address",
+      "name": "_dataProvider",
       "type": "address"
     },
     {
@@ -594,9 +584,9 @@ ABI:
       "name": "_index",
       "type": "uint256"
     }
-    ],
-    "name": "getDataFeed",
-    "outputs": [
+  ],
+  "name": "getDataFeed",
+  "outputs": [
     {
       "components": [
         {
@@ -629,9 +619,9 @@ ABI:
       "name": "",
       "type": "tuple"
     }
-    ],
-    "stateMutability": "view",
-    "type": "function"
+  ],
+  "stateMutability": "view",
+  "type": "function"
 }
 ```
 
@@ -672,9 +662,9 @@ Whitelisted data providers, data feeds and collateral tokens can also be accesse
 * Mainnet: n/a
 
 # DIVA protocol addresses
-* Ropsten: 0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf
-* Rinkeby: 0x5EB926AdbE39029be962acD8D27130073C50A0e5
-* Kovan: 0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba
-* Mumbai: 0xCDc415B8DEA4d348ccCa42Aa178611F1dbCD2f69 
+* Ropsten: 0x07F0293a07703c583F4Fb4ce3aC64043732eF3bf
+* Rinkeby: 0xa1fa77354D7810A6355583b566E5adB29C3f7733
+* Kovan: 0x607228ebB95aa097648Fa8b24dF8807684BBF101
+* Mumbai: 0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B 
 * Polygon: n/a 
 * Mainnet: n/a
