@@ -27,7 +27,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         uint256 _expiryDate = _params.expiryDate;
 
         // Tellor query
-        bytes memory _b = abi.encode("divaProtocolPolygon", abi.encode(_poolId)); 
+        bytes memory _b = abi.encode("DIVAProtocolPolygon", abi.encode(_poolId)); 
         bytes32 _queryID = keccak256(_b);
         (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - _minPeriodUndisputed); // takes the latest value that is undisputed for at least an hour
 
