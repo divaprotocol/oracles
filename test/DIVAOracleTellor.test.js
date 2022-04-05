@@ -10,7 +10,7 @@ describe('DIVAOracleTellor', () => {
   let divaOracleTellor;
   let tellorPlayground;
   let tellorPlaygroundAddress = '0xF281e2De3bB71dE348040b10B420615104359c10' // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
-  let divaAddress = '0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf' // Kovan: '0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba' deployed in Kovan block 29190631, Ropsten: '0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf' deployed in Ropsten block n/a (10 Jan 2022, before block 11812205)
+  let divaAddress = '0x07F0293a07703c583F4Fb4ce3aC64043732eF3bf' // Ropsten
   let settlementFeeRecipient;
   let referenceAsset = "BTC/USD";
   let finalReferenceValue = parseEther('42000');
@@ -79,7 +79,7 @@ describe('DIVAOracleTellor', () => {
           // Tellor value submission preparation
           abiCoder = new ethers.utils.AbiCoder
           queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])
-          queryData = abiCoder.encode(['string','bytes'], ['divaProtocolPolygon', queryDataArgs])
+          queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
           queryId = ethers.utils.keccak256(queryData)
           oracleValue = abiCoder.encode(['uint256'],[finalReferenceValue])
 
