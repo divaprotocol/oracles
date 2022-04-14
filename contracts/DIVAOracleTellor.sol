@@ -73,10 +73,17 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
      */
     function _sliceUint(bytes memory _b) private pure returns (uint256 _x) {
         uint256 _number = 0;
-        for (uint256 _i = 0; _i < _b.length; _i++) {
+        uint256 _length = _b.length;
+        for (uint256 _i = 0; _i < _length; ) {
             _number = _number * 2**8;
             _number = _number + uint8(_b[_i]);
+        
+        unchecked {
+                i++;
+            }
+
         }
+
         return _number;
     }
 
