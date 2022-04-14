@@ -49,7 +49,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         uint256 _formattedFinalReferenceValue = _sliceUint(_finalReferenceValue);
         uint256 _formattedCollateralValueUSD = _sliceUint(_collateralValueUSD); // TODO: (Tim)
         
-        // Forward final value to DIVA contract
+        // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(_poolId, _formattedFinalReferenceValue, _challengeable);
 
         // Get the current fee allocated to this contract address
