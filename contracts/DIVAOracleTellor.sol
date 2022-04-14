@@ -8,41 +8,54 @@ import "./interfaces/IDIVA.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
 
-    bool private _challengeable;
+    // Ordered to optimize storage
+    uint256 private _maxFeeAmountUSD;
+    address private _excessFeeRecipient;
     address private _tellorAddress;
-    address private _settlementFeeRecipient;
-    uint32 private _minPeriodUndisputed;
+    uint96 private _minPeriodUndisputed;
+    bool private immutable _challengeable;
 
-    constructor(address payable tellorAddress_, address settlementFeeRecipient_, uint32 minPeriodUndisputed_) UsingTellor(tellorAddress_) {
+    constructor(
+        address payable tellorAddress_, 
+        address excessFeeRecipient_, 
+        uint96 minPeriodUndisputed_, 
+        uint256 maxFeeAmountUSD_
+    ) UsingTellor(tellorAddress_) {
         _tellorAddress = tellorAddress_;
         _challengeable = false;
-        _settlementFeeRecipient = settlementFeeRecipient_;
+        _excessFeeRecipient = excessFeeRecipient_;
         _minPeriodUndisputed = minPeriodUndisputed_;
+        _maxFeeAmountUSD = maxFeeAmountUSD_;
+
     }
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override {
         IDIVA _diva = IDIVA(_divaDiamond);
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);   // updated the Pool struct based on the latest contracts
 
         uint256 _expiryDate = _params.expiryDate;
 
         // Tellor query
         bytes memory _b = abi.encode("DIVAProtocolPolygon", abi.encode(_poolId)); 
         bytes32 _queryID = keccak256(_b);
-        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - _minPeriodUndisputed); // takes the latest value that is undisputed for at least an hour
+        (, bytes memory _finalReferenceValue, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - _minPeriodUndisputed); // takes the latest value that is undisputed for at least an hour
+
+        // TODO: Retrieve both values, final reference value and USD value of the collateral 
+        // TODO: query reporter that should receive the fee (Tim)
 
         require(_timestampRetrieved >= _expiryDate, "Tellor: value set before expiry"); // if value disputed, timestampRetrieved will be 0 and hence this test will not pass, hence _ifRetrieve = true check not needed
-        uint256 _formattedValue = _sliceUint(_value);
-
+        uint256 _formattedFinalReferenceValue = _sliceUint(_finalReferenceValue);
+        // uint256 _formattedCollateralValueUSD = _sliceUint(_value); // TODO
+        
         // Forward final value to DIVA contract
-        _diva.setFinalReferenceValue(_poolId, _formattedValue, _challengeable);
+        _diva.setFinalReferenceValue(_poolId, _formattedFinalReferenceValue, _challengeable);
 
-        emit FinalReferenceValueSet(_poolId, _formattedValue, _expiryDate, _timestampRetrieved);
+        emit FinalReferenceValueSet(_poolId, _formattedFinalReferenceValue, _expiryDate, _timestampRetrieved);
     }
 
-    function transferFeeClaim(address _divaDiamond, address _collateralToken, uint256 _amount) external override {
+    function _transferFeeClaim(address _divaDiamond, address _collateralToken, uint256 _amount) internal {
         // Throws within DIVA contract if `_amount` exceeds the available fee claim
-        IDIVA(_divaDiamond).transferFeeClaim(_settlementFeeRecipient, _collateralToken, _amount);
+        IDIVA(_divaDiamond).transferFeeClaim(_excessFeeRecipient, _collateralToken, _amount);
     }
 
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override onlyOwner {
@@ -58,8 +71,8 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         return _tellorAddress;
     }
 
-    function getSettlementFeeRecipient() external view override returns (address) {
-        return _settlementFeeRecipient;
+    function getexcessFeeRecipient() external view override returns (address) {
+        return _excessFeeRecipient;
     }
 
     function getMinPeriodUndisputed() external view override returns (uint32) {
