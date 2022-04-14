@@ -41,14 +41,13 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         bytes memory _b = abi.encode("DIVAProtocolPolygon", abi.encode(_poolId)); 
         bytes32 _queryID = keccak256(_b);
         (, bytes memory _finalReferenceValue, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - _minPeriodUndisputed); // takes the latest value that is undisputed for at least an hour
-
-        // TODO: Retrieve both values, final reference value and USD value of the collateral 
-        // TODO: query reporter that should receive the fee (Tim)
+        
+        address _reporter; // TODO: (Tim)
 
         require(_timestampRetrieved >= _expiryDate, "Tellor: value set before expiry"); // if value disputed, timestampRetrieved will be 0 and hence this test will not pass, hence _ifRetrieve = true check not needed
         
         uint256 _formattedFinalReferenceValue = _sliceUint(_finalReferenceValue);
-        uint256 _formattedCollateralValueUSD = _sliceUint(_collateralValueUSD); // TODO
+        uint256 _formattedCollateralValueUSD = _sliceUint(_collateralValueUSD); // TODO: (Tim)
         
         // Forward final value to DIVA contract
         _diva.setFinalReferenceValue(_poolId, _formattedFinalReferenceValue, _challengeable);
@@ -73,6 +72,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override onlyOwner {
         require(_newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800, "Tellor: out of range");
         _minPeriodUndisputed = _newMinPeriodUndisputed;
+    }
+
+    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external override onlyOwner {
+        _maxFeeAmountUSD = _newMaxFeeAmountUSD;
     }
     
     function challengeable() external view override returns (bool) {

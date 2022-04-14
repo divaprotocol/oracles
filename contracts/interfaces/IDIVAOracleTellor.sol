@@ -34,6 +34,12 @@ interface IDIVAOracleTellor {
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external;
 
     /**
+     * @dev Function to update `_maxFeeAmountUSD`. Only callable by contract owner.
+     * @param _newMaxFeeAmountUSD New amount expressed as an integer with 18 decimals.
+     */
+    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external
+
+    /**
      * @dev Returns whether the oracle's data feed is challengeable or not.
      * Will return false in that implementation.
      */
