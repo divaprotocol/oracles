@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
+import "./libraries/SafeDecimalMath.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
 
@@ -44,11 +45,23 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         // TODO: query reporter that should receive the fee (Tim)
 
         require(_timestampRetrieved >= _expiryDate, "Tellor: value set before expiry"); // if value disputed, timestampRetrieved will be 0 and hence this test will not pass, hence _ifRetrieve = true check not needed
+        
         uint256 _formattedFinalReferenceValue = _sliceUint(_finalReferenceValue);
-        // uint256 _formattedCollateralValueUSD = _sliceUint(_value); // TODO
+        uint256 _formattedCollateralValueUSD = _sliceUint(_collateralValueUSD); // TODO
         
         // Forward final value to DIVA contract
         _diva.setFinalReferenceValue(_poolId, _formattedFinalReferenceValue, _challengeable);
+
+        // Get the current fee allocated to this contract address
+        _feeClaim = _diva.getClaims(_params.collateralToken, address(this))      // denominated in collateral token
+        _feeClaimUSD = _feeClaim.multiplyDecimals(_formattedCollateralValueUSD)  // denominated in USD
+        if (_feeClaimsUSD > _maxFeeAmountUSD) {
+            _feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralValueUSD);
+            _feeToExcessRecipient = _feeClaim - _feeToReporter;
+        } else {
+            _feeToReporter = _feeClaim;
+            _feeToExcessRecipient = 0;
+        }
 
         emit FinalReferenceValueSet(_poolId, _formattedFinalReferenceValue, _expiryDate, _timestampRetrieved);
     }
@@ -71,7 +84,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         return _tellorAddress;
     }
 
-    function getexcessFeeRecipient() external view override returns (address) {
+    function getExcessFeeRecipient() external view override returns (address) {
         return _excessFeeRecipient;
     }
 
