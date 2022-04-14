@@ -8,6 +8,7 @@ import "./interfaces/IDIVA.sol";
 import "./libraries/SafeDecimalMath.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
+    using SafeDecimalMath for uint256;
 
     // Ordered to optimize storage
     uint256 private _maxFeeAmountUSD;
@@ -55,20 +56,18 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         // Get the current fee allocated to this contract address
         _feeClaim = _diva.getClaims(_params.collateralToken, address(this))      // denominated in collateral token
         _feeClaimUSD = _feeClaim.multiplyDecimals(_formattedCollateralValueUSD)  // denominated in USD
-        if (_feeClaimsUSD > _maxFeeAmountUSD) {
+        if (_feeClaimsUSD > _maxFeeAmountUSD) {     // check whether there could be any rounding issues resulting in _feeToExcessRecipient < 0
             _feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralValueUSD);
             _feeToExcessRecipient = _feeClaim - _feeToReporter;
         } else {
             _feeToReporter = _feeClaim;
             _feeToExcessRecipient = 0;
         }
+        
+        _diva.transferFeeClaim(_reporter, _params.collateralToken, _feeToReporter)
+        _diva.transferFeeClaim(_excessFeeRecipient, _params.collateralToken, _feeToExcessRecipient)
 
         emit FinalReferenceValueSet(_poolId, _formattedFinalReferenceValue, _expiryDate, _timestampRetrieved);
-    }
-
-    function _transferFeeClaim(address _divaDiamond, address _collateralToken, uint256 _amount) internal {
-        // Throws within DIVA contract if `_amount` exceeds the available fee claim
-        IDIVA(_divaDiamond).transferFeeClaim(_excessFeeRecipient, _collateralToken, _amount);
     }
 
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override onlyOwner {
