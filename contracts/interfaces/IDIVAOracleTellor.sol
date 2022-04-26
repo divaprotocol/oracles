@@ -27,7 +27,7 @@ interface IDIVAOracleTellor {
         external;
 
     /**
-     * @dev Function to update `minPeriodUndisputed` with minimum value of  
+     * @dev Function to update `minPeriodUndisputed` with minimum value of
      * 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds).
      * @param _newMinPeriodUndisputed New `minPeriodUndisputed` in seconds.
      */
@@ -37,7 +37,7 @@ interface IDIVAOracleTellor {
      * @dev Function to update `_maxFeeAmountUSD`. Only callable by contract owner.
      * @param _newMaxFeeAmountUSD New amount expressed as an integer with 18 decimals.
      */
-    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external
+    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
 
     /**
      * @dev Returns whether the oracle's data feed is challengeable or not.
@@ -56,8 +56,8 @@ interface IDIVAOracleTellor {
     function getSettlementFeeRecipient() external view returns (address);
 
     /**
-     * @dev Returns the minimum period (in seconds) a value has to remain 
-     * undisputed in order to be considered valid 
+     * @dev Returns the minimum period (in seconds) a value has to remain
+     * undisputed in order to be considered valid
      */
     function getMinPeriodUndisputed() external view returns (uint32);
 }
