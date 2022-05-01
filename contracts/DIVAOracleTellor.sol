@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
@@ -15,13 +15,23 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
     uint256 private _maxFeeAmountUSD;       // expressed as an integer with 18 decimals
     address private _excessFeeRecipient;
     address private _tellorAddress;
-    uint96 private _minPeriodUndisputed;
+    uint32 private _minPeriodUndisputed;
     bool private immutable _challengeable;
+
+    // Temp struct to avoid stack too deep error
+    struct Temp {
+        uint8 decimals;
+        uint256 scaling;
+        uint256 feeClaim;
+        uint256 feeClaimUSD;
+        uint256 feeToReporter;
+        uint256 feeToExcessRecipient;
+    }
 
     constructor(
         address payable tellorAddress_,
         address excessFeeRecipient_,
-        uint96 minPeriodUndisputed_,
+        uint32 minPeriodUndisputed_,
         uint256 maxFeeAmountUSD_
     ) UsingTellor(tellorAddress_) {
         _tellorAddress = tellorAddress_;
@@ -30,6 +40,8 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         _minPeriodUndisputed = minPeriodUndisputed_;
         _maxFeeAmountUSD = maxFeeAmountUSD_;
     }
+
+    
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override {
         IDIVA _diva = IDIVA(_divaDiamond);
@@ -78,24 +90,29 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(_poolId, _formattedFinalReferenceValue, _challengeable);
 
-        uint8 _decimals = IERC20Metadata(_params.collateralToken).decimals();
-        uint256 _scaling = uint256(10**(18 - _decimals)); 
+        Temp memory _temp;
+
+        _temp.decimals = IERC20Metadata(_params.collateralToken).decimals();
+        _temp.scaling = uint256(10**(18 - _temp.decimals)); 
 
         // Get the current fee claim allocated to this contract address (msg.sender)
-        uint256 _feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token
-        uint256 _feeClaimUSD = (_feeClaim * _scaling).multiplyDecimals(_formattedCollateralValueUSD);  // denominated in USD; integer with 18 decimals
-        uint256 _feeToReporter;
-        uint256 _feeToExcessRecipient;
-        if (_feeClaimUSD > _maxFeeAmountUSD) {     
-            _feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralValueUSD) / _scaling; // integer with collateral token decimals
-            _feeToExcessRecipient = _feeClaim - _feeToReporter; // integer with collateral token decimals
+        _temp.feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token
+        _temp.feeClaimUSD = (_temp.feeClaim * _temp.scaling).multiplyDecimal(_formattedCollateralValueUSD);  // denominated in USD; integer with 18 decimals
+        _temp.feeToReporter;
+        _temp.feeToExcessRecipient;
+        
+        if (_temp.feeClaimUSD > _maxFeeAmountUSD) {     
+            _temp.feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralValueUSD) / _temp.scaling - 1; // integer with collateral token decimals
+            _temp.feeToExcessRecipient = _temp.feeClaim - _temp.feeToReporter; // integer with collateral token decimals
         } else {
-            _feeToReporter = _feeClaim;
-            _feeToExcessRecipient = 0;
+            _temp.feeToReporter = _temp.feeClaim;
+            _temp.feeToExcessRecipient = 0;
         }
+        
 
-        _diva.transferFeeClaim(_reporter, _params.collateralToken, _feeToReporter);
-        _diva.transferFeeClaim(_excessFeeRecipient, _params.collateralToken, _feeToExcessRecipient);
+        // Transfer fee claim to reporter and excessFeeRecipient
+        _diva.transferFeeClaim(_reporter, _params.collateralToken, _temp.feeToReporter);
+        _diva.transferFeeClaim(_excessFeeRecipient, _params.collateralToken, _temp.feeToExcessRecipient);
 
         emit FinalReferenceValueSet(_poolId, _formattedFinalReferenceValue, _expiryTime, _timestampRetrieved);
     }

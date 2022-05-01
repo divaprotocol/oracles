@@ -18,10 +18,7 @@ const MNEMONIC = process.env.MNEMONIC
      solidity: {
        compilers: [
          {
-           version: "0.8.3"
-         },
-         {
-           version: "0.8.4"
+           version: "0.8.9"
          },
        ]
      },

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.9;
 
 interface IDIVAOracleTellor {
     /**
@@ -51,13 +51,13 @@ interface IDIVAOracleTellor {
     function getTellorAddress() external view returns (address);
 
     /**
-     * @dev Returns the settlement fee recipient
+     * @dev Returns the excess fee recipient address
      */
-    function getSettlementFeeRecipient() external view returns (address);
+    function getExcessFeeRecipient() external view returns (address);
 
     /**
-     * @dev Returns the minimum period (in seconds) a value has to remain
-     * undisputed in order to be considered valid
+     * @dev Returns the minimum period (in seconds) a reported value has 
+     * to remain undisputed in order to be considered valid
      */
     function getMinPeriodUndisputed() external view returns (uint32);
 }
