@@ -1,10 +1,10 @@
-// DIVA contract addresses on different networks
+// DIVA contract addresses on different networks (v0.9.0)
 const addresses = {
-    rinkeby: "0x5EB926AdbE39029be962acD8D27130073C50A0e5",
-    ropsten: "0x6455A2Ae3c828c4B505b9217b51161f6976bE7cf", 
-    polygon: "0xe3343218CAa73AE523D40936D64E7f335AfDe8f9", 
-    kovan: "0xa8450f6cDbC80a07Eb593E514b9Bd5503c3812Ba", 
-    polygon_mumbai: "0xCDc415B8DEA4d348ccCa42Aa178611F1dbCD2f69"
+    rinkeby: "0xa1fa77354D7810A6355583b566E5adB29C3f7733",
+    ropsten: "0x07F0293a07703c583F4Fb4ce3aC64043732eF3bf", 
+    polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8", 
+    kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101", 
+    polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B"
   }
 
 // Status mapping

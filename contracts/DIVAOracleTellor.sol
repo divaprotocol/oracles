@@ -108,7 +108,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
             _temp.feeToReporter = _temp.feeClaim;
             _temp.feeToExcessRecipient = 0;
         }
-        
 
         // Transfer fee claim to reporter and excessFeeRecipient
         _diva.transferFeeClaim(_reporter, _params.collateralToken, _temp.feeToReporter);

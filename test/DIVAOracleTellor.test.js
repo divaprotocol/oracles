@@ -5,18 +5,21 @@ const DIVA_ABI = require('../contracts/abi/DIVA.json');
 const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture")
 const { parseEther, parseUnits } = require('@ethersproject/units');
 const { advanceTime, ONE_HOUR } = require('./utils.js')
+const { addresses } = require('../utils/constants') // v0.9.0
 
 describe('DIVAOracleTellor', () => {
   let divaOracleTellor;
   let tellorPlayground;
   let tellorPlaygroundAddress = '0xF281e2De3bB71dE348040b10B420615104359c10' // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
-  let divaAddress = '0x07F0293a07703c583F4Fb4ce3aC64043732eF3bf' // Ropsten
-  let settlementFeeRecipient;
+  let divaAddress = addresses['ropsten'] 
+  let excessFeeRecipient;
   let referenceAsset = "BTC/USD";
   let finalReferenceValue = parseEther('42000');
+  let collateralValueUSD = parseEther('1.14');
+  let maxFeeAmountUSD = parseEther('10');
 
   beforeEach(async () => {
-    [settlementFeeRecipient] = await ethers.getSigners();
+    [user1, user2, reporter1, reporter2, excessFeeRecipient] = await ethers.getSigners();
     await hre.network.provider.request({
       method: "hardhat_reset",
       params: [{forking: {
@@ -26,7 +29,7 @@ describe('DIVAOracleTellor', () => {
     });
 
     const divaOracleTellorFactory = await ethers.getContractFactory("DIVAOracleTellor");
-    divaOracleTellor = await divaOracleTellorFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient.address, ONE_HOUR);
+    divaOracleTellor = await divaOracleTellorFactory.deploy(tellorPlaygroundAddress, excessFeeRecipient.address, ONE_HOUR, maxFeeAmountUSD);
     tellorPlayground = await ethers.getContractAt("TellorPlayground", tellorPlaygroundAddress);
   });
 
@@ -44,7 +47,7 @@ describe('DIVAOracleTellor', () => {
         diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
         userStartCollateralTokenBalance = parseEther("1000000");
         initialCollateralTokenAllowance = parseEther("1000000");
-        erc20 = await erc20DeployFixture("DummyToken", "DCT", userStartCollateralTokenBalance);
+        erc20 = await erc20DeployFixture("DummyToken", "DCT", userStartCollateralTokenBalance, user1.address, 18); 
         await erc20.approve(diva.address, initialCollateralTokenAllowance);
         erc20Decimals = await erc20.decimals();
 
@@ -52,40 +55,39 @@ describe('DIVAOracleTellor', () => {
         currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
         await diva.createContingentPool(
             [
+              referenceAsset,                   // reference asset
+              currentBlockTimestamp,            // expiryTime; Tellor timestamp: 1642100218
+              parseEther("40000"),              // floor
               parseEther("43000"),              // inflection
               parseEther("46000"),              // cap
-              parseEther("40000"),              // floor
-              parseUnits("0.1", erc20Decimals), // collateral balance short
-              parseUnits("0.1", erc20Decimals), // collateral balance long
-              currentBlockTimestamp,            // expiry; Tellor timestamp: 1642100218
-              parseEther("200"),                // short token supply
-              parseEther("200"),                // long token supply
-              referenceAsset,                   // reference asset
+              parseUnits("100", erc20Decimals), // collateral balance short
+              parseUnits("100", erc20Decimals), // collateral balance long              
+              parseEther("100"),                // supplyPositionToken
               erc20.address,                    // collateral token
-              divaOracleTellor.address,             // data feed provider
+              divaOracleTellor.address,         // data feed provider
               0                                 // capacity
             ]
-          );
+        );
+        console.log("9*** HAHAHHA")
+        latestPoolId = await diva.getLatestPoolId()
+        poolParams = await diva.getPoolParameters(latestPoolId)
 
-          latestPoolId = await diva.getLatestPoolId()
-          poolParams = await diva.getPoolParameters(latestPoolId)
+        totalPoolCollateral = (poolParams.collateralBalanceShort).add(poolParams.collateralBalanceLong) // result is in collateral decimals (e.g., 100 ~ 10000 if 2 decimals)
+        settlementFeeAmount = totalPoolCollateral.mul(poolParams.settlementFee).div(parseEther('1')) // TODO: Update if min fee is introduced in DIVA contract; result is in collateral decimals;
+        console.log("totalPoolCollateral: " + totalPoolCollateral)
+        console.log("settlementFee: " + poolParams.settlementFee)
+        console.log("settlementFeeAmount: " + settlementFeeAmount)
 
-          totalPoolCollateral = (poolParams.collateralBalanceShort).add(poolParams.collateralBalanceLong) // result is in collateral decimals (e.g., 100 ~ 10000 if 2 decimals)
-          settlementFeeAmount = totalPoolCollateral.mul(poolParams.settlementFee).div(parseEther('1')) // TODO: Update if min fee is introduced in DIVA contract; result is in collateral decimals;
-          console.log("totalPoolCollateral: " + totalPoolCollateral)
-          console.log("settlementFee: " + poolParams.settlementFee)
-          console.log("settlementFeeAmount: " + settlementFeeAmount)
-
-          // Tellor value submission preparation
-          abiCoder = new ethers.utils.AbiCoder
-          queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])
-          queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
-          queryId = ethers.utils.keccak256(queryData)
-          oracleValue = abiCoder.encode(['uint256'],[finalReferenceValue])
+        // Tellor value submission preparation
+        abiCoder = new ethers.utils.AbiCoder
+        queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])
+        queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
+        queryId = ethers.utils.keccak256(queryData)
+        oracleValue = abiCoder.encode(['uint256','uint256'],[finalReferenceValue, collateralValueUSD])
 
     })
 
-    describe('setFinalReferenceValue', () => {
+    describe.only('setFinalReferenceValue', () => {
       it('Should add a value to TellorPlayground and retrieve value through DIVAOracleTellor contract', async () => {
           expect(poolParams.finalReferenceValue).to.eq(0)
           expect(poolParams.statusFinalReferenceValue).to.eq(0)
@@ -115,32 +117,32 @@ describe('DIVAOracleTellor', () => {
     });
     
     describe('transferFeeClaim', () => {
-      it('Should transfer __all__ the fee claim to the settlementFeeRecipientAddress', async () => {
+      it('Should transfer __all__ the fee claim to the excessFeeRecipientAddress', async () => {
         let claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
-        let claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
+        let claimsExcessFeeRecipient = await diva.getClaims(erc20.address, excessFeeRecipient.address)
         expect(claimsDIVAOracleTellor).to.eq(0)
-        expect(claimsSettlementFeeRecipient).to.eq(0)
+        expect(claimsExcessFeeRecipient).to.eq(0)
 
         await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
         await advanceTime(7200) // 2 hours
         await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
         claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
-        claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
+        claimsExcessFeeRecipient = await diva.getClaims(erc20.address, excessFeeRecipient.address)
         expect(claimsDIVAOracleTellor).to.eq(settlementFeeAmount);
-        expect(claimsSettlementFeeRecipient).to.eq(0);
+        expect(claimsExcessFeeRecipient).to.eq(0);
 
         await divaOracleTellor.transferFeeClaim(divaAddress, erc20.address, claimsDIVAOracleTellor)
         claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
-        claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
+        claimsExcessFeeRecipient = await diva.getClaims(erc20.address, excessFeeRecipient.address)
         expect(claimsDIVAOracleTellor).to.eq(0);
-        expect(claimsSettlementFeeRecipient).to.eq(settlementFeeAmount);
+        expect(claimsExcessFeeRecipient).to.eq(settlementFeeAmount);
       });
 
-      it('Should transfer a __partial__ fee claim to the settlementFeeRecipientAddress', async () => {
+      it('Should transfer a __partial__ fee claim to the excessFeeRecipientAddress', async () => {
         let claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
-        let claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
+        let claimsExcessFeeRecipient = await diva.getClaims(erc20.address, excessFeeRecipient.address)
         expect(claimsDIVAOracleTellor).to.eq(0)
-        expect(claimsSettlementFeeRecipient).to.eq(0)
+        expect(claimsExcessFeeRecipient).to.eq(0)
 
         await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
         await advanceTime(7200) // 2 hours
@@ -149,9 +151,9 @@ describe('DIVAOracleTellor', () => {
 
         await divaOracleTellor.transferFeeClaim(divaAddress, erc20.address, claimsDIVAOracleTellor.sub(1))
         claimsDIVAOracleTellor = await diva.getClaims(erc20.address, divaOracleTellor.address)
-        claimsSettlementFeeRecipient = await diva.getClaims(erc20.address, settlementFeeRecipient.address)
+        claimsExcessFeeRecipient = await diva.getClaims(erc20.address, excessFeeRecipient.address)
         expect(claimsDIVAOracleTellor).to.eq(1);
-        expect(claimsSettlementFeeRecipient).to.eq(settlementFeeAmount.sub(1));
+        expect(claimsExcessFeeRecipient).to.eq(settlementFeeAmount.sub(1));
       });
     });
 

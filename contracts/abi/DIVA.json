@@ -256,6 +256,16 @@
         "components": [
           {
             "internalType": "uint256",
+            "name": "redemptionFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "settlementFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "submissionPeriod",
             "type": "uint256"
           },
@@ -281,19 +291,14 @@
             "type": "address"
           },
           {
+            "internalType": "bool",
+            "name": "pauseReceiveCollateral",
+            "type": "bool"
+          },
+          {
             "internalType": "uint256",
             "name": "pauseReturnCollateralUntil",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint96",
-            "name": "redemptionFee",
-            "type": "uint96"
-          },
-          {
-            "internalType": "uint96",
-            "name": "settlementFee",
-            "type": "uint96"
           }
         ],
         "internalType": "struct LibDiamond.GovernanceStorage",
@@ -319,6 +324,16 @@
     "outputs": [
       {
         "components": [
+          {
+            "internalType": "string",
+            "name": "referenceAsset",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expiryTime",
+            "type": "uint256"
+          },
           { "internalType": "uint256", "name": "floor", "type": "uint256" },
           {
             "internalType": "uint256",
@@ -326,21 +341,29 @@
             "type": "uint256"
           },
           { "internalType": "uint256", "name": "cap", "type": "uint256" },
-          { "internalType": "uint256", "name": "gradient", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "supplyInitial",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "collateralToken",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceShortInitial",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceLongInitial",
+            "type": "uint256"
+          },
           {
             "internalType": "uint256",
             "name": "collateralBalance",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "finalReferenceValue",
-            "type": "uint256"
-          },
-          { "internalType": "uint256", "name": "capacity", "type": "uint256" },
-          {
-            "internalType": "uint256",
-            "name": "statusTimestamp",
             "type": "uint256"
           },
           {
@@ -348,29 +371,11 @@
             "name": "shortToken",
             "type": "address"
           },
-          { "internalType": "uint96", "name": "payoutShort", "type": "uint96" },
           { "internalType": "address", "name": "longToken", "type": "address" },
-          { "internalType": "uint96", "name": "payoutLong", "type": "uint96" },
           {
-            "internalType": "address",
-            "name": "collateralToken",
-            "type": "address"
-          },
-          { "internalType": "uint96", "name": "expiryTime", "type": "uint96" },
-          {
-            "internalType": "address",
-            "name": "dataProvider",
-            "type": "address"
-          },
-          {
-            "internalType": "uint96",
-            "name": "redemptionFee",
-            "type": "uint96"
-          },
-          {
-            "internalType": "uint96",
-            "name": "settlementFee",
-            "type": "uint96"
+            "internalType": "uint256",
+            "name": "finalReferenceValue",
+            "type": "uint256"
           },
           {
             "internalType": "enum LibDiamond.Status",
@@ -378,10 +383,36 @@
             "type": "uint8"
           },
           {
-            "internalType": "string",
-            "name": "referenceAsset",
-            "type": "string"
-          }
+            "internalType": "uint256",
+            "name": "redemptionAmountLongToken",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "redemptionAmountShortToken",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "statusTimestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "dataProvider",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "redemptionFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "settlementFee",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" }
         ],
         "internalType": "struct LibDiamond.Pool",
         "name": "",
@@ -399,6 +430,16 @@
     "outputs": [
       {
         "components": [
+          {
+            "internalType": "string",
+            "name": "referenceAsset",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expiryTime",
+            "type": "uint256"
+          },
           { "internalType": "uint256", "name": "floor", "type": "uint256" },
           {
             "internalType": "uint256",
@@ -406,21 +447,29 @@
             "type": "uint256"
           },
           { "internalType": "uint256", "name": "cap", "type": "uint256" },
-          { "internalType": "uint256", "name": "gradient", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "supplyInitial",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "collateralToken",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceShortInitial",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceLongInitial",
+            "type": "uint256"
+          },
           {
             "internalType": "uint256",
             "name": "collateralBalance",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "finalReferenceValue",
-            "type": "uint256"
-          },
-          { "internalType": "uint256", "name": "capacity", "type": "uint256" },
-          {
-            "internalType": "uint256",
-            "name": "statusTimestamp",
             "type": "uint256"
           },
           {
@@ -428,29 +477,11 @@
             "name": "shortToken",
             "type": "address"
           },
-          { "internalType": "uint96", "name": "payoutShort", "type": "uint96" },
           { "internalType": "address", "name": "longToken", "type": "address" },
-          { "internalType": "uint96", "name": "payoutLong", "type": "uint96" },
           {
-            "internalType": "address",
-            "name": "collateralToken",
-            "type": "address"
-          },
-          { "internalType": "uint96", "name": "expiryTime", "type": "uint96" },
-          {
-            "internalType": "address",
-            "name": "dataProvider",
-            "type": "address"
-          },
-          {
-            "internalType": "uint96",
-            "name": "redemptionFee",
-            "type": "uint96"
-          },
-          {
-            "internalType": "uint96",
-            "name": "settlementFee",
-            "type": "uint96"
+            "internalType": "uint256",
+            "name": "finalReferenceValue",
+            "type": "uint256"
           },
           {
             "internalType": "enum LibDiamond.Status",
@@ -458,10 +489,36 @@
             "type": "uint8"
           },
           {
-            "internalType": "string",
-            "name": "referenceAsset",
-            "type": "string"
-          }
+            "internalType": "uint256",
+            "name": "redemptionAmountLongToken",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "redemptionAmountShortToken",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "statusTimestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "dataProvider",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "redemptionFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "settlementFee",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" }
         ],
         "internalType": "struct LibDiamond.Pool",
         "name": "",
@@ -538,6 +595,25 @@
         "type": "address"
       },
       {
+        "indexed": true,
+        "internalType": "bool",
+        "name": "pause",
+        "type": "bool"
+      }
+    ],
+    "name": "PauseReceiveCollateralSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
         "indexed": false,
         "internalType": "uint256",
         "name": "pausedUntil",
@@ -558,9 +634,9 @@
       },
       {
         "indexed": false,
-        "internalType": "uint96",
+        "internalType": "uint256",
         "name": "fee",
-        "type": "uint96"
+        "type": "uint256"
       }
     ],
     "name": "RedemptionFeeSet",
@@ -596,9 +672,9 @@
       },
       {
         "indexed": false,
-        "internalType": "uint96",
+        "internalType": "uint256",
         "name": "fee",
-        "type": "uint96"
+        "type": "uint256"
       }
     ],
     "name": "SettlementFeeSet",
@@ -683,6 +759,13 @@
   },
   {
     "inputs": [{ "internalType": "bool", "name": "_pause", "type": "bool" }],
+    "name": "setPauseReceiveCollateral",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "bool", "name": "_pause", "type": "bool" }],
     "name": "setPauseReturnCollateral",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -690,7 +773,7 @@
   },
   {
     "inputs": [
-      { "internalType": "uint96", "name": "_redemptionFee", "type": "uint96" }
+      { "internalType": "uint256", "name": "_redemptionFee", "type": "uint256" }
     ],
     "name": "setRedemptionFee",
     "outputs": [],
@@ -708,7 +791,7 @@
   },
   {
     "inputs": [
-      { "internalType": "uint96", "name": "_settlementFee", "type": "uint96" }
+      { "internalType": "uint256", "name": "_settlementFee", "type": "uint256" }
     ],
     "name": "setSettlementFee",
     "outputs": [],
@@ -804,7 +887,11 @@
   {
     "inputs": [
       { "internalType": "uint256", "name": "_poolId", "type": "uint256" },
-      { "internalType": "uint256", "name": "_amount", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "_amountPositionToken",
+        "type": "uint256"
+      }
     ],
     "name": "removeLiquidity",
     "outputs": [],
@@ -882,7 +969,11 @@
             "name": "referenceAsset",
             "type": "string"
           },
-          { "internalType": "uint96", "name": "expiryTime", "type": "uint96" },
+          {
+            "internalType": "uint256",
+            "name": "expiryTime",
+            "type": "uint256"
+          },
           { "internalType": "uint256", "name": "floor", "type": "uint256" },
           {
             "internalType": "uint256",
@@ -890,10 +981,19 @@
             "type": "uint256"
           },
           { "internalType": "uint256", "name": "cap", "type": "uint256" },
-          { "internalType": "uint256", "name": "gradient", "type": "uint256" },
           {
             "internalType": "uint256",
-            "name": "collateralAmount",
+            "name": "collateralBalanceShort",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralBalanceLong",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "supplyPositionToken",
             "type": "uint256"
           },
           {
@@ -917,6 +1017,31 @@
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "poolId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeeClaimAllocated",
+    "type": "event"
   },
   {
     "anonymous": false,
