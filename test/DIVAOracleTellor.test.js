@@ -114,7 +114,7 @@ describe('DIVAOracleTellor', () => {
 
       })
       
-      it('Should add a value to TellorPlayground and retrieve value through DIVAOracleTellor contract', async () => {
+      it('Should set a reported Tellor value as the final reference value in DIVA Protocol', async () => {
           // ---------
           // Arrange: Confirm that finalRereferenceValue and statusFinalReferenceValue are not yet set and submit values to tellorPlayground 
           // ---------
@@ -128,13 +128,13 @@ describe('DIVAOracleTellor', () => {
           await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData) 
           
           // ---------
-          // Act: Call setFinalReferenceValue function in DIVAOracleTellor contract  
+          // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract shortly after minPeriodUndisputed period has passed 
           // ---------
           await advanceTime(minPeriodUndisputed + 1)
           await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
           
           // ---------
-          // Assert: finalReferenceValue and statusFinalReferenceValue are updated accordingly  
+          // Assert: finalReferenceValue and statusFinalReferenceValue are updated accordingly in DIVA Protocol
           // ---------
           poolParams = await diva.getPoolParameters(latestPoolId)
           expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue)
