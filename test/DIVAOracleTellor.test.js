@@ -5,7 +5,7 @@ const DIVA_ABI = require('../contracts/abi/DIVA.json');
 const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture")
 const { parseEther, parseUnits } = require('@ethersproject/units');
 const { advanceTime, ONE_HOUR } = require('./utils.js')
-const { addresses } = require('../utils/constants') // v0.9.0
+const { addresses } = require('../utils/constants') //  DIVA Protocol v0.9.0
 
 describe('DIVAOracleTellor', () => {
   let divaOracleTellor;
@@ -20,11 +20,12 @@ describe('DIVAOracleTellor', () => {
 
   beforeEach(async () => {
     [user1, user2, reporter1, reporter2, excessFeeRecipient] = await ethers.getSigners();
+
     await hre.network.provider.request({
       method: "hardhat_reset",
       params: [{forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
-            blockNumber: 11840999 // Kovan: 29245720 (212 blocks after playground contract deployment)
+            blockNumber: 12085815 // choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed  
           },},],
     });
 
@@ -41,8 +42,8 @@ describe('DIVAOracleTellor', () => {
     let latestPoolId;
     let poolParams;
     let abiCoder, queryData, queryId, oracleValue;
-    let totalPoolCollateral, settlementFeeAmount;
-
+    let settlementFeeAmount;
+    
     beforeEach(async () => {
         diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
         userStartCollateralTokenBalance = parseEther("1000000");
@@ -68,13 +69,12 @@ describe('DIVAOracleTellor', () => {
               0                                 // capacity
             ]
         );
-        console.log("9*** HAHAHHA")
+
         latestPoolId = await diva.getLatestPoolId()
         poolParams = await diva.getPoolParameters(latestPoolId)
 
-        totalPoolCollateral = (poolParams.collateralBalanceShort).add(poolParams.collateralBalanceLong) // result is in collateral decimals (e.g., 100 ~ 10000 if 2 decimals)
-        settlementFeeAmount = totalPoolCollateral.mul(poolParams.settlementFee).div(parseEther('1')) // TODO: Update if min fee is introduced in DIVA contract; result is in collateral decimals;
-        console.log("totalPoolCollateral: " + totalPoolCollateral)
+        settlementFeeAmount = (poolParams.collateralBalance).mul(poolParams.settlementFee).div(parseEther('1')) // TODO: Update if min fee is introduced in DIVA contract; result is in collateral decimals;
+        console.log("pool collateralBalance: " + poolParams.collateralBalance)
         console.log("settlementFee: " + poolParams.settlementFee)
         console.log("settlementFeeAmount: " + settlementFeeAmount)
 
@@ -84,18 +84,28 @@ describe('DIVAOracleTellor', () => {
         queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
         queryId = ethers.utils.keccak256(queryData)
         oracleValue = abiCoder.encode(['uint256','uint256'],[finalReferenceValue, collateralValueUSD])
+        console.log("queryDataArgs: " + queryDataArgs)
+        console.log("queryData: " + queryData)
+        console.log("queryId: " + queryId)
+        console.log("oracleValue: " + oracleValue)
+        console.log("decode: " + abiCoder.decode(['uint256','uint256'], oracleValue))
+
 
     })
 
-    describe.only('setFinalReferenceValue', () => {
-      it('Should add a value to TellorPlayground and retrieve value through DIVAOracleTellor contract', async () => {
+    describe('setFinalReferenceValue', () => {
+      it.only('Should add a value to TellorPlayground and retrieve value through DIVAOracleTellor contract', async () => {
           expect(poolParams.finalReferenceValue).to.eq(0)
           expect(poolParams.statusFinalReferenceValue).to.eq(0)
 
           // Submit value to Tellor playground contract
+          console.log(tellorPlayground)
+          console.log(tellorPlayground.address)
           await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
 
-          const tellorDataTimestamp = await tellorPlayground.timestamps(queryId, 0); // 0 is array index
+          // get timestamp of first reporter submission
+          const tellorDataTimestamp = await tellorPlayground.timestamps(queryId, 0);
+
           const tellorValue = await tellorPlayground.values(queryId, tellorDataTimestamp);
           console.log("Tellor data timestamp: " + tellorDataTimestamp)
           console.log("Tellor value: " + tellorValue)
