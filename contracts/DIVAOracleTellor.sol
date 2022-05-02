@@ -7,6 +7,7 @@ import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
 import "./libraries/SafeDecimalMath.sol";
+import "hardhat/console.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
     using SafeDecimalMath for uint256;
@@ -40,8 +41,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         _minPeriodUndisputed = minPeriodUndisputed_;
         _maxFeeAmountUSD = maxFeeAmountUSD_;
     }
-
-    
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override {
         IDIVA _diva = IDIVA(_divaDiamond);
@@ -80,10 +79,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         
         // Retrieve values (final reference value and USD value of collateral asset)
         bytes memory _valueRetrieved = retrieveData(_queryID, _timestampRetrieved);
-
+        // console.log("valueRetrieved *****", _valueRetrieved);
         // Format values (18 decimals)
         (uint256 _formattedFinalReferenceValue, uint256 _formattedCollateralValueUSD) = abi.decode(_valueRetrieved, (uint256, uint256));
-
+        // console.log("_formattedFinalReferenceValue *****", _formattedFinalReferenceValue);
         // Get address of reporter who will receive
         address _reporter = ITellor(_tellorAddress).getReporterByTimestamp(_queryID, _timestampRetrieved);
 

@@ -23,10 +23,12 @@ describe('DIVAOracleTellor', () => {
 
     await hre.network.provider.request({
       method: "hardhat_reset",
-      params: [{forking: {
+      params: [{
+        forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
             blockNumber: 12085815 // choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed  
-          },},],
+        },
+      },],
     });
 
     const divaOracleTellorFactory = await ethers.getContractFactory("DIVAOracleTellor");
@@ -72,6 +74,8 @@ describe('DIVAOracleTellor', () => {
 
         latestPoolId = await diva.getLatestPoolId()
         poolParams = await diva.getPoolParameters(latestPoolId)
+        console.log(latestPoolId)
+        console.log(poolParams)
 
         settlementFeeAmount = (poolParams.collateralBalance).mul(poolParams.settlementFee).div(parseEther('1')) // TODO: Update if min fee is introduced in DIVA contract; result is in collateral decimals;
         console.log("pool collateralBalance: " + poolParams.collateralBalance)
@@ -84,12 +88,11 @@ describe('DIVAOracleTellor', () => {
         queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
         queryId = ethers.utils.keccak256(queryData)
         oracleValue = abiCoder.encode(['uint256','uint256'],[finalReferenceValue, collateralValueUSD])
-        console.log("queryDataArgs: " + queryDataArgs)
-        console.log("queryData: " + queryData)
-        console.log("queryId: " + queryId)
-        console.log("oracleValue: " + oracleValue)
-        console.log("decode: " + abiCoder.decode(['uint256','uint256'], oracleValue))
-
+        // console.log("queryDataArgs: " + queryDataArgs)
+        // console.log("queryData: " + queryData)
+        // console.log("queryId: " + queryId)
+        // console.log("oracleValue: " + oracleValue)
+        // console.log("decode: " + abiCoder.decode(['uint256','uint256'], oracleValue)) // test
 
     })
 
@@ -97,10 +100,12 @@ describe('DIVAOracleTellor', () => {
       it.only('Should add a value to TellorPlayground and retrieve value through DIVAOracleTellor contract', async () => {
           expect(poolParams.finalReferenceValue).to.eq(0)
           expect(poolParams.statusFinalReferenceValue).to.eq(0)
-
+          console.log("poolParams")
+          console.log(poolParams)
           // Submit value to Tellor playground contract
-          console.log(tellorPlayground)
-          console.log(tellorPlayground.address)
+          // console.log("queryId: " + queryId)
+          // console.log("web3.utils.toHex(oracleValue): " + web3.utils.toHex(oracleValue))    // WHY not simply use orcleValue? seems to be the same as oracleValue?
+          // console.log("queryData: " + queryData)
           await tellorPlayground.submitValue(queryId, web3.utils.toHex(oracleValue), 0, queryData)
 
           // get timestamp of first reporter submission
@@ -108,7 +113,7 @@ describe('DIVAOracleTellor', () => {
 
           const tellorValue = await tellorPlayground.values(queryId, tellorDataTimestamp);
           console.log("Tellor data timestamp: " + tellorDataTimestamp)
-          console.log("Tellor value: " + tellorValue)
+          console.log("Tellor value: " + abiCoder.decode(['uint256','uint256'], tellorValue));
 
           currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
           console.log("Block timestamp which includes the submitValue tx: " + currentBlockTimestamp)
@@ -117,7 +122,6 @@ describe('DIVAOracleTellor', () => {
 
           currentBlockTimestamp = await (await ethers.provider.getBlock()).timestamp
           console.log("Block timestamp next block: " + currentBlockTimestamp)
-
           await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
           poolParams = await diva.getPoolParameters(latestPoolId)
           expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue)

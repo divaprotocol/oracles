@@ -26,7 +26,10 @@ const MNEMONIC = process.env.MNEMONIC
      hardhat: {
          forking: {
              url: process.env.ALCHEMY_URL_ROPSTEN,
-         }
+         },
+         accounts: {
+          mnemonic: MNEMONIC, 
+        }
      },
      ropsten: {
       url: process.env.ALCHEMY_URL_ROPSTEN,
