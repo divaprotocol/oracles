@@ -57,5 +57,8 @@ const MNEMONIC = process.env.MNEMONIC
       },
       gasPrice: 8000000000,
     }
-   }
+   },
+   mocha: {
+    timeout: 50000
+  }
 };

@@ -18,9 +18,9 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Function to set the final reference value for a given `poolId`.
-     * @param _divaDiamond Address of the diva smart contract. This is to avoid
-     * redeploying the oracle contracts when a new version of diva protocol
-     * is released.
+     * @param _divaDiamond Address of the diva smart contract. Used as argument
+     * rather than a hard-coded constant to avoid redeploying the oracle contracts
+     * when a new version of DIVA Protocol is released.
      * @param _poolId The unique identifier of the pool.
      */
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)

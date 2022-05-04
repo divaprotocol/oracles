@@ -9,6 +9,7 @@ import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
 import "./libraries/SafeDecimalMath.sol";
+import "hardhat/console.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, ReentrancyGuard {
     using SafeDecimalMath for uint256;
@@ -58,13 +59,14 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
 
         // Handle case where data was submitted before expiryTime
         if (_timestampRetrieved < _expiryTime) {
+            console.log("_timestampRetrieved: ", _timestampRetrieved);       // CHECK 
             
             // Check that data exists (_timestampRetrieved = 0 if it doesn't)
             require(_timestampRetrieved > 0, "DIVAOracleTellor: no oracle submission");
 
             // Retrieve latest array index of data before `_expiryTime` for the queryId
             (, uint256 _index) = getIndexForDataBefore(_queryID, _expiryTime);      
-            
+
             // Increment index to get the first data point after `_expiryTime`
             _index++;
 

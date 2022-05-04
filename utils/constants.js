@@ -7,6 +7,11 @@ const addresses = {
     polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B"
   }
 
+const tellorPlaygroundAddresses = {
+    ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10',
+    kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa'
+}
+
 // Status mapping
 const status = {
   0: "Open",
@@ -17,3 +22,4 @@ const status = {
 
 exports.addresses = addresses;
 exports.status = status;
+exports.tellorPlaygroundAddresses = tellorPlaygroundAddresses;

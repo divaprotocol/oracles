@@ -19,7 +19,12 @@ async function getLastTimestamp() {
     return currentBlock.timestamp
 }
 
+async function setNextTimestamp(provider, timestamp) {
+    await provider.send('evm_setNextBlockTimestamp', [timestamp])
+}
+
 exports.ONE_HOUR = ONE_HOUR;
 exports.advanceTime = advanceTime;
 exports.getExpiryInSeconds = getExpiryInSeconds;
 exports.getLastTimestamp = getLastTimestamp;
+exports.setNextTimestamp = setNextTimestamp;
