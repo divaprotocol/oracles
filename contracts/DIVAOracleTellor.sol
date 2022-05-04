@@ -3,13 +3,14 @@ pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
 import "./libraries/SafeDecimalMath.sol";
-import "hardhat/console.sol";
 
-contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
+contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, ReentrancyGuard {
     using SafeDecimalMath for uint256;
 
     // Ordered to optimize storage
@@ -42,7 +43,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         _maxFeeAmountUSD = maxFeeAmountUSD_;
     }
 
-    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override {
+    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override nonReentrant {
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);   // updated the Pool struct based on the latest contracts
 
@@ -79,10 +80,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         
         // Retrieve values (final reference value and USD value of collateral asset)
         bytes memory _valueRetrieved = retrieveData(_queryID, _timestampRetrieved);
-        // console.log("valueRetrieved *****", _valueRetrieved);
+
         // Format values (18 decimals)
         (uint256 _formattedFinalReferenceValue, uint256 _formattedCollateralValueUSD) = abi.decode(_valueRetrieved, (uint256, uint256));
-        // console.log("_formattedFinalReferenceValue *****", _formattedFinalReferenceValue);
+
         // Get address of reporter who will receive
         address _reporter = ITellor(_tellorAddress).getReporterByTimestamp(_queryID, _timestampRetrieved);
 
