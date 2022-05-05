@@ -60,17 +60,17 @@ describe('DIVAOracleTellor', () => {
         currentBlockTimestamp = await getLastTimestamp()
         await diva.createContingentPool(
             [
-              referenceAsset,                   // reference asset
-              currentBlockTimestamp,            // expiryTime
-              parseEther("40000"),              // floor
-              parseEther("43000"),              // inflection
-              parseEther("46000"),              // cap
+              referenceAsset,                             // reference asset
+              currentBlockTimestamp,                      // expiryTime
+              parseEther("40000"),                        // floor
+              parseEther("43000"),                        // inflection
+              parseEther("46000"),                        // cap
               parseUnits("100", collateralTokenDecimals), // collateral balance short
               parseUnits("100", collateralTokenDecimals), // collateral balance long              
-              parseEther("100"),                // supplyPositionToken
-              erc20.address,                    // collateral token
-              divaOracleTellor.address,         // data feed provider
-              0                                 // capacity
+              parseEther("100"),                          // supplyPositionToken
+              erc20.address,                              // collateral token
+              divaOracleTellor.address,                   // data provider
+              0                                           // capacity
             ]
         );
 
@@ -79,8 +79,8 @@ describe('DIVAOracleTellor', () => {
 
         // Calculate
         settlementFeeAmount = poolParams.collateralBalance.mul(parseUnits('1', 18 - collateralTokenDecimals)).mul(poolParams.settlementFee).div(parseEther('1')).div(parseUnits('1', 18 - collateralTokenDecimals)) 
-        console.log("settlementFeeAmount: " + settlementFeeAmount)
-        // Tellor value submission preparation
+
+        // Prepare Tellor value submission
         abiCoder = new ethers.utils.AbiCoder
         queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])
         queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
@@ -186,30 +186,34 @@ describe('DIVAOracleTellor', () => {
         expiryTimeInFuture = await getLastTimestamp() + 7200
         await diva.createContingentPool(
           [
-            referenceAsset,                   // reference asset
-            expiryTimeInFuture,            // expiryTime
-            parseEther("40000"),              // floor
-            parseEther("43000"),              // inflection
-            parseEther("46000"),              // cap
+            referenceAsset,                             // reference asset
+            expiryTimeInFuture,                         // expiryTime
+            parseEther("40000"),                        // floor
+            parseEther("43000"),                        // inflection
+            parseEther("46000"),                        // cap
             parseUnits("100", collateralTokenDecimals), // collateral balance short
             parseUnits("100", collateralTokenDecimals), // collateral balance long              
-            parseEther("100"),                // supplyPositionToken
-            erc20.address,                    // collateral token
-            divaOracleTellor.address,         // data feed provider
-            0                                 // capacity
+            parseEther("100"),                          // supplyPositionToken
+            erc20.address,                              // collateral token
+            divaOracleTellor.address,                   // data provider
+            0                                           // capacity
           ]
         );
         latestPoolId = await diva.getLatestPoolId()
         poolParams = await diva.getPoolParameters(latestPoolId)
 
         // Prepare value submission to tellorPlayground
+        queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])  // Re-construct as latestPoolId changed in this test
+        queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
+        queryId = ethers.utils.keccak256(queryData)
         finalReferenceValue = parseEther('42000');
         collateralValueUSD = parseEther('1.14');
         oracleValue = abiCoder.encode(['uint256','uint256'],[finalReferenceValue, collateralValueUSD])
+        
         // Submit value to Tellor playground contract
         await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData) 
+        
         // Confirm that timestamp of reported value is non-zero and smaller than expiryTime
-        console.log("value: " + await tellorPlayground.getTimestampbyQueryIdandIndex(queryId, 0)) // CHECK 
         expect(await tellorPlayground.getTimestampbyQueryIdandIndex(queryId, 0)).not.eq(0)
         expect(await tellorPlayground.getTimestampbyQueryIdandIndex(queryId, 0)).to.be.lt(poolParams.expiryTime)
 
