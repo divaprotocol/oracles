@@ -8,19 +8,20 @@
     "sh": "solhint -f table contracts/**/*.sol",
     "t": "yarn hardhat test",
     "c": "yarn hardhat compile",
-    "size": "yarn hardhat size-contracts"
+    "size": "yarn hardhat size-contracts",
+    "coverage": "npx hardhat coverage"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/divaprotocol/ChainlinkOracle.git"
+    "url": "git+https://github.com/divaprotocol/oracles.git"
   },
   "keywords": [],
   "author": "Wladimir <wladimir.weinbender@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/divaprotocol/ChainlinkOracle/issues"
+    "url": "https://github.com/divaprotocol/oracles/issues"
   },
-  "homepage": "https://github.com/divaprotocol/ChainlinkOracle#readme",
+  "homepage": "https://github.com/divaprotocol/oracles#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -30,8 +31,10 @@
     "hardhat": "^2.9.3",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
+    "hardhat-gas-reporter": "1.0.4",
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "^0.0.5",
+    "solidity-coverage": "0.7.18",
     "typescript": "^4.5.4"
   },
   "dependencies": {

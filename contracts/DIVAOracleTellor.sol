@@ -94,7 +94,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         _temp.scaling = uint256(10**(18 - _temp.decimals)); 
 
         // Get the current fee claim allocated to this contract address (msg.sender)
-        _temp.feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token
+        _temp.feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token; integer with collateral token decimals
         _temp.feeClaimUSD = (_temp.feeClaim * _temp.scaling).multiplyDecimal(_formattedCollateralValueUSD);  // denominated in USD; integer with 18 decimals
         _temp.feeToReporter;
         _temp.feeToExcessRecipient;
