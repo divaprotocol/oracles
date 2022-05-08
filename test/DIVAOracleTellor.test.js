@@ -282,16 +282,12 @@ describe('DIVAOracleTellor', () => {
         expect(await poolParams.finalReferenceValue).to.eq(parseEther('42500'))
     })
 
-    it.only('Allocates all the settlement fee to the excess recipient if it is below maxFeeAmountUSD', async () => {
+    it('Allocates all the settlement fee to the excess recipient if it is below maxFeeAmountUSD', async () => {
         // ---------
-        // Arrange: Confirm that user1's fee claim balance is zero, calculate USD denominated fee and report value 
+        // Arrange: Confirm that user1's fee claim balance is zero, report value and calculate USD denominated fee 
         // ---------
         // Confirm that user1's fee claim balance is zero
         expect(await diva.getClaims(erc20.address, user1.address)).to.eq(0)
-
-        // Calculate USD denominated fee
-        settlementFeeAmountUSD = settlementFeeAmount.mul(parseUnits('1', 18 - collateralTokenDecimals)).mul(collateralValueUSD).div(parseEther('1'))
-        expect(settlementFeeAmountUSD).to.be.lte(maxFeeAmountUSD)
         
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseEther('42000');
@@ -301,6 +297,10 @@ describe('DIVAOracleTellor', () => {
         // Submit value to Tellor playground contract
         await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData)        
         
+        // Calculate USD denominated fee
+        settlementFeeAmountUSD = settlementFeeAmount.mul(parseUnits('1', 18 - collateralTokenDecimals)).mul(collateralValueUSD).div(parseEther('1'))
+        expect(settlementFeeAmountUSD).to.be.lte(maxFeeAmountUSD)
+
         // ---------
         // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after minPeriodUndisputed 
         // ---------
