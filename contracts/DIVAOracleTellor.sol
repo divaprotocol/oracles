@@ -8,7 +8,6 @@ import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
 import "./libraries/SafeDecimalMath.sol";
-import "hardhat/console.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, ReentrancyGuard {
     using SafeDecimalMath for uint256;
@@ -57,9 +56,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         uint256 _timestampRetrieved = getTimestampbyQueryIdandIndex(_queryID, 0);
 
         // Handle case where data was submitted before expiryTime
-        if (_timestampRetrieved < _expiryTime) {
-            console.log("_timestampRetrieved: ", _timestampRetrieved);       // CHECK 
-            
+        if (_timestampRetrieved < _expiryTime) {            
             // Check that data exists (_timestampRetrieved = 0 if it doesn't)
             require(_timestampRetrieved > 0, "DIVAOracleTellor: no oracle submission");
 
@@ -73,7 +70,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
             _timestampRetrieved = getTimestampbyQueryIdandIndex(_queryID, _index);
 
             // _timestampRetrieved = 0 if there is no submission
-            require(_timestampRetrieved > 0, "DIVAOracleTellor: no oracle submission after expiry data");
+            require(_timestampRetrieved > 0, "DIVAOracleTellor: no oracle submission after expiry time");
         }
 
         // Check that _minPeriodUndisputed has passed after _timestampRetrieved
@@ -102,8 +99,13 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         _temp.feeToReporter;
         _temp.feeToExcessRecipient;
         
-        if (_temp.feeClaimUSD > _maxFeeAmountUSD) {     
-            _temp.feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralValueUSD) / _temp.scaling - 1; // integer with collateral token decimals
+        if (_temp.feeClaimUSD > _maxFeeAmountUSD) { 
+            if (_formattedCollateralValueUSD != 0) {    
+                _temp.feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralValueUSD) / _temp.scaling - 1; // integer with collateral token decimals
+            } else 
+            {
+                _temp.feeToReporter = 0;
+            }
             _temp.feeToExcessRecipient = _temp.feeClaim - _temp.feeToReporter; // integer with collateral token decimals
         } else {
             _temp.feeToReporter = _temp.feeClaim;

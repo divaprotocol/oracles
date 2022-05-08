@@ -47,7 +47,6 @@ describe('DIVAOracleTellor', () => {
     let latestPoolId;
     let poolParams;
     let abiCoder, queryData, queryId, oracleValue;
-    let settlementFeeAmount;
     
     beforeEach(async () => {
         diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -67,7 +66,7 @@ describe('DIVAOracleTellor', () => {
               parseEther("46000"),                        // cap
               parseUnits("100", collateralTokenDecimals), // collateral balance short
               parseUnits("100", collateralTokenDecimals), // collateral balance long              
-              parseEther("100"),                          // supplyPositionToken
+              parseEther("200"),                          // supplyPositionToken
               erc20.address,                              // collateral token
               divaOracleTellor.address,                   // data provider
               0                                           // capacity
@@ -179,7 +178,7 @@ describe('DIVAOracleTellor', () => {
 
     })
 
-    it.only('Should revert if a value has been reported prior to expiryTime only', async () => {
+    it('Should revert if a value has been reported prior to expiryTime only', async () => {
         // ---------
         // Arrange: Create a non-expired pool and submit one value prior to expiration 
         // ---------
@@ -193,7 +192,7 @@ describe('DIVAOracleTellor', () => {
             parseEther("46000"),                        // cap
             parseUnits("100", collateralTokenDecimals), // collateral balance short
             parseUnits("100", collateralTokenDecimals), // collateral balance long              
-            parseEther("100"),                          // supplyPositionToken
+            parseEther("200"),                          // supplyPositionToken
             erc20.address,                              // collateral token
             divaOracleTellor.address,                   // data provider
             0                                           // capacity
@@ -220,75 +219,118 @@ describe('DIVAOracleTellor', () => {
         // ---------
         // Act & Assert: Confirm that setFinalReferenceValue function will revert if the only value reported is before expiryTime
         // ---------
-        await expect(divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)).to.be.revertedWith("DIVAOracleTellor: no oracle submission after expiry data")
+        await expect(divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)).to.be.revertedWith("DIVAOracleTellor: no oracle submission after expiry time")
+    })
+
+    it('Should take the second value if the first one was submitted before expiryTime and the second one afterwards', async () => {
+        // ---------
+        // Arrange: Create a contingent pool with expiry time in the future, prepare the submission to tellorPlayground
+        // and submit two values, one before and one after expiration
+        // ---------
+        expiryTimeInFuture = await getLastTimestamp() + 7200
+        await diva.createContingentPool(
+          [
+            referenceAsset,                             // reference asset
+            expiryTimeInFuture,                         // expiryTime
+            parseEther("40000"),                        // floor
+            parseEther("43000"),                        // inflection
+            parseEther("46000"),                        // cap
+            parseUnits("100", collateralTokenDecimals), // collateral balance short
+            parseUnits("100", collateralTokenDecimals), // collateral balance long              
+            parseEther("200"),                          // supplyPositionToken
+            erc20.address,                              // collateral token
+            divaOracleTellor.address,                   // data provider
+            0                                           // capacity
+          ]
+        );
+        latestPoolId = await diva.getLatestPoolId()
+        poolParams = await diva.getPoolParameters(latestPoolId)
+
+        // Prepare value submission to tellorPlayground
+        queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])  // Re-construct as latestPoolId changed in this test
+        queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
+        queryId = ethers.utils.keccak256(queryData)
+
+        // First reporter submission prior to expiration 
+        finalReferenceValue1 = parseEther('42000');
+        collateralValueUSD1 = parseEther('1.14');
+        oracleValue1 = abiCoder.encode(['uint256','uint256'],[finalReferenceValue1, collateralValueUSD1])
+        nextBlockTimestamp = poolParams.expiryTime.sub(1)
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber())
+        await tellorPlayground.submitValue(queryId, oracleValue1, 0, queryData) 
+
+        // Second reporter submission after expiration 
+        finalReferenceValue2 = parseEther('42500');
+        collateralValueUSD2 = parseEther('1.15');
+        oracleValue2 = abiCoder.encode(['uint256','uint256'],[finalReferenceValue2, collateralValueUSD2])
+        nextBlockTimestamp = poolParams.expiryTime.add(1)
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber())
+        await tellorPlayground.submitValue(queryId, oracleValue2, 0, queryData) 
+
+        // ---------
+        // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after minPeriodUndisputed has passed
+        // ---------
+        nextBlockTimestamp = poolParams.expiryTime.add(minPeriodUndisputed).add(10) // has to be minPeriodDisputed after the time of the second submission (assumed to be 1 second after expiration)
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber())
+        await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
+      
+        // ---------
+        // Assert: Confirm that the second value was set as the final 
+        // ---------
+        poolParams = await diva.getPoolParameters(latestPoolId)
+        expect(await poolParams.statusFinalReferenceValue).to.eq(3)
+        expect(await poolParams.finalReferenceValue).to.eq(parseEther('42500'))
     })
 
     it('...', async () => {
-      // ---------
-      // Arrange: ...
-      // ---------
-      // ...
-      
-      // ---------
-      // Act: ...
-      // ---------
-      // ...
+        // ---------
+        // Arrange: ...
+        // ---------
+        // ...
+        
+        // ---------
+        // Act: ...
+        // ---------
+        // ...
 
-      // ---------
-      // Assert: ...
-      // ---------
-      // ...
+        // ---------
+        // Assert: ...
+        // ---------
+        // ...
     })
 
     it('...', async () => {
-      // ---------
-      // Arrange: ...
-      // ---------
-      // ...
-      
-      // ---------
-      // Act: ...
-      // ---------
-      // ...
+        // ---------
+        // Arrange: ...
+        // ---------
+        // ...
+        
+        // ---------
+        // Act: ...
+        // ---------
+        // ...
 
-      // ---------
-      // Assert: ...
-      // ---------
-      // ...
+        // ---------
+        // Assert: ...
+        // ---------
+        // ...
     })
 
     it('...', async () => {
-      // ---------
-      // Arrange: ...
-      // ---------
-      // ...
-      
-      // ---------
-      // Act: ...
-      // ---------
-      // ...
+        // ---------
+        // Arrange: ...
+        // ---------
+        // ...
+        
+        // ---------
+        // Act: ...
+        // ---------
+        // ...
 
-      // ---------
-      // Assert: ...
-      // ---------
-      // ...
-    })
-
-    it('...', async () => {
-      // ---------
-      // Arrange: ...
-      // ---------
-      // ...
-      
-      // ---------
-      // Act: ...
-      // ---------
-      // ...
-
-      // ---------
-      // Assert: ...
-      // ---------
-      // ...
+        // ---------
+        // Assert: ...
+        // ---------
+        // ...
     })
     
     // describe('transferFeeClaim', () => {
