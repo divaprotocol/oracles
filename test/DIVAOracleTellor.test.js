@@ -284,33 +284,35 @@ describe('DIVAOracleTellor', () => {
 
     it.only('Allocates all the settlement fee to the excess recipient if it is below maxFeeAmountUSD', async () => {
         // ---------
-        // Arrange: ...
+        // Arrange: Confirm that user1's fee claim balance is zero, calculate USD denominated fee and report value 
         // ---------
+        // Confirm that user1's fee claim balance is zero
+        expect(await diva.getClaims(erc20.address, user1.address)).to.eq(0)
+
+        // Calculate USD denominated fee
+        settlementFeeAmountUSD = settlementFeeAmount.mul(parseUnits('1', 18 - collateralTokenDecimals)).mul(collateralValueUSD).div(parseEther('1'))
+        expect(settlementFeeAmountUSD).to.be.lte(maxFeeAmountUSD)
+        
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseEther('42000');
         collateralValueUSD = parseEther('1.14');
         oracleValue = abiCoder.encode(['uint256','uint256'],[finalReferenceValue, collateralValueUSD])
+
         // Submit value to Tellor playground contract
-        await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData)
-        const userBalanceBefore = await erc20.balanceOf(user1.address) 
-        
-        settlementFeeAmountUSD = settlementFeeAmount.mul(parseUnits('1', 18 - collateralTokenDecimals)).mul(collateralValueUSD).div(parseEther('1'))
-        console.log("settlementFeeAmountUSD: " + formatEther(settlementFeeAmountUSD))
-        expect(settlementFeeAmountUSD).to.be.lte(maxFeeAmountUSD)
+        await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData)        
         
         // ---------
-        // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed 
+        // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after minPeriodUndisputed 
         // ---------
         nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed
         await setNextTimestamp(ethers.provider, nextBlockTimestamp)
         await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
         
         // ---------
-        // Assert: Confirm that the reporter receives the full settlement fee payment (in collateral asset)
+        // Assert: Confirm that the reporter receives the full settlement fee payment (in collateral asset) and 0 goes to excess fee recipient
         // ---------
-        const userBalanceAfter = await erc20.balanceOf(user1.address)
-        expect(userBalanceAfter).to.eq(userBalanceBefore.add(settlementFeeAmount))
-        expect(await erc20.balanceOf(excessFeeRecipient.address)).to.eq(0)
+        expect(await diva.getClaims(erc20.address, user1.address)).to.eq(settlementFeeAmount)
+        expect(await diva.getClaims(erc20.address, excessFeeRecipient.address)).to.eq(0)
     })
 
     it('Should split the fee between reporter and excess fee recipient if fee amount exceeds maxFeeAmountUSD', async () => {
