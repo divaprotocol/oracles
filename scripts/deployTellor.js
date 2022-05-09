@@ -1,13 +1,22 @@
+const { parseEther } = require("ethers/lib/utils");
 const hre = require("hardhat");
+const { tellorPlaygroundAddresses } = require('../utils/constants') //  DIVA Protocol v0.9.0
+
 
 async function main() {
 
-  let tellorPlaygroundAddress = '0xF281e2De3bB71dE348040b10B420615104359c10' // Ropsten 
-  let settlementFeeRecipient = '0x9AdEFeb576dcF52F5220709c1B267d89d5208D78' // temporary address
-  let periodMinPeriodUndisputed = 3600; // 1 hour 
+  const tellorPlaygroundAddress = tellorPlaygroundAddresses["ropsten"] 
+  const excessFeeRecipient = '0x245B8ABbC1B70B370d1b81398dE0a7920B25E7ca' // temporary address
+  const periodMinPeriodUndisputed = 3600; // 1 hour 
+  const maxFeeAmountUSD = parseEther('10') // $10
 
   const divaOracleTellorFactory = await hre.ethers.getContractFactory("DIVAOracleTellor");
-  divaOracleTellor = await divaOracleTellorFactory.deploy(tellorPlaygroundAddress, settlementFeeRecipient, periodMinPeriodUndisputed);
+  divaOracleTellor = await divaOracleTellorFactory.deploy(
+    tellorPlaygroundAddress,
+    excessFeeRecipient,
+    periodMinPeriodUndisputed,
+    maxFeeAmountUSD
+  );
   
   await divaOracleTellor.deployed();
 
