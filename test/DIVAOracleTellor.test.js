@@ -334,7 +334,7 @@ describe('DIVAOracleTellor', () => {
         expect(await diva.getClaims(erc20.address, excessFeeRecipient.address)).to.eq(0)
     })
 
-    it.only('Should split the fee between reporter and excess fee recipient if fee amount exceeds maxFeeAmountUSD', async () => {
+    it('Should split the fee between reporter and excess fee recipient if fee amount exceeds maxFeeAmountUSD', async () => {
         // ---------
         // Arrange: ...
         // ---------
@@ -379,9 +379,20 @@ describe('DIVAOracleTellor', () => {
         )
 
         // calculate equivalent of maxFeeAmountUSD in collateral token asset
-        
-
         expect(feeAmountUSD).to.be.gte(maxFeeAmountUSD)
+
+        // Get user1's fee claim before
+        const feeClaimUserBefore = await diva.getClaims(erc20.address, user1.address)
+
+        // Calc max fee amount in collateral token
+        const maxFeeAmount = maxFeeAmountUSD.mul(parseEther('1')).div(collateralToUSDRate) 
+        console.log("maxFeeAmount: " + maxFeeAmount)
+
+        // Call setFinalReferenceValue function inside DIVAOracleTellor contract after minPeriodUndisputed 
+        nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp)
+        await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
+        
         
         // ---------
         // Act: ...
@@ -391,7 +402,9 @@ describe('DIVAOracleTellor', () => {
         // ---------
         // Assert: ...
         // ---------
-        expect(await diva.getClaims(erc20.address, user1.address)).to.eq(settlementFeeAmount)
+        const feeClaimUserAfter = await diva.getClaims(erc20.address, user1.address)
+        expect(feeClaimUserAfter).to.eq(feeClaimUserBefore.add(maxFeeAmount))
+        // expect(excessFeeRecipientAfter).to.eq(feeAmount.sub(maxFeeAmount))
     })
 
     it('Should allocate all fees to excess fee recipient if collateralToUSDRate = 0', async () => {

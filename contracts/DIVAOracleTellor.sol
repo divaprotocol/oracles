@@ -19,16 +19,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
     uint32 private _minPeriodUndisputed;
     bool private immutable _challengeable;
 
-    // Temp struct to avoid stack too deep error
-    struct Temp {
-        uint8 decimals;
-        uint256 scaling;
-        uint256 feeClaim;
-        uint256 feeClaimUSD;
-        uint256 feeToReporter;
-        uint256 feeToExcessRecipient;
-    }
-
     constructor(
         address payable tellorAddress_,
         address excessFeeRecipient_,
@@ -46,22 +36,24 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);   // updated the Pool struct based on the latest contracts
 
-        uint256 _expiryTime = _params.expiryTime;
+        // uint256 _expiryTime = _params.expiryTime;
 
         // Construct Tellor queryID (http://querybuilder.tellor.io/divaprotocolpolygon)
-        bytes memory _b = abi.encode("DIVAProtocolPolygon", abi.encode(_poolId));
-        bytes32 _queryID = keccak256(_b);
+        // bytes memory _b = abi.encode("DIVAProtocolPolygon", abi.encode(_poolId));
+        bytes32 _queryID = keccak256(
+            abi.encode("DIVAProtocolPolygon", abi.encode(_poolId))
+        );
 
         // Find first oracle submission
         uint256 _timestampRetrieved = getTimestampbyQueryIdandIndex(_queryID, 0);
 
         // Handle case where data was submitted before expiryTime
-        if (_timestampRetrieved < _expiryTime) {            
+        if (_timestampRetrieved < _params.expiryTime) {            
             // Check that data exists (_timestampRetrieved = 0 if it doesn't)
             require(_timestampRetrieved > 0, "DIVAOracleTellor: no oracle submission");
 
             // Retrieve latest array index of data before `_expiryTime` for the queryId
-            (, uint256 _index) = getIndexForDataBefore(_queryID, _expiryTime);      
+            (, uint256 _index) = getIndexForDataBefore(_queryID, _params.expiryTime);      
 
             // Increment index to get the first data point after `_expiryTime`
             _index++;
@@ -88,35 +80,33 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(_poolId, _formattedFinalReferenceValue, _challengeable);
 
-        Temp memory _temp;
-
-        _temp.decimals = IERC20Metadata(_params.collateralToken).decimals();
-        _temp.scaling = uint256(10**(18 - _temp.decimals)); 
+        // uint8 _decimals = IERC20Metadata(_params.collateralToken).decimals();
+        uint256 _SCALING = uint256(10**(18 - IERC20Metadata(_params.collateralToken).decimals())); 
 
         // Get the current fee claim allocated to this contract address (msg.sender)
-        _temp.feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token; integer with collateral token decimals
-        _temp.feeClaimUSD = (_temp.feeClaim * _temp.scaling).multiplyDecimal(_formattedCollateralToUSDRate);  // denominated in USD; integer with 18 decimals
-        _temp.feeToReporter;
-        _temp.feeToExcessRecipient;
+        uint256 feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token; integer with collateral token decimals
+        uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(_formattedCollateralToUSDRate);  // denominated in USD; integer with 18 decimals
+        uint256 feeToReporter;
+        uint256 feeToExcessRecipient;
         
-        if (_temp.feeClaimUSD > _maxFeeAmountUSD) { 
+        if (feeClaimUSD > _maxFeeAmountUSD) { 
             if (_formattedCollateralToUSDRate != 0) {    
-                _temp.feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) / _temp.scaling - 1; // integer with collateral token decimals
+                feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) / _SCALING - 1; // integer with collateral token decimals
             } else 
             {
-                _temp.feeToReporter = 0;
+                feeToReporter = 0;
             }
-            _temp.feeToExcessRecipient = _temp.feeClaim - _temp.feeToReporter; // integer with collateral token decimals
+            feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
         } else {
-            _temp.feeToReporter = _temp.feeClaim;
-            _temp.feeToExcessRecipient = 0;
+            feeToReporter = feeClaim;
+            feeToExcessRecipient = 0;
         }
 
         // Transfer fee claim to reporter and excessFeeRecipient
-        _diva.transferFeeClaim(_reporter, _params.collateralToken, _temp.feeToReporter);
-        _diva.transferFeeClaim(_excessFeeRecipient, _params.collateralToken, _temp.feeToExcessRecipient);
+        _diva.transferFeeClaim(_reporter, _params.collateralToken, feeToReporter);
+        _diva.transferFeeClaim(_excessFeeRecipient, _params.collateralToken, feeToExcessRecipient);
 
-        emit FinalReferenceValueSet(_poolId, _formattedFinalReferenceValue, _expiryTime, _timestampRetrieved);
+        emit FinalReferenceValueSet(_poolId, _formattedFinalReferenceValue, _params.expiryTime, _timestampRetrieved);
     }
 
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override onlyOwner {
