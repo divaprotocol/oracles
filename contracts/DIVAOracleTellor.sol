@@ -80,7 +80,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         bytes memory _valueRetrieved = retrieveData(_queryID, _timestampRetrieved);
 
         // Format values (18 decimals)
-        (uint256 _formattedFinalReferenceValue, uint256 _formattedCollateralValueUSD) = abi.decode(_valueRetrieved, (uint256, uint256));
+        (uint256 _formattedFinalReferenceValue, uint256 _formattedCollateralToUSDRate) = abi.decode(_valueRetrieved, (uint256, uint256));
 
         // Get address of reporter who will receive
         address _reporter = ITellor(_tellorAddress).getReporterByTimestamp(_queryID, _timestampRetrieved);
@@ -95,13 +95,13 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
 
         // Get the current fee claim allocated to this contract address (msg.sender)
         _temp.feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token; integer with collateral token decimals
-        _temp.feeClaimUSD = (_temp.feeClaim * _temp.scaling).multiplyDecimal(_formattedCollateralValueUSD);  // denominated in USD; integer with 18 decimals
+        _temp.feeClaimUSD = (_temp.feeClaim * _temp.scaling).multiplyDecimal(_formattedCollateralToUSDRate);  // denominated in USD; integer with 18 decimals
         _temp.feeToReporter;
         _temp.feeToExcessRecipient;
         
         if (_temp.feeClaimUSD > _maxFeeAmountUSD) { 
-            if (_formattedCollateralValueUSD != 0) {    
-                _temp.feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralValueUSD) / _temp.scaling - 1; // integer with collateral token decimals
+            if (_formattedCollateralToUSDRate != 0) {    
+                _temp.feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) / _temp.scaling - 1; // integer with collateral token decimals
             } else 
             {
                 _temp.feeToReporter = 0;
