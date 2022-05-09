@@ -8,7 +8,7 @@ const addresses = {
   }
 
 const tellorPlaygroundAddresses = {
-    ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10',
+    ropsten: '0x86C428B9A0C43D78BEe4B6beA1e7d149B116e09C',
     kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa'
 }
 

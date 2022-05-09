@@ -6,9 +6,10 @@ const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture")
 const { parseEther, parseUnits, formatEther, formatUnits } = require('@ethersproject/units');
 const { getLastTimestamp, setNextTimestamp, ONE_HOUR } = require('./utils.js')
 const { addresses, tellorPlaygroundAddresses } = require('../utils/constants') //  DIVA Protocol v0.9.0
+const { finalReferenceValueSet } = require('./events')
 
-const network = 'ropsten' // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
-const collateralTokenDecimals = 18
+const network = 'ropsten' // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
+const collateralTokenDecimals = 6
 
 function calcSettlementFee(
   collateralBalance,        // Basis for fee calcuation
@@ -48,7 +49,7 @@ describe('DIVAOracleTellor', () => {
       params: [{
         forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
-            blockNumber: 12085815 // choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed  
+            blockNumber: 12252024 // choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed  
         },
       },],
     });
@@ -362,7 +363,7 @@ describe('DIVAOracleTellor', () => {
         queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
         queryId = ethers.utils.keccak256(queryData)
 
-        // First reporter submission prior to expiration 
+        // Report value to tellor playground 
         finalReferenceValue = parseEther('42000');
         collateralToUSDRate = parseEther('1.14');
         oracleValue = abiCoder.encode(['uint256','uint256'],[finalReferenceValue, collateralToUSDRate])
@@ -376,16 +377,16 @@ describe('DIVAOracleTellor', () => {
           poolParams.settlementFee,
           collateralTokenDecimals,
           collateralToUSDRate
-        )
+        ) // feeAmount is expressed as an integer with collateral token decimals and feeAmountUSD with 18 decimals
 
-        // calculate equivalent of maxFeeAmountUSD in collateral token asset
+        // Confirm that implied USD value of fee exceeds maxFeeAmountUSD
         expect(feeAmountUSD).to.be.gte(maxFeeAmountUSD)
 
         // Calc max fee amount in collateral token
-        const maxFeeAmount = maxFeeAmountUSD.mul(parseEther('1')).div(collateralToUSDRate) 
+        const maxFeeAmount = maxFeeAmountUSD.mul(parseEther('1')).div(collateralToUSDRate).div(parseUnits('1', 18 - collateralTokenDecimals))  // in collateral token decimals
 
-        // Get user1's fee claim before
-        const feeClaimUserBefore = await diva.getClaims(erc20.address, user1.address)
+        // Get reporter's and excess fee recipient's fee claim before
+        const feeClaimReporterBefore = await diva.getClaims(erc20.address, user1.address)
         const feeClaimExcessFeeRecipientBefore = await diva.getClaims(erc20.address, excessFeeRecipient.address)
 
         // ---------
@@ -401,65 +402,114 @@ describe('DIVAOracleTellor', () => {
         // user3 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not 
         // allocated any fees
         // ---------
-        const feeClaimUserAfter = await diva.getClaims(erc20.address, user1.address)
+        const feeClaimReporterAfter = await diva.getClaims(erc20.address, user1.address)
         const feeClaimExcessFeeRecipientAfter = await diva.getClaims(erc20.address, excessFeeRecipient.address)
 
-        expect(feeClaimUserAfter).to.eq(feeClaimUserBefore.add(maxFeeAmount))
+        expect(feeClaimReporterAfter).to.eq(feeClaimReporterBefore.add(maxFeeAmount))
         expect(feeClaimExcessFeeRecipientAfter).to.eq(feeClaimExcessFeeRecipientBefore.add(feeAmount.sub(maxFeeAmount)))
         expect(await diva.getClaims(erc20.address, user3.address)).to.eq(0)
         expect(await diva.getClaims(erc20.address, divaOracleTellor.address)).to.eq(0)
 
     })
 
-    it('Should allocate all fees to excess fee recipient if collateralToUSDRate = 0', async () => {
-      // ---------
-      // Arrange: ...
-      // ---------
-      // ...
-      
-      // ---------
-      // Act: ...
-      // ---------
-      // ...
+    it('Should allocate all fees to reporter if collateralToUSDRate = 0 (should typically be disputed by the Tellor mechanism)', async () => {
+        // ---------
+        // Arrange: Create a contingent pool where settlement fee exceeds maxFeeAmountUSD and report zero collateralToUSDRate
+        // ---------
+        currentBlockTimestamp = await getLastTimestamp()
+        await diva.createContingentPool(
+          [
+            referenceAsset,                             // reference asset
+            currentBlockTimestamp,                         // expiryTime
+            parseEther("40000"),                        // floor
+            parseEther("43000"),                        // inflection
+            parseEther("46000"),                        // cap
+            parseUnits("100000", collateralTokenDecimals), // collateral balance short
+            parseUnits("100000", collateralTokenDecimals), // collateral balance long              
+            parseEther("200000"),                          // supplyPositionToken
+            erc20.address,                              // collateral token
+            divaOracleTellor.address,                   // data provider
+            0                                           // capacity
+          ]
+        );
+        latestPoolId = await diva.getLatestPoolId()
+        poolParams = await diva.getPoolParameters(latestPoolId)
+        
+        // Prepare value submission to tellorPlayground
+        queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])  // Re-construct as latestPoolId changed in this test
+        queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
+        queryId = ethers.utils.keccak256(queryData)
 
-      // ---------
-      // Assert: ...
-      // ---------
-      // ...
+        // Report value to tellor playground with collateralToUSDRate = 0
+        finalReferenceValue = parseEther('42000');
+        collateralToUSDRate = parseEther('0');
+        oracleValue = abiCoder.encode(['uint256','uint256'],[finalReferenceValue, collateralToUSDRate])
+        nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp)
+        await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData) 
+
+        // Calculate settlement fee expressed in both collateral token and USD
+        const { feeAmount } = calcSettlementFee(
+          poolParams.collateralBalance,
+          poolParams.settlementFee,
+          collateralTokenDecimals,
+          collateralToUSDRate
+        ) // feeAmount is expressed as an integer with collateral token decimals and feeAmountUSD with 18 decimals
+
+        // Get reporter's and excess fee recipient's fee claim before
+        const feeClaimReporterBefore = await diva.getClaims(erc20.address, user1.address)
+        const feeClaimExcessFeeRecipientBefore = await diva.getClaims(erc20.address, excessFeeRecipient.address)
+
+        // ---------
+        // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after minPeriodUndisputed
+        // from a random user account (user3) 
+        // ---------
+        nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp)
+        await divaOracleTellor.connect(user3).setFinalReferenceValue(divaAddress, latestPoolId) // triggered by a random user3
+        
+        // ---------
+        // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and 
+        // user3 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not 
+        // allocated any fees
+        // ---------
+        const feeClaimReporterAfter = await diva.getClaims(erc20.address, user1.address)
+        const feeClaimExcessFeeRecipientAfter = await diva.getClaims(erc20.address, excessFeeRecipient.address)
+
+        expect(feeClaimReporterAfter).to.eq(feeAmount)
+        expect(feeClaimExcessFeeRecipientAfter).to.eq(0)
+        expect(await diva.getClaims(erc20.address, user3.address)).to.eq(0)
+        expect(await diva.getClaims(erc20.address, divaOracleTellor.address)).to.eq(0)
     })
-
-    it('Should calculate the right fee amounts if collateral token has less than 18 decimals', async () => {
-      // ---------
-      // Arrange: ...
-      // ---------
-      // ...
-      
-      // ---------
-      // Act: ...
-      // ---------
-      // ...
-
-      // ---------
-      // Assert: ...
-      // ---------
-      // ...
-  })
 
     it('Should emit a FinalReferenceValueSet event', async () => {
         // ---------
-        // Arrange: ...
+        // Arrange: Submit values to tellorPlayground 
         // ---------
-        // ...
+        // Prepare value submission to tellorPlayground
+        finalReferenceValue = parseEther('42000');
+        collateralToUSDRate = parseEther('1.14');
+        oracleValue = abiCoder.encode(['uint256','uint256'],[finalReferenceValue, collateralToUSDRate])
+        // Submit value to Tellor playground contract
+        await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData) 
         
         // ---------
-        // Act: ...
+        // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed 
         // ---------
-        // ...
+        nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp)
+        await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
+        
+        // ---------
+        // Assert: Confirm that a FinalReferenceValueSet event is emitted with the correct values
+        // ---------
+        const timestampRetrieved = await tellorPlayground.getTimestampbyQueryIdandIndex(queryId, 0)
+        const event = await finalReferenceValueSet(divaOracleTellor)
+        expect(event.poolId).to.eq(latestPoolId)
+        expect(event.finalValue).to.eq(finalReferenceValue)
+        expect(event.expiryTime).to.eq(poolParams.expiryTime)
+        expect(event.timestamp).to.eq(timestampRetrieved)
 
-        // ---------
-        // Assert: ...
-        // ---------
-        // ...
     })
 
   });

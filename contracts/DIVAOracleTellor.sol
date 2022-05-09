@@ -85,16 +85,11 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(_formattedCollateralToUSDRate);  // denominated in USD; integer with 18 decimals
         uint256 feeToReporter;
         uint256 feeToExcessRecipient;
-        // 100000000000000000000
-        // 500000000000000000000
         
         if (feeClaimUSD > _maxFeeAmountUSD) { 
-            if (_formattedCollateralToUSDRate != 0) {    
-                feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) / _SCALING; // integer with collateral token decimals
-            } else 
-            {
-                feeToReporter = 0;
-            }
+            // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in which case it will 
+            // go into the else part, hence division by zero is not a problem
+            feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) / _SCALING; // integer with collateral token decimals
         } else {
             feeToReporter = feeClaim;
         }

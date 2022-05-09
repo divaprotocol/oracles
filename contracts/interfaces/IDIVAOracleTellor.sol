@@ -6,13 +6,13 @@ interface IDIVAOracleTellor {
      * @notice Emitted when the final reference value is set.
      * @param poolId The Id of an existing derivatives pool
      * @param finalValue Tellor value (converted into 18 decimals)
-     * @param expiryDate Unix timestamp in seconds of pool expiry date
+     * @param expiryTime Unix timestamp in seconds of pool expiry date
      * @param timestamp Tellor value timestamp
      */
     event FinalReferenceValueSet(
         uint256 indexed poolId,
         uint256 finalValue,
-        uint256 expiryDate,
+        uint256 expiryTime,
         uint256 timestamp
     );
 

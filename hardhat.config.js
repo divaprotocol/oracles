@@ -26,6 +26,7 @@ const MNEMONIC = process.env.MNEMONIC
      hardhat: {
          forking: {
              url: process.env.ALCHEMY_URL_ROPSTEN,
+             blockNumber: 12252024
          },
          accounts: {
           mnemonic: MNEMONIC, 
