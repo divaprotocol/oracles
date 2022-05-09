@@ -39,7 +39,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         // uint256 _expiryTime = _params.expiryTime;
 
         // Construct Tellor queryID (http://querybuilder.tellor.io/divaprotocolpolygon)
-        // bytes memory _b = abi.encode("DIVAProtocolPolygon", abi.encode(_poolId));
         bytes32 _queryID = keccak256(
             abi.encode("DIVAProtocolPolygon", abi.encode(_poolId))
         );
@@ -80,27 +79,27 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(_poolId, _formattedFinalReferenceValue, _challengeable);
 
-        // uint8 _decimals = IERC20Metadata(_params.collateralToken).decimals();
         uint256 _SCALING = uint256(10**(18 - IERC20Metadata(_params.collateralToken).decimals())); 
-
         // Get the current fee claim allocated to this contract address (msg.sender)
         uint256 feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token; integer with collateral token decimals
         uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(_formattedCollateralToUSDRate);  // denominated in USD; integer with 18 decimals
         uint256 feeToReporter;
         uint256 feeToExcessRecipient;
+        // 100000000000000000000
+        // 500000000000000000000
         
         if (feeClaimUSD > _maxFeeAmountUSD) { 
             if (_formattedCollateralToUSDRate != 0) {    
-                feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) / _SCALING - 1; // integer with collateral token decimals
+                feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) / _SCALING; // integer with collateral token decimals
             } else 
             {
                 feeToReporter = 0;
             }
-            feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
         } else {
             feeToReporter = feeClaim;
-            feeToExcessRecipient = 0;
         }
+
+        feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
 
         // Transfer fee claim to reporter and excessFeeRecipient
         _diva.transferFeeClaim(_reporter, _params.collateralToken, feeToReporter);
