@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.9;
 
 /**
  * @title Shortened version of the interface including required functions only
@@ -16,45 +16,41 @@ interface IDIVA {
     // Collection of pool related parameters
     struct Pool {
         string referenceAsset;
+        uint256 expiryTime;
+        uint256 floor;
         uint256 inflection;
         uint256 cap;
-        uint256 floor;
-        uint256 supplyShortInitial;
-        uint256 supplyLongInitial;
-        uint256 supplyShort;
-        uint256 supplyLong;
-        uint256 expiryDate;
+        uint256 supplyInitial;
         address collateralToken;
         uint256 collateralBalanceShortInitial;
         uint256 collateralBalanceLongInitial;
-        uint256 collateralBalanceShort;
-        uint256 collateralBalanceLong;
+        uint256 collateralBalance;
         address shortToken;
         address longToken;
         uint256 finalReferenceValue;
         Status statusFinalReferenceValue;
         uint256 redemptionAmountLongToken;
         uint256 redemptionAmountShortToken;
-        uint256 statusTimeStamp;
-        address dataFeedProvider;
+        uint256 statusTimestamp;
+        address dataProvider;
         uint256 redemptionFee;
         uint256 settlementFee;
         uint256 capacity;
     }
 
     /**
-     * @dev Throws if called by any account other than the dataFeedProvider
+     * @dev Throws if called by any account other than the `dataProvider`
      * specified in the contract parameters. Current implementation allows
      * for positive final values only. For negative metrices, choose the
-     * negated version as your reference asset (e.g., -LIBOR).
+     * negated or shifted version as your reference asset (e.g., -LIBOR).
      * @param _poolId The pool Id for which the settlement value is submitted
      * @param _finalReferenceValue Proposed settlement value by the data
      * feed provider
      * @param _allowChallenge Toggle to enable/disable the challenge
      * functionality. If 0, then the submitted reference value will
-     * immediately go into confirmed status, challenge will not be possible.
+     * immediately go into confirmed status, a challenge will not be possible.
      * This parameter was introduced to allow automated oracles (e.g.,
-     * Uniswap v3 or Chainlink) to settle without dispute.
+     * Tellor, Uniswap v3, Chainlink) to settle without dispute.
      */
     function setFinalReferenceValue(
         uint256 _poolId,
@@ -66,7 +62,7 @@ interface IDIVA {
      * @notice Function to transfer fee claims to another account. To be
      * called by oracle contract after a user has triggered the reference
      * value feed and settlement fees were assigned
-     * @dev msg.sender has to have a fee claim allocation in order to initiate
+     * @dev `msg.sender` has to have a fee claim allocation in order to initiate
      * the transfer
      * @param _recipient Recipient address of the fee claim
      * @param _collateralToken Collateral token address

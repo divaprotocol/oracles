@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
+require('solidity-coverage');
 require("dotenv").config();
 
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -18,10 +19,7 @@ const MNEMONIC = process.env.MNEMONIC
      solidity: {
        compilers: [
          {
-           version: "0.8.3"
-         },
-         {
-           version: "0.8.4"
+           version: "0.8.9"
          },
        ]
      },
@@ -29,7 +27,11 @@ const MNEMONIC = process.env.MNEMONIC
      hardhat: {
          forking: {
              url: process.env.ALCHEMY_URL_ROPSTEN,
-         }
+             blockNumber: 12252024
+         },
+         accounts: {
+          mnemonic: MNEMONIC, 
+        }
      },
      ropsten: {
       url: process.env.ALCHEMY_URL_ROPSTEN,
@@ -57,5 +59,8 @@ const MNEMONIC = process.env.MNEMONIC
       },
       gasPrice: 8000000000,
     }
-   }
+   },
+   mocha: {
+    timeout: 50000
+  }
 };

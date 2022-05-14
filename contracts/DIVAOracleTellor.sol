@@ -1,55 +1,117 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
+import "./libraries/SafeDecimalMath.sol";
 
-contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
+contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, ReentrancyGuard {
+    using SafeDecimalMath for uint256;
 
-    bool private _challengeable;
+    // Ordered to optimize storage
+    uint256 private _maxFeeAmountUSD;       // expressed as an integer with 18 decimals
+    address private _excessFeeRecipient;
     address private _tellorAddress;
-    address private _settlementFeeRecipient;
     uint32 private _minPeriodUndisputed;
+    bool private immutable _challengeable;
 
-    constructor(address payable tellorAddress_, address settlementFeeRecipient_, uint32 minPeriodUndisputed_) UsingTellor(tellorAddress_) {
+    constructor(
+        address payable tellorAddress_,
+        address excessFeeRecipient_,
+        uint32 minPeriodUndisputed_,
+        uint256 maxFeeAmountUSD_
+    ) UsingTellor(tellorAddress_) {
         _tellorAddress = tellorAddress_;
         _challengeable = false;
-        _settlementFeeRecipient = settlementFeeRecipient_;
+        _excessFeeRecipient = excessFeeRecipient_;
         _minPeriodUndisputed = minPeriodUndisputed_;
+        _maxFeeAmountUSD = maxFeeAmountUSD_;
     }
 
-    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override {
+    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId) external override nonReentrant {
         IDIVA _diva = IDIVA(_divaDiamond);
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);   // updated the Pool struct based on the latest contracts
 
-        uint256 _expiryDate = _params.expiryDate;
+        // uint256 _expiryTime = _params.expiryTime;
 
-        // Tellor query
-        bytes memory _b = abi.encode("DIVAProtocolPolygon", abi.encode(_poolId)); 
-        bytes32 _queryID = keccak256(_b);
-        (, bytes memory _value, uint256 _timestampRetrieved) = getDataBefore(_queryID, block.timestamp - _minPeriodUndisputed); // takes the latest value that is undisputed for at least an hour
+        // Construct Tellor queryID (http://querybuilder.tellor.io/divaprotocolpolygon)
+        bytes32 _queryID = keccak256(
+            abi.encode("DIVAProtocolPolygon", abi.encode(_poolId))
+        );
 
-        require(_timestampRetrieved >= _expiryDate, "Tellor: value set before expiry"); // if value disputed, timestampRetrieved will be 0 and hence this test will not pass, hence _ifRetrieve = true check not needed
-        uint256 _formattedValue = _sliceUint(_value);
+        // Find first oracle submission
+        uint256 _timestampRetrieved = getTimestampbyQueryIdandIndex(_queryID, 0);
 
-        // Forward final value to DIVA contract
-        _diva.setFinalReferenceValue(_poolId, _formattedValue, _challengeable);
+        // Handle case where data was submitted before expiryTime
+        if (_timestampRetrieved < _params.expiryTime) {            
+            // Check that data exists (_timestampRetrieved = 0 if it doesn't)
+            require(_timestampRetrieved > 0, "DIVAOracleTellor: no oracle submission");
 
-        emit FinalReferenceValueSet(_poolId, _formattedValue, _expiryDate, _timestampRetrieved);
-    }
+            // Retrieve latest array index of data before `_expiryTime` for the queryId
+            (, uint256 _index) = getIndexForDataBefore(_queryID, _params.expiryTime);      
 
-    function transferFeeClaim(address _divaDiamond, address _collateralToken, uint256 _amount) external override {
-        // Throws within DIVA contract if `_amount` exceeds the available fee claim
-        IDIVA(_divaDiamond).transferFeeClaim(_settlementFeeRecipient, _collateralToken, _amount);
+            // Increment index to get the first data point after `_expiryTime`
+            _index++;
+
+            // Get timestamp of first data point after `_expiryTime`
+            _timestampRetrieved = getTimestampbyQueryIdandIndex(_queryID, _index);
+
+            // _timestampRetrieved = 0 if there is no submission
+            require(_timestampRetrieved > 0, "DIVAOracleTellor: no oracle submission after expiry time");
+        }
+
+        // Check that _minPeriodUndisputed has passed after _timestampRetrieved
+        require(block.timestamp - _timestampRetrieved >= _minPeriodUndisputed, "DIVAOracleTellor: must wait _minPeriodUndisputed before calling this function");
+        
+        // Retrieve values (final reference value and USD value of collateral asset)
+        bytes memory _valueRetrieved = retrieveData(_queryID, _timestampRetrieved);
+
+        // Format values (18 decimals)
+        (uint256 _formattedFinalReferenceValue, uint256 _formattedCollateralToUSDRate) = abi.decode(_valueRetrieved, (uint256, uint256));
+
+        // Get address of reporter who will receive
+        address _reporter = ITellor(_tellorAddress).getReporterByTimestamp(_queryID, _timestampRetrieved);
+
+        // Forward final value to DIVA contract. Allocates the fee as part of that process.
+        _diva.setFinalReferenceValue(_poolId, _formattedFinalReferenceValue, _challengeable);
+
+        uint256 _SCALING = uint256(10**(18 - IERC20Metadata(_params.collateralToken).decimals())); 
+        // Get the current fee claim allocated to this contract address (msg.sender)
+        uint256 feeClaim = _diva.getClaims(_params.collateralToken, address(this));      // denominated in collateral token; integer with collateral token decimals
+        uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(_formattedCollateralToUSDRate);  // denominated in USD; integer with 18 decimals
+        uint256 feeToReporter;
+        uint256 feeToExcessRecipient;
+        
+        if (feeClaimUSD > _maxFeeAmountUSD) { 
+            // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in which case it will 
+            // go into the else part, hence division by zero is not a problem
+            feeToReporter = _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) / _SCALING; // integer with collateral token decimals
+        } else {
+            feeToReporter = feeClaim;
+        }
+
+        feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
+
+        // Transfer fee claim to reporter and excessFeeRecipient
+        _diva.transferFeeClaim(_reporter, _params.collateralToken, feeToReporter);
+        _diva.transferFeeClaim(_excessFeeRecipient, _params.collateralToken, feeToExcessRecipient);
+
+        emit FinalReferenceValueSet(_poolId, _formattedFinalReferenceValue, _params.expiryTime, _timestampRetrieved);
     }
 
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override onlyOwner {
-        require(_newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800, "Tellor: out of range");
+        require(_newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800, "DIVAOracleTellor: out of range");
         _minPeriodUndisputed = _newMinPeriodUndisputed;
     }
-    
+
+    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external override onlyOwner {
+        _maxFeeAmountUSD = _newMaxFeeAmountUSD;
+    }
+
     function challengeable() external view override returns (bool) {
         return _challengeable;
     }
@@ -58,26 +120,11 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable {
         return _tellorAddress;
     }
 
-    function getSettlementFeeRecipient() external view override returns (address) {
-        return _settlementFeeRecipient;
+    function getExcessFeeRecipient() external view override returns (address) {
+        return _excessFeeRecipient;
     }
 
     function getMinPeriodUndisputed() external view override returns (uint32) {
         return _minPeriodUndisputed;
     }
-
-    /**
-     * @dev Utilized to help slice a bytes variable into a uint
-     * @param _b is the bytes variable to be sliced
-     * @return _x of the sliced uint256
-     */
-    function _sliceUint(bytes memory _b) private pure returns (uint256 _x) {
-        uint256 _number = 0;
-        for (uint256 _i = 0; _i < _b.length; _i++) {
-            _number = _number * 2**8;
-            _number = _number + uint8(_b[_i]);
-        }
-        return _number;
-    }
-
 }
