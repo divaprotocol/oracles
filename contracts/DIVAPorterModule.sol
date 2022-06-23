@@ -4,16 +4,12 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./UsingTellor.sol";
-import "./interfaces/IDIVAOracleProtocol.sol";
+import "./interfaces/IDIVAPorterModule.sol";
 import "./interfaces/IBond.sol";
 import "./interfaces/IDIVA.sol";
-import "./libraries/SafeDecimalMath.sol";
 
-contract DIVAOracleProtocol is IDIVAOracleProtocol, Ownable, ReentrancyGuard {
-    using SafeDecimalMath for uint256;
-
-    // Storage
+contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
+    // Mapping to check if pool is settled already
     mapping(uint256 => bool) public poolIsSettled;
 
     // Ordered to optimize storage
@@ -30,25 +26,26 @@ contract DIVAOracleProtocol is IDIVAOracleProtocol, Ownable, ReentrancyGuard {
     {
         require(
             !poolIsSettled[_poolId],
-            "DIVAOracleProtocol: pool is already settled"
+            "DIVAPorterModule: pool is already settled"
         );
 
         IDIVA _diva = IDIVA(_divaDiamond);
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
-
-        uint256 _expiryTime = _params.expiryTime;
-        require(
-            _expiryTime <= block.timestamp,
-            "DIVAOracleProtocol: Porter Bond is not expired yet"
-        );
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         string memory _porterBond = _params.referenceAsset;
         IBond _bond = IBond(stringToAddress(_porterBond));
 
         uint256 _amountUnpaid = _bond.amountUnpaid();
+        uint256 _SCALING = uint256(
+            10**(18 - IERC20Metadata(_bond.paymentToken()).decimals())
+        );
 
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
-        _diva.setFinalReferenceValue(_poolId, _amountUnpaid, _challengeable);
+        _diva.setFinalReferenceValue(
+            _poolId,
+            _amountUnpaid * _SCALING, // formatted value (18 decimals)
+            _challengeable
+        );
 
         // Get the current fee claim allocated to this contract address (msg.sender)
         uint256 feeClaim = _diva.getClaims(
@@ -56,13 +53,11 @@ contract DIVAOracleProtocol is IDIVAOracleProtocol, Ownable, ReentrancyGuard {
             address(this)
         );
 
-        // Transfer fee claim to reporter and excessFeeRecipient
+        // Transfer fee claim to the first reporter who is calling the function
         _diva.transferFeeClaim(msg.sender, _params.collateralToken, feeClaim);
 
         // Set poolIsSettles as True
         poolIsSettled[_poolId] = true;
-
-        emit FinalReferenceValueSet(_poolId, _amountUnpaid, _params.expiryTime);
     }
 
     function createContingentPool(
@@ -87,8 +82,6 @@ contract DIVAOracleProtocol is IDIVAOracleProtocol, Ownable, ReentrancyGuard {
 
         IDIVA _diva = IDIVA(_divaDiamond);
         uint256 _poolId = _diva.createContingentPool(_poolParams);
-
-        emit PoolIssued(_poolId);
 
         return _poolId;
     }

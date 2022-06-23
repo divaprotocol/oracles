@@ -18,4 +18,11 @@ interface IBond {
         external
         view
         returns (uint256 gracePeriodEndTimestamp);
+
+    /**
+        @notice This is the token the borrower deposits into the contract and
+            what the Bond holders will receive when redeemed.
+        @return The address of the token.
+    */
+    function paymentToken() external view returns (address);
 }

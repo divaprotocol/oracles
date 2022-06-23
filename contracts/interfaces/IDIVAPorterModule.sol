@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-interface IDIVAOracleProtocol {
+interface IDIVAPorterModule {
     // Argument for `createContingentPool` function
     struct PorterPoolParams {
         address referenceAsset;
@@ -14,24 +14,6 @@ interface IDIVAOracleProtocol {
         address dataProvider;
         uint256 capacity;
     }
-
-    /**
-     * @notice Emitted when the final reference value is set.
-     * @param poolId The Id of an existing derivatives pool
-     * @param finalValue Unpaid amount from porter bond
-     * @param expiryTime Unix timestamp in seconds of pool expiry date
-     */
-    event FinalReferenceValueSet(
-        uint256 indexed poolId,
-        uint256 finalValue,
-        uint256 expiryTime
-    );
-
-    /**
-     * @notice Emitted when a new pool is created.
-     * @param poolId The Id of the newly created contingent pool.
-     */
-    event PoolIssued(uint256 indexed poolId);
 
     /**
      * @dev Function to set the final reference value for a given `poolId`.
