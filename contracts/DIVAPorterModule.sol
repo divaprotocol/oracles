@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
+import "hardhat/console.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IDIVAPorterModule.sol";
 import "./interfaces/IBond.sol";
+import "./interfaces/IBondFactory.sol";
 import "./interfaces/IDIVA.sol";
 
 contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
@@ -14,9 +17,11 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
 
     // Ordered to optimize storage
     bool private immutable _challengeable;
+    address private _bondFactoryAddress;
 
-    constructor() {
+    constructor(address bondFactoryAddress_) {
         _challengeable = false;
+        _bondFactoryAddress = bondFactoryAddress_;
     }
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
@@ -64,7 +69,13 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         address _divaDiamond,
         PorterPoolParams calldata _porterPoolParams
     ) external override nonReentrant returns (uint256) {
+        IBondFactory _bondFactory = IBondFactory(_bondFactoryAddress);
         address _porterBond = _porterPoolParams.referenceAsset;
+        require(
+            _bondFactory.isBond(_porterBond), // check if Bond address is valid from Bond factory contract
+            "DIVAPorterModule: invalid Bond address"
+        );
+
         IBond _bond = IBond(_porterBond);
         uint256 gracePeriodEnd = _bond.gracePeriodEnd();
 
@@ -86,8 +97,20 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         return _poolId;
     }
 
+    function setBondFactoryAddress(address _newBondFactoryAddress)
+        external
+        override
+        onlyOwner
+    {
+        _bondFactoryAddress = _newBondFactoryAddress;
+    }
+
     function challengeable() external view override returns (bool) {
         return _challengeable;
+    }
+
+    function getBondFactoryAddress() external view override returns (address) {
+        return _bondFactoryAddress;
     }
 
     /**

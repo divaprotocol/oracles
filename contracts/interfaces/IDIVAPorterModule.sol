@@ -63,8 +63,19 @@ interface IDIVAPorterModule {
     ) external returns (uint256);
 
     /**
+     * @dev Function to update `_bondFactoryAddress`. Only callable by contract owner.
+     * @param _newBondFactoryAddress New Bond Factory Address
+     */
+    function setBondFactoryAddress(address _newBondFactoryAddress) external;
+
+    /**
      * @dev Returns whether the oracle's data feed is challengeable or not.
      * Will return false in that implementation.
      */
     function challengeable() external view returns (bool);
+
+    /**
+     * @dev Returns Bond Factory address
+     */
+    function getBondFactoryAddress() external view returns (address);
 }
