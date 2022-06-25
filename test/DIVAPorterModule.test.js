@@ -45,7 +45,7 @@ describe("DIVAPorterModule", () => {
         user1.address,
         collateralTokenDecimals
       );
-      await erc20.approve(divaAddress, parseEther("1000000000"));
+      await erc20.approve(divaPorterModule.address, parseEther("1000000000"));
 
       // Create Bond contract using BondFactory contract
       const tx = await bondFactory.createBond(
@@ -99,12 +99,14 @@ describe("DIVAPorterModule", () => {
       // ---------
       latestPoolId = await diva.getLatestPoolId();
       poolParams = await diva.getPoolParameters(latestPoolId);
-      expect(poolParams.referenceAsset).to.eq(bondAddress); // check if referenceAsset is equal to bondAddress
+      console.log('poolParams.referenceAsset', poolParams.referenceAsset.length)
+      console.log('bondAddress', bondAddress.length)
+      expect(poolParams.referenceAsset).to.eq(bondAddress.toLowerCase()); // check if referenceAsset is equal to bondAddress
     });
   });
 
   describe("setFinalReferenceValue", async () => {
-    it("Should set a unpaid amount from Bond as the final reference value in DIVA Protocol", async () => {
+    it.only("Should set a unpaid amount from Bond as the final reference value in DIVA Protocol", async () => {
       // ---------
       // Arrange: Confirm that pool is already settled or not.
       // ---------

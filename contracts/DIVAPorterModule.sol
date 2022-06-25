@@ -6,12 +6,15 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IDIVAPorterModule.sol";
 import "./interfaces/IBond.sol";
 import "./interfaces/IBondFactory.sol";
 import "./interfaces/IDIVA.sol";
 
 contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20Metadata;
+
     // Mapping to check if pool is settled already
     mapping(uint256 => bool) public poolIsSettled;
 
@@ -68,7 +71,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     function createContingentPool(
         address _divaDiamond,
         PorterPoolParams calldata _porterPoolParams
-    ) external override nonReentrant returns (uint256) {
+    ) external override nonReentrant returns (uint256) {        
         IBondFactory _bondFactory = IBondFactory(_bondFactoryAddress);
         address _porterBond = _porterPoolParams.referenceAsset;
         require(
@@ -78,6 +81,17 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
 
         IBond _bond = IBond(_porterBond);
         uint256 gracePeriodEnd = _bond.gracePeriodEnd();
+
+        // Set allowance for collateral token
+        IERC20Metadata collateralToken = IERC20Metadata(_porterPoolParams.collateralToken);
+        collateralToken.approve(_divaDiamond, _porterPoolParams.collateralAmount);
+
+        // Transfer approved collateral tokens from user to DIVAPorterModule contract
+        collateralToken.safeTransferFrom(
+            msg.sender,
+            address(this),
+            _porterPoolParams.collateralAmount
+        );
 
         IDIVA.PoolParams memory _poolParams;
         _poolParams.referenceAsset = addressToString(_porterBond);
