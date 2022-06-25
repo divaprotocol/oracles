@@ -15,27 +15,25 @@ interface IDIVA {
 
     // Collection of pool related parameters
     struct Pool {
-        string referenceAsset;
-        uint256 expiryTime;
         uint256 floor;
         uint256 inflection;
         uint256 cap;
-        uint256 supplyInitial;
-        address collateralToken;
-        uint256 collateralBalanceShortInitial;
-        uint256 collateralBalanceLongInitial;
+        uint256 gradient;
         uint256 collateralBalance;
-        address shortToken;
-        address longToken;
         uint256 finalReferenceValue;
-        Status statusFinalReferenceValue;
-        uint256 redemptionAmountLongToken;
-        uint256 redemptionAmountShortToken;
-        uint256 statusTimestamp;
-        address dataProvider;
-        uint256 redemptionFee;
-        uint256 settlementFee;
         uint256 capacity;
+        uint256 statusTimestamp;
+        address shortToken;
+        uint96 payoutShort;
+        address longToken;                  
+        uint96 payoutLong;
+        address collateralToken;
+        uint96 expiryTime;
+        address dataProvider;
+        uint96 protocolFee;
+        uint96 settlementFee;
+        Status statusFinalReferenceValue;
+        string referenceAsset;
     }
 
     // Argument for `createContingentPool` function

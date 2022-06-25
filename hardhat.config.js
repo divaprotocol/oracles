@@ -58,7 +58,13 @@ const MNEMONIC = process.env.MNEMONIC
         mnemonic: MNEMONIC, 
       },
       gasPrice: 8000000000,
-    }
+    },
+    goerli: {
+     url: process.env.ALCHEMY_URL_GOERLI,
+     accounts: {
+       mnemonic: MNEMONIC, 
+     },
+   }
    },
    mocha: {
     timeout: 50000

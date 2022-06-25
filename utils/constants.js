@@ -1,10 +1,11 @@
 // DIVA contract addresses on different networks (v0.9.0)
 const addresses = {
   rinkeby: "0xa1fa77354D7810A6355583b566E5adB29C3f7733",
-  ropsten: "0xebBAA31B1Ebd727A1a42e71dC15E304aD8905211", // new used for testnet
+  ropsten: "0xe4B55fC1968C8913AA120E42846d233Bbcb803F6", // audited contract
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
   kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101",
   polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B",
+  goerli: "0x2d8642777C51dB31945CeDbbC3198d75e497cb48"
 };
 
 const tellorPlaygroundAddresses = {

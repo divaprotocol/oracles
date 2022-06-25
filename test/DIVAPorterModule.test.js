@@ -6,7 +6,7 @@ const { parseEther, parseUnits } = require("@ethersproject/units");
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const { addresses } = require("../utils/constants");
 
-const network = "ropsten"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
+const network = "goerli"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
 
 describe("DIVAPorterModule", () => {
