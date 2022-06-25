@@ -58,23 +58,23 @@ describe("DIVAPorterModule", () => {
         .newBond;
     });
 
-    it("Should throw error when user pass non-bond address for referenceAsset", async () => {
+    it("Should throw an error when user passes a non-bond address for referenceAsset", async () => {
       await expect(
         divaPorterModule.createContingentPool(divaAddress, [
           divaPorterModule.address, // Non Porter Bond address
           parseEther("40000"), // floor
           parseEther("43000"), // inflection
           parseEther("46000"), // cap
-          parseUnits("100", 18), // collateral balance
-          parseEther("200"), // supplyPositionToken
+          parseEther("0.5"), // gradient
+          parseUnits("100", collateralTokenDecimals), // collateral amount
           erc20.address, // collateral token
           divaPorterModule.address, // data provider
-          0, // capacity
+          parseUnits("300", collateralTokenDecimals), // capacity
         ])
       ).to.be.revertedWith("DIVAPorterModule: invalid Bond address");
     });
 
-    it("Should create contingent pool on DIVA protocol", async () => {
+    it.only("Should create contingent pool on DIVA protocol", async () => {
       // ---------
       // Act: Call createContingentPool function inside DIVAPorterModule
       // ---------
@@ -84,11 +84,11 @@ describe("DIVAPorterModule", () => {
           parseEther("40000"), // floor
           parseEther("43000"), // inflection
           parseEther("46000"), // cap
-          parseUnits("100", 15), // gradient
-          parseEther("0.2"), // collateralAmount
+          parseEther("0.5"), // gradient
+          parseUnits("100", collateralTokenDecimals), // collateral amount
           erc20.address, // collateral token
           divaPorterModule.address, // data provider
-          parseEther("300"), // capacity
+          parseUnits("300", collateralTokenDecimals), // capacity
         ]);
       } catch (error) {
         console.error(error);
