@@ -2,7 +2,9 @@
 pragma solidity 0.8.9;
 
 interface IDIVAPorterModule {
-    // Argument for `createContingentPool` function
+    // Argument for `createContingentPool` function inside DIVAPorterModule contract.
+    // Note that expiryTime is automatically set to the end of the grace period.
+    // Further note that referenceAsset is an address rather than a string.
     struct PorterPoolParams {
         address referenceAsset;
         uint256 floor;
@@ -26,7 +28,9 @@ interface IDIVAPorterModule {
         external;
 
     /**
-     * @notice Function to create contingent pool
+     * @notice Function to create contingent pool. Note that as opposed to DIVA Protocol,
+     * expiryTime is automatically set to the end of the grace period. Further note that
+     * referenceAsset is an address rather than a string.
      * @dev Position token supply equals `collateralAmount` (minimum 1e6).
      * Position tokens have the same amount of decimals as the collateral token.
      * Only ERC20 tokens with 6 <= decimals <= 18 are accepted as collateral.

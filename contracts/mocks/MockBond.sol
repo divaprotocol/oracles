@@ -8,6 +8,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+import "hardhat/console.sol";
+/**
+ @notice Mock version of the Porter Finance contract: https://github.com/porter-finance/v1-core/blob/main/contracts/Bond.sol
+ */
 contract MockBond is IBond, Ownable, ERC20 {
     /**
         @notice A period of time after maturity in which bond redemption is
@@ -59,7 +63,6 @@ contract MockBond is IBond, Ownable, ERC20 {
         if (bondSupply <= _paymentBalance) {
             return 0;
         }
-
         paymentTokens = bondSupply - _paymentBalance;
     }
 }

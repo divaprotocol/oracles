@@ -143,11 +143,12 @@ describe("DIVAPorterModule", () => {
       expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
     });
 
-    it("Should revert if the poool is already settled", async () => {
+    // ---------
+    // Reverts
+    // ---------
+    it("Should revert if the pool is already settled", async () => {
       // ---------
-      // Arrange: Confirm that finalRereferenceValue and statusFinalReferenceValue are not yet set on DIVA Protocol
-      // and the pool was not yet settled on DIVA Porter module.
-      // and set a unpaid amount from Bond as the final reference value in DIVA Protocol.
+      // Arrange: Settle pool using amountUnpaid from Porter Bond contract
       // ---------
       latestPoolId = await diva.getLatestPoolId();
       poolParams = await diva.getPoolParameters(latestPoolId);
@@ -160,7 +161,7 @@ describe("DIVAPorterModule", () => {
       await divaPorterModule.setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
-      // Assert: try to call setFinalReferenceValue func
+      // Act & Assert: Confirm that the setFinalReferenceValue function will fail if called after the pool has been already settled
       // ---------
       await expect(
         divaPorterModule.setFinalReferenceValue(divaAddress, latestPoolId)

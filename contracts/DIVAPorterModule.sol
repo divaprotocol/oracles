@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "hardhat/console.sol";
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -18,7 +16,6 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     // Mapping to check if pool is settled already
     mapping(uint256 => bool) public poolIsSettled;
 
-    // Ordered to optimize storage
     bool private immutable _challengeable;
     address private _bondFactoryAddress;
 
@@ -37,18 +34,29 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
             "DIVAPorterModule: pool is already settled"
         );
 
+        // Connect to DIVA contract and extract pool parameters based on `_poolId`
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
+        // Connect to Porter Bond contract based on the address stored in the 
+        // referenceAsset field
         string memory _porterBond = _params.referenceAsset;
         IBond _bond = IBond(stringToAddress(_porterBond));
 
         uint256 _amountUnpaid = _bond.amountUnpaid();
+        
+        // Get scaling factor as DIVA Protocol expects the final reference value
+        // to be expressed as an integer with 18 decimals, but payment token
+        // may have less decimals
         uint256 _SCALING = uint256(
             10**(18 - IERC20Metadata(_bond.paymentToken()).decimals())
         );
 
-        // Forward final value to DIVA contract. Allocates the fee as part of that process.
+        // Update poolIsSettled storage variable external contract interactions 
+        poolIsSettled[_poolId] = true;
+
+        // Forward final value to DIVA contract. Allocates the settlement fee as part of 
+        // that process to this contract.
         _diva.setFinalReferenceValue(
             _poolId,
             _amountUnpaid * _SCALING, // formatted value (18 decimals)
@@ -63,9 +71,6 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
 
         // Transfer fee claim to the first reporter who is calling the function
         _diva.transferFeeClaim(msg.sender, _params.collateralToken, feeClaim);
-
-        // Set poolIsSettles as True
-        poolIsSettled[_poolId] = true;
     }
 
     function createContingentPool(
