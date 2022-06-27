@@ -15,7 +15,7 @@ contract MockBond is IBond, Ownable, ERC20 {
             once the grace period has ended. The issuer has the ability to
             pay during this time to fully pay the bond. 
     */
-    uint256 internal constant GRACE_PERIOD = 10 minutes; // 7 days in real Porter Bond
+    uint256 internal constant GRACE_PERIOD = 10 seconds; // 7 days in real Porter Bond
 
     uint256 public maturity;
     address public paymentToken;

@@ -71,7 +71,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     function createContingentPool(
         address _divaDiamond,
         PorterPoolParams calldata _porterPoolParams
-    ) external override nonReentrant returns (uint256) {        
+    ) external override nonReentrant returns (uint256) {
         IBondFactory _bondFactory = IBondFactory(_bondFactoryAddress);
         address _porterBond = _porterPoolParams.referenceAsset;
         require(
@@ -83,8 +83,13 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         uint256 gracePeriodEnd = _bond.gracePeriodEnd();
 
         // Set allowance for collateral token
-        IERC20Metadata collateralToken = IERC20Metadata(_porterPoolParams.collateralToken);
-        collateralToken.approve(_divaDiamond, _porterPoolParams.collateralAmount);
+        IERC20Metadata collateralToken = IERC20Metadata(
+            _porterPoolParams.collateralToken
+        );
+        collateralToken.approve(
+            _divaDiamond,
+            _porterPoolParams.collateralAmount
+        );
 
         // Transfer approved collateral tokens from user to DIVAPorterModule contract
         collateralToken.safeTransferFrom(
@@ -138,7 +143,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         bytes32 _bytes = bytes32(uint256(uint160(_addr)));
         bytes memory _hex = "0123456789abcdef";
 
-        bytes memory _string = new bytes(51);
+        bytes memory _string = new bytes(42);
         _string[0] = "0";
         _string[1] = "x";
         for (uint256 i = 0; i < 20; i++) {
@@ -153,6 +158,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
      */
     function stringToAddress(string memory _a) public pure returns (address) {
         bytes memory tmp = bytes(_a);
+        require(tmp.length == 42, "DIVAPorterModule: invalid address");
         uint160 iaddr = 0;
         uint160 b1;
         uint160 b2;

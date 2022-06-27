@@ -25,7 +25,7 @@ interface IDIVA {
         uint256 statusTimestamp;
         address shortToken;
         uint96 payoutShort;
-        address longToken;                  
+        address longToken;
         uint96 payoutLong;
         address collateralToken;
         uint96 expiryTime;
