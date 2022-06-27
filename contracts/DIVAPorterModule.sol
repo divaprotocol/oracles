@@ -41,7 +41,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         // Connect to Porter Bond contract based on the address stored in the 
         // referenceAsset field
         string memory _porterBond = _params.referenceAsset;
-        IBond _bond = IBond(stringToAddress(_porterBond));
+        IBond _bond = IBond(_stringToAddress(_porterBond));
 
         uint256 _amountUnpaid = _bond.amountUnpaid();
         
@@ -86,6 +86,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
 
         IBond _bond = IBond(_porterBond);
         uint256 gracePeriodEnd = _bond.gracePeriodEnd();
+        uint256 bondTotalSupply = IERC20Metadata(_porterBond).totalSupply();
 
         // Set allowance for collateral token
         IERC20Metadata collateralToken = IERC20Metadata(
@@ -104,15 +105,15 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         );
 
         IDIVA.PoolParams memory _poolParams;
-        _poolParams.referenceAsset = addressToString(_porterBond);
+        _poolParams.referenceAsset = _addressToString(_porterBond);
         _poolParams.expiryTime = uint96(gracePeriodEnd);
-        _poolParams.floor = _porterPoolParams.floor;
+        _poolParams.floor = 0;
         _poolParams.inflection = _porterPoolParams.inflection;
-        _poolParams.cap = _porterPoolParams.cap;
+        _poolParams.cap = bondTotalSupply;
         _poolParams.gradient = _porterPoolParams.gradient;
         _poolParams.collateralAmount = _porterPoolParams.collateralAmount;
         _poolParams.collateralToken = _porterPoolParams.collateralToken;
-        _poolParams.dataProvider = _porterPoolParams.dataProvider;
+        _poolParams.dataProvider = address(this);
         _poolParams.capacity = _porterPoolParams.capacity;
 
         IDIVA _diva = IDIVA(_divaDiamond);
@@ -140,8 +141,8 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     /**
      * @notice Function to convert address to string.
      */
-    function addressToString(address _addr)
-        public
+    function _addressToString(address _addr)
+        internal
         pure
         returns (string memory)
     {
@@ -161,7 +162,11 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     /**
      * @notice Function to convert string to address.
      */
-    function stringToAddress(string memory _a) public pure returns (address) {
+    function _stringToAddress(string memory _a)
+        internal
+        pure
+        returns (address)
+    {
         bytes memory tmp = bytes(_a);
         require(tmp.length == 42, "DIVAPorterModule: invalid address");
         uint160 iaddr = 0;

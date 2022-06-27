@@ -4,21 +4,23 @@ const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture");
 const { parseEther, parseUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
+const BOND_ABI = require("../contracts/abi/Bond.json");
 const { addresses } = require("../utils/constants");
+const { setNextTimestamp } = require("./utils.js");
 
 const network = "goerli"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
-
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 describe("DIVAPorterModule", () => {
   let divaPorterModule;
   let divaAddress = addresses[network];
   let bondFactory;
   let bondAddress;
+  let bond;
   let latestPoolId;
   let poolParams;
   let erc20;
+  let gracePeriodEnd;
 
   beforeEach(async () => {
     // Get user
@@ -43,7 +45,7 @@ describe("DIVAPorterModule", () => {
     erc20 = await erc20DeployFixture(
       "DummyToken",
       "DCT",
-      parseEther("1000000000"),
+      parseUnits("1000000000", collateralTokenDecimals),
       user1.address,
       collateralTokenDecimals
     );
@@ -51,10 +53,17 @@ describe("DIVAPorterModule", () => {
     await erc20.approve(divaPorterModule.address, parseEther("1000000000"));
 
     // Create Bond contract using BondFactory contract
-    const tx = await bondFactory.createBond("DummyBond", "DBD", erc20.address);
+    const tx = await bondFactory.createBond(
+      "DummyBond",
+      "DBD",
+      erc20.address,
+      parseUnits("1000", collateralTokenDecimals)
+    );
     const receipt = await tx.wait();
     bondAddress = receipt.events?.find((x) => x.event === "BondCreated")?.args
       .newBond;
+    bond = await ethers.getContractAt(BOND_ABI, bondAddress);
+    gracePeriodEnd = await bond.gracePeriodEnd();
   });
 
   describe("createContingentPool", async () => {
@@ -62,13 +71,10 @@ describe("DIVAPorterModule", () => {
       await expect(
         divaPorterModule.createContingentPool(divaAddress, [
           divaPorterModule.address, // Non Porter Bond address
-          parseEther("40000"), // floor
-          parseEther("43000"), // inflection
-          parseEther("46000"), // cap
+          parseUnits("600", collateralTokenDecimals), // inflection
           parseEther("0.5"), // gradient
           parseUnits("100", collateralTokenDecimals), // collateral amount
           erc20.address, // collateral token
-          divaPorterModule.address, // data provider
           parseUnits("300", collateralTokenDecimals), // capacity
         ])
       ).to.be.revertedWith("DIVAPorterModule: invalid Bond address");
@@ -76,26 +82,27 @@ describe("DIVAPorterModule", () => {
 
     it("Should create contingent pool on DIVA protocol", async () => {
       // ---------
-      // Act: Call createContingentPool function inside DIVAPorterModule
+      // Act: Call createContingentPool function inside DIVA Porter module
       // ---------
       await divaPorterModule.createContingentPool(divaAddress, [
         bondAddress, // Porter Bond address
-        parseEther("40000"), // floor
-        parseEther("43000"), // inflection
-        parseEther("46000"), // cap
+        parseUnits("600", collateralTokenDecimals), // inflection
         parseEther("0.5"), // gradient
         parseUnits("100", collateralTokenDecimals), // collateral amount
         erc20.address, // collateral token
-        divaPorterModule.address, // data provider
         parseUnits("300", collateralTokenDecimals), // capacity
       ]);
 
       // ---------
-      // Assert: new pool is created with Bond address as referenceAsset
+      // Assert: Confirm that new pool is created with Bond address as referenceAsset
+      // and expiryTime is equal to periodEnd of Bond
+      // and dataProvider is equal to DIVA Porter module address
       // ---------
       latestPoolId = await diva.getLatestPoolId();
       poolParams = await diva.getPoolParameters(latestPoolId);
-      expect(poolParams.referenceAsset).to.eq(bondAddress.toLowerCase()); // check if referenceAsset is equal to bondAddress
+      expect(poolParams.referenceAsset).to.eq(bondAddress.toLowerCase());
+      expect(poolParams.expiryTime).to.eq(gracePeriodEnd.toNumber());
+      expect(poolParams.dataProvider).to.eq(divaPorterModule.address);
     });
   });
 
@@ -104,18 +111,15 @@ describe("DIVAPorterModule", () => {
       // Create congingent pool using DIVA Porter module
       await divaPorterModule.createContingentPool(divaAddress, [
         bondAddress, // Porter Bond address
-        parseEther("40000"), // floor
-        parseEther("43000"), // inflection
-        parseEther("46000"), // cap
+        parseUnits("600", collateralTokenDecimals), // inflection
         parseEther("0.5"), // gradient
         parseUnits("100", collateralTokenDecimals), // collateral amount
         erc20.address, // collateral token
-        divaPorterModule.address, // data provider
         parseUnits("300", collateralTokenDecimals), // capacity
       ]);
 
       // Wait till the pool end
-      await delay(10000);
+      await setNextTimestamp(ethers.provider, gracePeriodEnd.toNumber());
     });
 
     it("Should set a unpaid amount from Bond as the final reference value in DIVA Protocol", async () => {
@@ -131,16 +135,22 @@ describe("DIVAPorterModule", () => {
       const poolIsSettled = await divaPorterModule.poolIsSettled(latestPoolId);
       expect(poolIsSettled).to.eq(false);
 
+      const amountUnpaid = await bond.amountUnpaid();
+
       // ---------
       // Act: Call setFinalReferenceValue function inside DIVAPorterModule
       // ---------
       await divaPorterModule.setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
-      // Assert: statusFinalReferenceValue is updated accordingly in DIVA Protocol
+      // Assert: Confirm that statusFinalReferenceValue is updated accordingly in DIVA Protocol
+      // and finalReferenceValue is udpated as amountUnpaid
       // ---------
       poolParams = await diva.getPoolParameters(latestPoolId);
       expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
+      expect(poolParams.finalReferenceValue).to.eq(
+        amountUnpaid.mul(parseUnits("1", 18 - collateralTokenDecimals))
+      );
     });
 
     // ---------

@@ -27,10 +27,14 @@ contract MockBond is IBond, Ownable, ERC20 {
     constructor(
         string memory bondName,
         string memory bondSymbol,
-        address _paymentToken
+        address _paymentToken,
+        uint256 maxSupply
     ) ERC20(bondName, bondSymbol) {
         maturity = block.timestamp; // provided when create Bond in real Porter Bond
         paymentToken = _paymentToken;
+
+        // Transfer all bond shares to the address initializing this contract.
+        _mint(msg.sender, maxSupply);
     }
 
     function gracePeriodEnd()

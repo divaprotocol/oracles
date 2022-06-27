@@ -7,13 +7,10 @@ interface IDIVAPorterModule {
     // Further note that referenceAsset is an address rather than a string.
     struct PorterPoolParams {
         address referenceAsset;
-        uint256 floor;
         uint256 inflection;
-        uint256 cap;
         uint256 gradient;
         uint256 collateralAmount;
         address collateralToken;
-        address dataProvider;
         uint256 capacity;
     }
 
@@ -45,19 +42,13 @@ interface IDIVAPorterModule {
      * when a new version of DIVA Protocol is released.
      * @param _porterPoolParams Struct containing the pool specification:
      * - referenceAsset: The address of bond contract.
-     * - floor: Value of underlying at or below which the short token will pay
-         out the max amount and the long token zero.
      * - inflection: Value of underlying at which the long token will payout
          out `gradient` and the short token `1-gradient`.
-     * - cap: Value of underlying at or above which the long token will pay
-         out the max amount and short token zero.
      * - gradient: Long token payout at inflection. The short token payout at
          inflection is `1-gradient`.
      * - collateralAmount: Collateral amount to be deposited into the pool to
          back the position tokens.
      * - collateralToken: ERC20 collateral token address.
-     * - dataProvider: Address that is supposed to report the final value of
-         the reference asset.
      * - capacity: The maximum collateral amount that the pool can accept.
      * @return poolId
      */

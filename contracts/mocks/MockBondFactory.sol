@@ -17,9 +17,10 @@ contract MockBondFactory is IBondFactory, Ownable {
     function createBond(
         string memory name,
         string memory symbol,
-        address paymentToken
+        address paymentToken,
+        uint256 bonds
     ) external onlyOwner returns (address bondAddress) {
-        MockBond _bond = new MockBond(name, symbol, paymentToken);
+        MockBond _bond = new MockBond(name, symbol, paymentToken, bonds);
         bondAddress = address(_bond);
         isBond[bondAddress] = true;
 

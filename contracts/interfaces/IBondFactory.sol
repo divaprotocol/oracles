@@ -18,7 +18,8 @@ interface IBondFactory {
     function createBond(
         string memory name,
         string memory symbol,
-        address paymentToken
+        address paymentToken,
+        uint256 bonds
     ) external returns (address bondAddress);
 
     /**
