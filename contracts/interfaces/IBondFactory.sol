@@ -3,26 +3,6 @@ pragma solidity 0.8.9;
 
 interface IBondFactory {
     /**
-        @notice Emitted when a new bond is created.
-        @param newBond The address of the newly deployed bond.
-    */
-    event BondCreated(address newBond);
-
-    /**
-        @notice Creates a new Bond. The calculated ratios are rounded down.
-        @param name Passed into the ERC20 token to define the name.
-        @param symbol Passed into the ERC20 token to define the symbol.
-        @param paymentToken The ERC20 token address the Bond is redeemable for.
-        @return bondAddress The address of the newly created Bond.
-    */
-    function createBond(
-        string memory name,
-        string memory symbol,
-        address paymentToken,
-        uint256 bonds
-    ) external returns (address bondAddress);
-
-    /**
         @notice Returns whether or not the given address key is a bond created
             by this Bond factory.
         @dev This mapping is used to check if a bond was issued by this contract

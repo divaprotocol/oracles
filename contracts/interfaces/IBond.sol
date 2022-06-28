@@ -9,18 +9,6 @@ interface IBond {
     function amountUnpaid() external view returns (uint256 paymentTokens);
 
     /**
-        @notice A date set at Bond creation when the Bond will mature.
-        @return The maturity date as a timestamp.
-    */
-    function maturity() external view returns (uint256);
-
-    /**
-        @notice Gets the external balance of the ERC20 paymentToken.
-        @return paymentTokens The number of paymentTokens in the contract.
-    */
-    function paymentBalance() external view returns (uint256 paymentTokens);
-
-    /**
         @notice One week after the maturity date. Bond collateral can be 
             redeemed after this date.
         @return gracePeriodEndTimestamp The grace period end date as 

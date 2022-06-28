@@ -5,22 +5,28 @@ const { parseEther, parseUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const BOND_ABI = require("../contracts/abi/Bond.json");
-const { addresses } = require("../utils/constants");
-const { setNextTimestamp } = require("./utils.js");
+const BOND_FACTORY_ABI = require("../contracts/abi/BondFactory.json");
+const { addresses, bondFactoryInfo } = require("../utils/constants");
+const { setNextTimestamp, getLastTimestamp } = require("./utils.js");
 
-const network = "goerli"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
+const network = "rinkeby"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
+const paymentTokenDecimals = 6;
+const tokenAmount = "1000000000";
+const transferAmount = "100000000";
 
 describe("DIVAPorterModule", () => {
   let divaPorterModule;
   let divaAddress = addresses[network];
-  let bondFactory;
+  let bondFactoryAddr = bondFactoryInfo.address[network];
   let bondAddress;
   let bond;
   let latestPoolId;
   let poolParams;
-  let erc20;
+  let collateralToken;
+  let paymentToken;
   let gracePeriodEnd;
+  let bondTotalSupply;
 
   beforeEach(async () => {
     // Get user
@@ -29,9 +35,17 @@ describe("DIVAPorterModule", () => {
     // Get DIVA protocol contract
     diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
 
-    // Deploy Bond factory contract
-    const mockBondFactory = await ethers.getContractFactory("MockBondFactory");
-    bondFactory = await mockBondFactory.deploy();
+    // Get BondFactory contract using signer of issuer role account
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [bondFactoryInfo.issuer],
+    });
+    const signer = await ethers.getSigner(bondFactoryInfo.issuer);
+    bondFactory = await ethers.getContractAt(
+      BOND_FACTORY_ABI,
+      bondFactoryAddr,
+      signer
+    );
 
     // Deploy DIVA Porter module contract
     const divaPorterModuleFactory = await ethers.getContractFactory(
@@ -41,40 +55,85 @@ describe("DIVAPorterModule", () => {
       bondFactory.address
     );
 
-    // Create DummyToken for the collateral token
-    erc20 = await erc20DeployFixture(
-      "DummyToken",
-      "DCT",
-      parseUnits("1000000000", collateralTokenDecimals),
+    // Deploy CollateralToken
+    collateralToken = await erc20DeployFixture(
+      "CollateralToken",
+      "COT",
+      parseUnits(tokenAmount, collateralTokenDecimals),
       user1.address,
       collateralTokenDecimals
     );
-    // Approve DummyToken to DIVA Porter module contract
-    await erc20.approve(divaPorterModule.address, parseEther("1000000000"));
+
+    // Approve CollateralToken to DIVA Porter module contract
+    await collateralToken.approve(
+      divaPorterModule.address,
+      parseUnits(tokenAmount, collateralTokenDecimals)
+    );
+
+    // Transfer CollateralToken to issuer of BondFactory
+    await collateralToken.transfer(
+      bondFactoryInfo.issuer,
+      parseUnits(transferAmount, collateralTokenDecimals)
+    );
+
+    // Approve CollateralToken to BondFactory contract with issuer role signer
+    await collateralToken
+      .connect(signer)
+      .approve(
+        bondFactory.address,
+        parseUnits(transferAmount, collateralTokenDecimals)
+      );
+
+    // Deploy PaymentToken
+    paymentToken = await erc20DeployFixture(
+      "PaymentToken",
+      "PAT",
+      parseUnits(tokenAmount, paymentTokenDecimals),
+      user1.address,
+      paymentTokenDecimals
+    );
+
+    // Grant allowed token role for payment token and collateral token
+    await bondFactory.grantRole(
+      bondFactoryInfo.roles.allowedToken,
+      paymentToken.address
+    );
+    await bondFactory.grantRole(
+      bondFactoryInfo.roles.allowedToken,
+      collateralToken.address
+    );
 
     // Create Bond contract using BondFactory contract
+    const currentBlockTimestamp = await getLastTimestamp();
     const tx = await bondFactory.createBond(
-      "DummyBond",
-      "DBD",
-      erc20.address,
-      parseUnits("1000", collateralTokenDecimals)
+      "DummyBond", // name
+      "DBD", // symbol
+      currentBlockTimestamp + 1000, // maturity
+      paymentToken.address, // paymentToken
+      collateralToken.address, // collateralToken
+      parseUnits("2000", collateralTokenDecimals), // collateralTokenAmount
+      parseUnits("1000", collateralTokenDecimals), // convertibleTokenAmount
+      parseUnits("1000", collateralTokenDecimals) // bonds
     );
     const receipt = await tx.wait();
     bondAddress = receipt.events?.find((x) => x.event === "BondCreated")?.args
       .newBond;
     bond = await ethers.getContractAt(BOND_ABI, bondAddress);
     gracePeriodEnd = await bond.gracePeriodEnd();
+    bondTotalSupply = await bond.totalSupply();
   });
 
   describe("createContingentPool", async () => {
     it("Should throw an error when user passes a non-bond address for referenceAsset", async () => {
+      const invalidReferenceAsset = divaPorterModule.address;
+
       await expect(
         divaPorterModule.createContingentPool(divaAddress, [
-          divaPorterModule.address, // Non Porter Bond address
+          invalidReferenceAsset, // Non Porter Bond address
           parseUnits("600", collateralTokenDecimals), // inflection
           parseEther("0.5"), // gradient
           parseUnits("100", collateralTokenDecimals), // collateral amount
-          erc20.address, // collateral token
+          collateralToken.address, // collateral token
           parseUnits("300", collateralTokenDecimals), // capacity
         ])
       ).to.be.revertedWith("DIVAPorterModule: invalid Bond address");
@@ -89,7 +148,7 @@ describe("DIVAPorterModule", () => {
         parseUnits("600", collateralTokenDecimals), // inflection
         parseEther("0.5"), // gradient
         parseUnits("100", collateralTokenDecimals), // collateral amount
-        erc20.address, // collateral token
+        collateralToken.address, // collateral token
         parseUnits("300", collateralTokenDecimals), // capacity
       ]);
 
@@ -97,12 +156,16 @@ describe("DIVAPorterModule", () => {
       // Assert: Confirm that new pool is created with Bond address as referenceAsset
       // and expiryTime is equal to periodEnd of Bond
       // and dataProvider is equal to DIVA Porter module address
+      // and floor is equal to 0
+      // and cap is equal to totalSupply of Bond contract
       // ---------
       latestPoolId = await diva.getLatestPoolId();
       poolParams = await diva.getPoolParameters(latestPoolId);
       expect(poolParams.referenceAsset).to.eq(bondAddress.toLowerCase());
       expect(poolParams.expiryTime).to.eq(gracePeriodEnd.toNumber());
       expect(poolParams.dataProvider).to.eq(divaPorterModule.address);
+      expect(poolParams.floor).to.eq(0);
+      expect(poolParams.cap).to.eq(bondTotalSupply);
     });
   });
 
@@ -114,7 +177,7 @@ describe("DIVAPorterModule", () => {
         parseUnits("600", collateralTokenDecimals), // inflection
         parseEther("0.5"), // gradient
         parseUnits("100", collateralTokenDecimals), // collateral amount
-        erc20.address, // collateral token
+        collateralToken.address, // collateral token
         parseUnits("300", collateralTokenDecimals), // capacity
       ]);
 
@@ -122,7 +185,7 @@ describe("DIVAPorterModule", () => {
       await setNextTimestamp(ethers.provider, gracePeriodEnd.toNumber());
     });
 
-    it("Should set a unpaid amount from Bond as the final reference value in DIVA Protocol", async () => {
+    it("Should set an unpaid amount from Bond as the final reference value in DIVA Protocol", async () => {
       // ---------
       // Arrange: Confirm that finalRereferenceValue and statusFinalReferenceValue are not yet set on DIVA Protocol
       // and the pool was not yet settled on DIVA Porter module.
