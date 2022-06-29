@@ -14,7 +14,7 @@ const bondFactoryInfo = {
   },
   roles: {
     allowedToken:
-      "0x94a5b40e9ddb843bda953e14636ea28eec9c9e9913064fe7321def93f0bc7d95",
+      "0x94a5b40e9ddb843bda953e14636ea28eec9c9e9913064fe7321def93f0bc7d95", // hash of a the ALLOWED_TOKEN role: https://rinkeby.etherscan.io/address/0x0ae42cF40Fb46A926e2dcCE92b2Fe785d2D1E0A0#readContract
   },
   issuer: "0xfab4AF4EA2EB609868cDb4f744155d67f0A5BF41",
 };

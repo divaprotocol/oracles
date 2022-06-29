@@ -93,11 +93,14 @@ describe("DIVAPorterModule", () => {
       paymentTokenDecimals
     );
 
-    // Grant allowed token role for payment token and collateral token
+    // Grant allowed token role for payment token and collateral token in order to use them for creating bonds
+    // Only needed if `isTokenAllowListEnabled` is true (which it is in the current contract)
+    // Check out the contract: https://github.com/porter-finance/v1-core/blob/main/contracts/BondFactory.sol#L150
     await bondFactory.grantRole(
       bondFactoryInfo.roles.allowedToken,
       paymentToken.address
     );
+    // Using same collateral token as for createContingentPool for simplicity
     await bondFactory.grantRole(
       bondFactoryInfo.roles.allowedToken,
       collateralToken.address
@@ -113,12 +116,18 @@ describe("DIVAPorterModule", () => {
       collateralToken.address, // collateralToken
       parseUnits("2000", collateralTokenDecimals), // collateralTokenAmount
       parseUnits("1000", collateralTokenDecimals), // convertibleTokenAmount
-      parseUnits("1000", collateralTokenDecimals) // bonds
+      parseUnits("1000", paymentTokenDecimals) // bonds
     );
     const receipt = await tx.wait();
+    
+    // Get address of the bond created
     bondAddress = receipt.events?.find((x) => x.event === "BondCreated")?.args
       .newBond;
+
+    // Connect to the created bond contract 
     bond = await ethers.getContractAt(BOND_ABI, bondAddress);
+
+    // Read grace period and supply details from the bond contract
     gracePeriodEnd = await bond.gracePeriodEnd();
     bondTotalSupply = await bond.totalSupply();
   });
@@ -212,8 +221,13 @@ describe("DIVAPorterModule", () => {
       poolParams = await diva.getPoolParameters(latestPoolId);
       expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
       expect(poolParams.finalReferenceValue).to.eq(
-        amountUnpaid.mul(parseUnits("1", 18 - collateralTokenDecimals))
-      );
+        amountUnpaid.mul(parseUnits("1", 18 - paymentTokenDecimals))
+      ); // DIVA Protocol expects the final value to be represented as an integer with 18 decimals
+      
+      // TODO: 
+      // expect(poolParams.payoutLong).to.eq(0);
+      // expect(poolParams.payoutShort).to.eq(1*0.997); // You have to deduct settlement + protocol fee of combined 0.3% (0.003)
+
     });
 
     // ---------
