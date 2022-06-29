@@ -11,6 +11,8 @@ const addresses = {
 const bondFactoryInfo = {
   address: {
     rinkeby: "0x0ae42cF40Fb46A926e2dcCE92b2Fe785d2D1E0A0",
+    ropsten: "0x74Ef0622280dfae28F9513e9173CaFF711C47eF4",
+    goerli: "0x74Ef0622280dfae28F9513e9173CaFF711C47eF4",
   },
   roles: {
     allowedToken:

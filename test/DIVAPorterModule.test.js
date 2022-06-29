@@ -11,7 +11,7 @@ const { setNextTimestamp, getLastTimestamp } = require("./utils.js");
 
 const network = "rinkeby"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
-const paymentTokenDecimals = 6;
+const paymentTokenDecimals = 18;
 const tokenAmount = "1000000000";
 const transferAmount = "100000000";
 
@@ -119,12 +119,12 @@ describe("DIVAPorterModule", () => {
       parseUnits("1000", paymentTokenDecimals) // bonds
     );
     const receipt = await tx.wait();
-    
+
     // Get address of the bond created
     bondAddress = receipt.events?.find((x) => x.event === "BondCreated")?.args
       .newBond;
 
-    // Connect to the created bond contract 
+    // Connect to the created bond contract
     bond = await ethers.getContractAt(BOND_ABI, bondAddress);
 
     // Read grace period and supply details from the bond contract
@@ -217,17 +217,19 @@ describe("DIVAPorterModule", () => {
       // ---------
       // Assert: Confirm that statusFinalReferenceValue is updated accordingly in DIVA Protocol
       // and finalReferenceValue is udpated as amountUnpaid
+      // and payout amounts (net of fees) are correct
       // ---------
       poolParams = await diva.getPoolParameters(latestPoolId);
       expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
       expect(poolParams.finalReferenceValue).to.eq(
         amountUnpaid.mul(parseUnits("1", 18 - paymentTokenDecimals))
       ); // DIVA Protocol expects the final value to be represented as an integer with 18 decimals
-      
-      // TODO: 
-      // expect(poolParams.payoutLong).to.eq(0);
-      // expect(poolParams.payoutShort).to.eq(1*0.997); // You have to deduct settlement + protocol fee of combined 0.3% (0.003)
-
+      expect(poolParams.payoutLong).to.eq(
+        parseUnits("0.997", collateralTokenDecimals)
+      ); // (1- 0.3% fee)
+      expect(poolParams.payoutShort).to.eq(
+        parseUnits("0", collateralTokenDecimals)
+      );
     });
 
     // ---------
