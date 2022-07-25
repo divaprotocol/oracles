@@ -38,13 +38,13 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
-        // Connect to Porter Bond contract based on the address stored in the 
+        // Connect to Porter Bond contract based on the address stored in the
         // referenceAsset field
         string memory _porterBond = _params.referenceAsset;
         IBond _bond = IBond(_stringToAddress(_porterBond));
 
         uint256 _amountUnpaid = _bond.amountUnpaid();
-        
+
         // Get scaling factor as DIVA Protocol expects the final reference value
         // to be expressed as an integer with 18 decimals, but payment token
         // may have less decimals
@@ -52,10 +52,10 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
             10**(18 - IERC20Metadata(_bond.paymentToken()).decimals())
         );
 
-        // Update poolIsSettled storage variable external contract interactions 
+        // Update poolIsSettled storage variable external contract interactions
         poolIsSettled[_poolId] = true;
 
-        // Forward final value to DIVA contract. Allocates the settlement fee as part of 
+        // Forward final value to DIVA contract. Allocates the settlement fee as part of
         // that process to this contract.
         _diva.setFinalReferenceValue(
             _poolId,

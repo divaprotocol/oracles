@@ -41,7 +41,7 @@ describe("DIVAPorterModule", () => {
       params: [bondFactoryInfo.issuer],
     });
     const signer = await ethers.getSigner(bondFactoryInfo.issuer);
-    bondFactory = await ethers.getContractAt(
+    const bondFactory = await ethers.getContractAt(
       BOND_FACTORY_ABI,
       bondFactoryAddr,
       signer
