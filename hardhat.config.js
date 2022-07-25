@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-waffle");
-require('solidity-coverage');
+require("@nomiclabs/hardhat-etherscan");
+require("solidity-coverage");
 require("dotenv").config();
 
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -10,57 +11,69 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-const MNEMONIC = process.env.MNEMONIC
+const MNEMONIC = process.env.MNEMONIC;
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
- module.exports = {
-     solidity: {
-       compilers: [
-         {
-           version: "0.8.9"
-         },
-       ]
-     },
-   networks: {
-     hardhat: {
-         forking: {
-             url: process.env.ALCHEMY_URL_ROPSTEN,
-             blockNumber: 12252024
-         },
-         accounts: {
-          mnemonic: MNEMONIC, 
-        }
-     },
-     ropsten: {
+module.exports = {
+  solidity: {
+    compilers: [
+      {
+        version: "0.8.9",
+      },
+    ],
+  },
+  etherscan: {
+    apiKey: {
+      ropsten: process.env.ETHERSCAN_API_KEY,
+      goerli: process.env.ETHERSCAN_API_KEY,
+    },
+  },
+  networks: {
+    hardhat: {
+      forking: {
+        url: process.env.ALCHEMY_URL_RINKEBY,
+        blockNumber: 10932590,
+      },
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    ropsten: {
       url: process.env.ALCHEMY_URL_ROPSTEN,
       accounts: {
-        mnemonic: MNEMONIC, 
+        mnemonic: MNEMONIC,
       },
-      gasPrice: 8000000000
+      gasPrice: 8000000000,
     },
     rinkeby: {
       url: process.env.ALCHEMY_URL_RINKEBY,
       accounts: {
-        mnemonic: MNEMONIC, 
+        mnemonic: MNEMONIC,
       },
     },
     kovan: {
       url: process.env.ALCHEMY_URL_KOVAN,
       accounts: {
         mnemonic: MNEMONIC,
-      }
+      },
     },
-     polygon_mumbai: {
+    polygon_mumbai: {
       url: process.env.ALCHEMY_URL_POLYGON_MUMBAI,
       accounts: {
-        mnemonic: MNEMONIC, 
+        mnemonic: MNEMONIC,
       },
       gasPrice: 8000000000,
-    }
-   },
-   mocha: {
-    timeout: 50000
-  }
+    },
+    goerli: {
+      url: process.env.ALCHEMY_URL_GOERLI,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+  },
+  mocha: {
+    timeout: 50000,
+  },
 };
