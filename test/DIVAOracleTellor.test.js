@@ -104,10 +104,14 @@ describe('DIVAOracleTellor', () => {
         queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])
         queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
         queryId = ethers.utils.keccak256(queryData)
+        console.log('latestPoolId', latestPoolId)
+        console.log('queryDataArgs', queryDataArgs)
+        console.log('queryData', queryData)
+        console.log('queryId', queryId)
         
     })
 
-    it('Should add a value to TellorPlayground', async () => {
+    it.only('Should add a value to TellorPlayground', async () => {
         // ---------
         // Arrange: Prepare values and submit to tellorPlayground
         // ---------
