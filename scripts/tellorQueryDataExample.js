@@ -2,10 +2,10 @@ const { ethers } = require("hardhat");
 
 async function main() {
 
-  // Tellor value submission example
+  // Load ABI code from ethers library
   abiCoder = new ethers.utils.AbiCoder
   
-  
+  // Generate queryId for Tellor submission
   const latestPoolId = 1
   queryDataArgs = abiCoder.encode(['uint256'], [latestPoolId])
   queryData = abiCoder.encode(['string','bytes'], ['DIVAProtocolPolygon', queryDataArgs])
