@@ -1,6 +1,6 @@
 // DIVA contract addresses on different networks (v0.9.1)
 const addresses = {
-  rinkeby: "0x4F7ad4674e67aFc2169984f194d7a5e77926327C",
+  rinkeby: "0x3481C73363b52a26068b1C7006CEF98670FEE514",
   ropsten: "0xebBAA31B1Ebd727A1a42e71dC15E304aD8905211", // v0.9.1 used in the testnet app; 
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
   kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101",
@@ -22,6 +22,7 @@ const bondFactoryInfo = {
 };
 
 const tellorPlaygroundAddresses = {
+  rinkeby: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A", // new used for testnet
   ropsten: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A", // new used for testnet
   kovan: "0x320f09D9f92Cfa0e9C272b179e530634D873aeFa",
 };

@@ -4,9 +4,9 @@ const { addresses } = require('../utils/constants');
 
 async function main() {
 
-  const network = "ropsten"
-  let divaOracleTellorAddress = "0xebBAA31B1Ebd727A1a42e71dC15E304aD8905211" // Ropsten
-  let poolId = 157
+  const network = "rinkeby"
+  let divaOracleTellorAddress = "0x7f4262f9511702a4e69F1AA41adDD653Fbc50cf9" // Rinkeby
+  let poolId = 4
   divaAddress = addresses[network]
   console.log("divaAddress: " + divaAddress)
 
