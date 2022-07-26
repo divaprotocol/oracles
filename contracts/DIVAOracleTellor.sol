@@ -19,9 +19,9 @@ contract DIVAOracleTellor is
 
     // Ordered to optimize storage
     ITellor public tellor; // Tellor contract address
-    IERC20 public tippingToken; // TRB token address
+    IERC20 public tippingToken; // TRB token address // QUESTION Why only one token?
     address public feeTo;
-    uint256 public fee; // 1000 is 100%, 50 is 5%, etc.
+    uint256 public fee; // 1000 is 100%, 50 is 5%, etc. // QUESTION is that more gas efficient?
 
     mapping(uint256 => mapping(bytes32 => Feed)) dataFeed; // mapping poolId to dataFeedId to details
     mapping(uint256 => bytes32[]) currentFeeds; // mapping poolId to dataFeedIds array
@@ -45,13 +45,13 @@ contract DIVAOracleTellor is
         address feeTo_,
         uint256 fee_
     ) UsingTellor(tellorAddress_) {
-        tellor = ITellor(tellorAddress_);
+        tellor = ITellor(tellorAddress_); // QUESTION: Why do we need this? This is already inside UsingTellor contract
         _challengeable = false;
         _excessFeeRecipient = excessFeeRecipient_;
         _minPeriodUndisputed = minPeriodUndisputed_;
         _maxFeeAmountUSD = maxFeeAmountUSD_;
 
-        tippingToken = IERC20(tippingToken_);
+        tippingToken = IERC20(tippingToken_); // QUESTION The plan was to have multiple options for the tipping token; I wouldn't set it in the constructor; Or you want to use a default token?
         feeTo = feeTo_;
         fee = fee_;
     }
@@ -182,7 +182,7 @@ contract DIVAOracleTellor is
         );
     }
 
-    function getQueryId(uint256 _poolId) public pure returns (bytes32) {
+    function getQueryId(uint256 _poolId) public pure returns (bytes32) { // COMMENT I like that!
         return
             keccak256(abi.encode("DIVAProtocolPolygon", abi.encode(_poolId)));
     }
@@ -230,7 +230,7 @@ contract DIVAOracleTellor is
         require(tips[_poolId].length > 0, "no tips submitted for this poolId");
         uint256 _reward;
         uint256 _cumulativeReward;
-        for (uint256 _i = 0; _i < _timestamps.length; _i++) {
+        for (uint256 _i = 0; _i < _timestamps.length; _i++) { // COMMENT Check out the whitelist contract for a gas optimized way to do for loops;
             (_reward) = _claimOneTimeTip(_poolId, _timestamps[_i]);
             _cumulativeReward += _reward;
         }
@@ -371,7 +371,7 @@ contract DIVAOracleTellor is
      * @param _poolId ID of tipped data
      * @param _amount amount to tip
      */
-    function tip(uint256 _poolId, uint256 _amount) external {
+    function tip(uint256 _poolId, uint256 _amount) external { // COMMENT Add tipping token here
         // require(
         //     _queryId == keccak256(_queryData) || uint256(_queryId) <= 100,
         //     "id must be hash of bytes data"

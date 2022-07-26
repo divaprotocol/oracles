@@ -76,7 +76,7 @@ describe("DIVAOracleTellor", () => {
           forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
             // blockNumber: 10932590, // Rinkeby; choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
-            blockNumber: 12666000, // Ropsten; choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
+            blockNumber: 12435703, // Ropsten; choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
           },
         },
       ],

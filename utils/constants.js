@@ -28,7 +28,7 @@ const tellorPlaygroundAddresses = {
 };
 
 const divaTellorOracleAddresses = {
-  ropsten: "0x2f4218C9262216B7B73A76334e5A98F3eF71A61c"
+  ropsten: "0x2f4218C9262216B7B73A76334e5A98F3eF71A61c" // That's connecting to DIVA version 0.9.1!
 }
 
 // Status mapping

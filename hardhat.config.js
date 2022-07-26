@@ -36,7 +36,7 @@ module.exports = {
         // url: process.env.ALCHEMY_URL_RINKEBY,
         // blockNumber: 10932590,
         url: process.env.ALCHEMY_URL_ROPSTEN,
-        blockNumber: 12666000, 
+        blockNumber: 12435703, 
       },
       accounts: {
         mnemonic: MNEMONIC,
