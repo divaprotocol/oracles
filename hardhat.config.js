@@ -33,8 +33,10 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.ALCHEMY_URL_RINKEBY,
-        blockNumber: 10932590,
+        // url: process.env.ALCHEMY_URL_RINKEBY,
+        // blockNumber: 10932590,
+        url: process.env.ALCHEMY_URL_ROPSTEN,
+        blockNumber: 12666000, 
       },
       accounts: {
         mnemonic: MNEMONIC,

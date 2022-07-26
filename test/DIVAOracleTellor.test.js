@@ -15,10 +15,10 @@ const {
   ONE_HOUR,
   TEN_MINS,
 } = require("./utils.js");
-const { addresses, tellorPlaygroundAddresses } = require("../utils/constants"); //  DIVA Protocol v0.9.0
+const { addresses, tellorPlaygroundAddresses } = require("../utils/constants"); //  DIVA Protocol v1.0.0
 const { finalReferenceValueSet } = require("./events");
 
-const network = "rinkeby"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
+const network = "ropsten"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
 
 function calcSettlementFee(
@@ -27,22 +27,20 @@ function calcSettlementFee(
   collateralTokenDecimals,
   collateralToUSDRate // USD value of one unit of collateral token
 ) {
-  // Fee amount in collateral token
+  // Fee amount in collateral token decimals
   feeAmount = collateralBalance
-    .mul(parseUnits("1", 18 - collateralTokenDecimals))
     .mul(fee)
     .div(parseEther("1"))
-    .div(parseUnits("1", 18 - collateralTokenDecimals));
 
-  // Fee amount in USD
+  // Fee amount in USD expressed as integer with 18 decimals
   feeAmountUSD = feeAmount
     .mul(parseUnits("1", 18 - collateralTokenDecimals))
     .mul(collateralToUSDRate)
     .div(parseEther("1"));
 
   return {
-    feeAmount,
-    feeAmountUSD,
+    feeAmount, // expressed as integer with collateral token decimals
+    feeAmountUSD, // expressed as integer with 18 decimals
   };
 }
 
@@ -77,7 +75,8 @@ describe("DIVAOracleTellor", () => {
         {
           forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
-            blockNumber: 10932590, // choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed
+            // blockNumber: 10932590, // Rinkeby; choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
+            blockNumber: 12666000, // Ropsten; choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
           },
         },
       ],

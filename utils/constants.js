@@ -1,4 +1,4 @@
-// DIVA contract addresses on different networks (v0.9.0)
+// DIVA contract addresses on different networks (v1.0.0)
 const addresses = {
   rinkeby: "0x4F7ad4674e67aFc2169984f194d7a5e77926327C",
   ropsten: "0xe4B55fC1968C8913AA120E42846d233Bbcb803F6", // audited contract
