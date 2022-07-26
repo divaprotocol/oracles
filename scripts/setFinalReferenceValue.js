@@ -5,7 +5,7 @@ const { addresses } = require('../utils/constants');
 async function main() {
 
   const network = "ropsten"
-  let divaOracleTellorAddress = "0xebBAA31B1Ebd727A1a42e71dC15E304aD8905211" // Ropsten
+  let divaOracleTellorAddress = "0x2f4218C9262216B7B73A76334e5A98F3eF71A61c" // Ropsten
   let poolId = 157
   divaAddress = addresses[network]
   console.log("divaAddress: " + divaAddress)
@@ -21,7 +21,6 @@ async function main() {
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId)
   console.log(poolParams)
-
 }
 
 main()

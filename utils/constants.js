@@ -27,6 +27,10 @@ const tellorPlaygroundAddresses = {
   rinkeby: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A",
 };
 
+const divaTellorOracleAddresses = {
+  ropsten: "0x2f4218C9262216B7B73A76334e5A98F3eF71A61c"
+}
+
 // Status mapping
 const status = {
   0: "Open",
@@ -39,3 +43,4 @@ exports.addresses = addresses;
 exports.bondFactoryInfo = bondFactoryInfo;
 exports.status = status;
 exports.tellorPlaygroundAddresses = tellorPlaygroundAddresses;
+exports.divaTellorOracleAddresses = divaTellorOracleAddresses;
