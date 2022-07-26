@@ -7,7 +7,7 @@ async function main() {
 
   const tellorPlaygroundAddress = tellorPlaygroundAddresses["ropsten"] 
   const excessFeeRecipient = '0x1EE5730C710cF06dFA7952D61A321eC8e16b9d3A' // temporary address
-  const periodMinPeriodUndisputed = 3600; // 1 hour 
+  const periodMinPeriodUndisputed = 10; // 1 hour 
   const maxFeeAmountUSD = parseEther('10') // $10
 
   const divaOracleTellorFactory = await hre.ethers.getContractFactory("DIVAOracleTellor");

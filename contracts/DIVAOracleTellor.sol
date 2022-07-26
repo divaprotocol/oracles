@@ -104,7 +104,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, Reentrancy
     }
 
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external override onlyOwner {
-        require(_newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800, "DIVAOracleTellor: out of range");
+        require(_newMinPeriodUndisputed >= 10 && _newMinPeriodUndisputed <= 64800, "DIVAOracleTellor: out of range");
         _minPeriodUndisputed = _newMinPeriodUndisputed;
     }
 
