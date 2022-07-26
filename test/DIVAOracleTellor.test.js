@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const DIVA_ABI = require('../contracts/abi/DIVA.json');
+const DIVA_ABI = require('../contracts/abi/DIVA_old.json');
 const { BigNumber } = require('ethers')
 const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture")
 const { parseEther, parseUnits, formatEther, formatUnits } = require('@ethersproject/units');
@@ -8,7 +8,7 @@ const { getLastTimestamp, setNextTimestamp, ONE_HOUR } = require('./utils.js')
 const { addresses, tellorPlaygroundAddresses } = require('../utils/constants') //  DIVA Protocol v0.9.0
 const { finalReferenceValueSet } = require('./events')
 
-const network = 'ropsten' // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
+const network = 'rinkeby' // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6
 
 function calcSettlementFee(
@@ -49,7 +49,7 @@ describe('DIVAOracleTellor', () => {
       params: [{
         forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
-            blockNumber: 12252024 // choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed  
+            blockNumber: 11091281 // choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed  
         },
       },],
     });
@@ -77,6 +77,7 @@ describe('DIVAOracleTellor', () => {
 
         // Create an expired contingent pool that uses Tellor as the data provider
         currentBlockTimestamp = await getLastTimestamp()
+        console.log('HIII')
         await diva.createContingentPool(
             [
               referenceAsset,                             // reference asset
@@ -107,7 +108,7 @@ describe('DIVAOracleTellor', () => {
         
     })
 
-    it('Should add a value to TellorPlayground', async () => {
+    it.only('Should add a value to TellorPlayground', async () => {
         // ---------
         // Arrange: Prepare values and submit to tellorPlayground
         // ---------
@@ -119,7 +120,7 @@ describe('DIVAOracleTellor', () => {
         // Act: Submit value to tellorPlayground
         // ---------
         await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData) 
-
+        console.log('Value submitted')
         // ---------
         // Assert: Check that timestamp and values have been set in tellorPlayground contract
         // ---------

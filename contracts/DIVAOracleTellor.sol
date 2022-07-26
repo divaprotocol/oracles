@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
-import "./interfaces/IDIVA.sol";
+import "./interfaces/IDIVA_old.sol";
 import "./libraries/SafeDecimalMath.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, Ownable, ReentrancyGuard {
