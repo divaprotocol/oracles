@@ -39,6 +39,7 @@ module.exports = {
       accounts: {
         mnemonic: MNEMONIC,
       },
+      allowUnlimitedContractSize: true,
     },
     ropsten: {
       url: process.env.ALCHEMY_URL_ROPSTEN,
@@ -74,6 +75,6 @@ module.exports = {
     },
   },
   mocha: {
-    timeout: 50000,
+    timeout: 100000,
   },
 };

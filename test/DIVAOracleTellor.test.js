@@ -47,6 +47,9 @@ function calcSettlementFee(
 }
 
 describe("DIVAOracleTellor", () => {
+  let erc20;
+  let userStartCollateralTokenBalance;
+
   let divaOracleTellor;
   let tellorPlayground;
   let tellorPlaygroundAddress = tellorPlaygroundAddresses[network]; // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
@@ -57,8 +60,15 @@ describe("DIVAOracleTellor", () => {
   let minPeriodUndisputed = ONE_HOUR;
 
   beforeEach(async () => {
-    [user1, treasury, user3, reporter1, reporter2, excessFeeRecipient] =
-      await ethers.getSigners();
+    [
+      user1,
+      treasury,
+      user3,
+      reporter1,
+      reporter2,
+      excessFeeRecipient,
+      tippingFeeRecipient,
+    ] = await ethers.getSigners();
 
     // Reset block
     await hre.network.provider.request({
@@ -73,6 +83,15 @@ describe("DIVAOracleTellor", () => {
       ],
     });
 
+    userStartCollateralTokenBalance = parseEther("1000000");
+    erc20 = await erc20DeployFixture(
+      "DummyToken",
+      "DCT",
+      userStartCollateralTokenBalance,
+      user1.address,
+      collateralTokenDecimals
+    );
+
     const divaOracleTellorFactory = await ethers.getContractFactory(
       "DIVAOracleTellor"
     );
@@ -80,7 +99,10 @@ describe("DIVAOracleTellor", () => {
       tellorPlaygroundAddress,
       excessFeeRecipient.address,
       minPeriodUndisputed,
-      maxFeeAmountUSD
+      maxFeeAmountUSD,
+      erc20.address,
+      tippingFeeRecipient.address,
+      10
     );
     tellorPlayground = await ethers.getContractAt(
       "TellorPlayground",
@@ -89,8 +111,6 @@ describe("DIVAOracleTellor", () => {
   });
 
   describe("setFinalReferenceValue", async () => {
-    let erc20;
-    let userStartCollateralTokenBalance;
     let initialCollateralTokenAllowance;
     let poolExpiryTime;
     let latestPoolId;
@@ -99,15 +119,7 @@ describe("DIVAOracleTellor", () => {
 
     beforeEach(async () => {
       diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
-      userStartCollateralTokenBalance = parseEther("1000000");
       initialCollateralTokenAllowance = parseEther("1000000");
-      erc20 = await erc20DeployFixture(
-        "DummyToken",
-        "DCT",
-        userStartCollateralTokenBalance,
-        user1.address,
-        collateralTokenDecimals
-      );
       await erc20.approve(diva.address, initialCollateralTokenAllowance);
 
       // Create an expired contingent pool that uses Tellor as the data provider // Create an expired contingent pool that uses Tellor as the data provider
