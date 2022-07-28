@@ -2,57 +2,33 @@
 pragma solidity 0.8.9;
 
 interface IDIVAOracleTellor {
-    // Structs
-    struct FeedDetails {
-        uint256 reward; // amount paid for each eligible data submission
-        uint256 balance; // account remaining balance
-        uint256 startTime; // time of first payment window
-        uint256 interval; // time between pay periods
-        uint256 window; // amount of time data can be submitted per interval
-        uint256 priceThreshold; //change in price necessitating an update 100 = 1%
-        uint256 feedsWithFundingIndex; // index plus one of dataFeedID in feedsWithFunding array (0 if not in array)
+    // Struct for pool detail
+    struct PoolDetail {
+        address tellorReporter;
+        uint256 formattedCollateralToUSDRate;
+        bool rewardClaimed;
     }
 
-    struct Feed {
-        FeedDetails details;
-        mapping(uint256 => bool) rewardClaimed; // tracks which tips were already paid out
-    }
-
-    struct Tip {
-        uint256 amount;
-        uint256 timestamp;
-    }
-
-    // Events
-    event NewDataFeed(
-        uint256 _poolId,
-        bytes32 _feedId,
-        // bytes _queryData,
-        address _feedCreator
-    );
-    event DataFeedFunded(
-        bytes32 _feedId,
-        uint256 _poolId,
-        uint256 _amount,
-        address _feedFunder
-    );
-    event OneTimeTipClaimed(
-        uint256 _poolId,
-        uint256 _amount,
-        address _reporter
-    );
+    /**
+     * @notice Emitted when the tip is added.
+     * @param poolId The Id of an existing derivatives pool
+     * @param tippingToken Address of tipping token
+     * @param amount Tipping token amount
+     * @param tipper Address of user who adds the tip
+     */
     event TipAdded(
-        uint256 _poolId,
-        uint256 _amount,
-        // bytes _queryData,
-        address _tipper
+        uint256 poolId,
+        address tippingToken,
+        uint256 amount,
+        address tipper
     );
-    event TipClaimed(
-        bytes32 _feedId,
-        uint256 _poolId,
-        uint256 _amount,
-        address _reporter
-    );
+
+    /**
+     * @notice Emitted when the fees are claimed.
+     * @param poolId The Id of an existing derivatives pool
+     * @param tellorReporter Address of Tellor reporter
+     */
+    event FeesClaimed(uint256 poolId, address tellorReporter);
 
     /**
      * @notice Emitted when the final reference value is set.
@@ -74,9 +50,32 @@ interface IDIVAOracleTellor {
      * rather than a hard-coded constant to avoid redeploying the oracle contracts
      * when a new version of DIVA Protocol is released.
      * @param _poolId The unique identifier of the pool.
+     * @param _withClaimFees The flag whether to claim the fees or not.
      */
-    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
-        external;
+    function setFinalReferenceValue(
+        address _divaDiamond,
+        uint256 _poolId,
+        bool _withClaimFees
+    ) external;
+
+    /**
+     * @dev Function to run a single tip
+     * @param _poolId The unique identifier of the pool.
+     * @param _amount amount to tip
+     * @param _tippingToken tipping token address
+     */
+    function tip(
+        uint256 _poolId,
+        uint256 _amount,
+        address _tippingToken
+    ) external;
+
+    /**
+     * @dev Function to claim fees
+     * @param _divaDiamond Address of the diva smart contract. Used as argument
+     * @param _poolId The unique identifier of the pool.
+     */
+    function claimFees(address _divaDiamond, uint256 _poolId) external;
 
     /**
      * @dev Function to update `minPeriodUndisputed` with minimum value of
@@ -107,4 +106,22 @@ interface IDIVAOracleTellor {
      * to remain undisputed in order to be considered valid
      */
     function getMinPeriodUndisputed() external view returns (uint32);
+
+    /**
+     * @dev Returns the reward claimed status with poolId
+     * @param _poolId The unique identifier of the pool.
+     */
+    function getRewardClaimedStatus(uint256 _poolId)
+        external
+        view
+        returns (bool);
+
+    /**
+     * @dev Returns the length of tipping tokens with the poolId
+     * @param _poolId The unique identifier of the pool.
+     */
+    function getTippingTokensLength(uint256 _poolId)
+        external
+        view
+        returns (uint256);
 }
