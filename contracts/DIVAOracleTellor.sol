@@ -150,6 +150,52 @@ contract DIVAOracleTellor is
             _challengeable
         );
 
+
+        IDIVA _diva = IDIVA(_divaDiamond);
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
+
+        uint256 _SCALING = uint256(
+            10**(18 - IERC20Metadata(_params.collateralToken).decimals())
+        );
+        // Get the current fee claim allocated to this contract address (msg.sender)
+        uint256 feeClaim = _diva.getClaims(
+            _params.collateralToken,
+            address(this)
+        ); // denominated in collateral token; integer with collateral token decimals
+
+        uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(
+            poolsDetail[_poolId].formattedCollateralToUSDRate
+        ); // denominated in USD; integer with 18 decimals
+        uint256 feeToReporter;
+        uint256 feeToExcessRecipient;
+
+        if (feeClaimUSD > _maxFeeAmountUSD) {
+            // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in which case it will
+            // go into the else part, hence division by zero is not a problem
+            feeToReporter =
+                _maxFeeAmountUSD.divideDecimal(
+                    poolsDetail[_poolId].formattedCollateralToUSDRate
+                ) /
+                _SCALING; // integer with collateral token decimals
+        } else {
+            feeToReporter = feeClaim;
+        }
+
+        feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
+
+        // Transfer fee claim to reporter and excessFeeRecipient
+        _diva.transferFeeClaim(
+            poolsDetail[_poolId].tellorReporter,
+            _params.collateralToken,
+            feeToReporter
+        );
+        _diva.transferFeeClaim(
+            _excessFeeRecipient,
+            _params.collateralToken,
+            feeToExcessRecipient
+        ); 
+
+
         PoolDetail storage _poolDetails = poolsDetail[_poolId];
         _poolDetails.tellorReporter = _reporter;
         _poolDetails
@@ -225,55 +271,15 @@ contract DIVAOracleTellor is
 
     // Claim fees
     function _claimFees(address _divaDiamond, uint256 _poolId) private {
-        IDIVA _diva = IDIVA(_divaDiamond);
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
+    
+        
 
-        uint256 _SCALING = uint256(
-            10**(18 - IERC20Metadata(_params.collateralToken).decimals())
-        );
-        // Get the current fee claim allocated to this contract address (msg.sender)
-        uint256 feeClaim = _diva.getClaims(
-            _params.collateralToken,
-            address(this)
-        ); // denominated in collateral token; integer with collateral token decimals
 
-        uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(
-            poolsDetail[_poolId].formattedCollateralToUSDRate
-        ); // denominated in USD; integer with 18 decimals
-        uint256 feeToReporter;
-        uint256 feeToExcessRecipient;
-
-        if (feeClaimUSD > _maxFeeAmountUSD) {
-            // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in which case it will
-            // go into the else part, hence division by zero is not a problem
-            feeToReporter =
-                _maxFeeAmountUSD.divideDecimal(
-                    poolsDetail[_poolId].formattedCollateralToUSDRate
-                ) /
-                _SCALING; // integer with collateral token decimals
-        } else {
-            feeToReporter = feeClaim;
-        }
-
-        feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
-
-        // Transfer fee claim to reporter and excessFeeRecipient
-        _diva.transferFeeClaim(
-            poolsDetail[_poolId].tellorReporter,
-            _params.collateralToken,
-            feeToReporter
-        );
-        _diva.transferFeeClaim(
-            _excessFeeRecipient,
-            _params.collateralToken,
-            feeToExcessRecipient
-        );
-
-        // Claim tip
+        // Claim tips
         for (uint256 _i = 0; _i < getTippingTokensLength(_poolId); _i++) {
             address _tippingToken = tippingTokens[_poolId][_i];
             require(
-                IERC20(_tippingToken).transferFrom(
+                IERC20(_tippingToken).transferFrom( // TODO Use transfer
                     address(this),
                     poolsDetail[_poolId].tellorReporter,
                     tips[_poolId][_tippingToken]
@@ -282,6 +288,9 @@ contract DIVAOracleTellor is
             );
         }
 
+        // TODO claim fees from DIVA Protocol via delegateCall
+        _diva.claimFees(collateralToken)
+        
         // Set rewardClaimed
         poolsDetail[_poolId].rewardClaimed = true;
 
