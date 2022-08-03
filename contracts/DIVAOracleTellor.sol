@@ -3,6 +3,7 @@ pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
@@ -15,14 +16,13 @@ contract DIVAOracleTellor is
     Ownable,
     ReentrancyGuard
 {
+    using SafeERC20 for IERC20Metadata;
     using SafeDecimalMath for uint256;
-    // TODO: Remove Feed stuff
-    // Use multiple tipping tokens
 
     // Ordered to optimize storage
-    mapping(uint256 => mapping(address => uint256)) public tips; // mapping poolId to tips
-    mapping(uint256 => address[]) public tippingTokens; // mapping poolId to tipping tokens
-    mapping(uint256 => PoolDetail) public poolsDetail; // mapping poolId to pool detail
+    mapping(uint256 => mapping(address => uint256)) public tips; // mapping poolId => tipping token address => tip amount
+    mapping(uint256 => address[]) public poolIdToTippingTokens; // mapping poolId to tipping tokens
+    mapping(uint256 => address) public poolIdToReporter; // mapping poolId to reporter address
 
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
     address private _excessFeeRecipient;
@@ -47,36 +47,34 @@ contract DIVAOracleTellor is
         address _tippingToken
     ) external override {
         if (tips[_poolId][_tippingToken] == 0) {
-            tippingTokens[_poolId].push(_tippingToken);
+            poolIdToTippingTokens[_poolId].push(_tippingToken);
         }
         tips[_poolId][_tippingToken] += _amount;
-        require(
-            IERC20(_tippingToken).transferFrom(
-                msg.sender,
-                address(this),
-                _amount
-            ),
-            "ERC20: transfer amount exceeds balance"
+        IERC20Metadata(_tippingToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
         );
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
-    function claimFees(address _divaDiamond, uint256 _poolId)
-        external
-        override
-    {
-        require(
-            poolsDetail[_poolId].tellorReporter != address(0),
-            "DIVAOracleTellor: cannot claim fees for this pool"
-        );
-        _claimFees(_divaDiamond, _poolId);
-    }
-
-    function setFinalReferenceValue(
+    function claimFees(
         address _divaDiamond,
         uint256 _poolId,
-        bool _withClaimFees
-    ) external override nonReentrant {
+        address[] memory _tippingTokens
+    ) external override {
+        require(
+            poolIdToReporter[_poolId] == msg.sender,
+            "DIVAOracleTellor: cannot claim fees for this pool"
+        );
+        _claimFees(_divaDiamond, _poolId, _tippingTokens);
+    }
+
+    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
+        external
+        override
+        nonReentrant
+    {
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
 
@@ -150,10 +148,6 @@ contract DIVAOracleTellor is
             _challengeable
         );
 
-
-        IDIVA _diva = IDIVA(_divaDiamond);
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
-
         uint256 _SCALING = uint256(
             10**(18 - IERC20Metadata(_params.collateralToken).decimals())
         );
@@ -164,7 +158,7 @@ contract DIVAOracleTellor is
         ); // denominated in collateral token; integer with collateral token decimals
 
         uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(
-            poolsDetail[_poolId].formattedCollateralToUSDRate
+            _formattedCollateralToUSDRate
         ); // denominated in USD; integer with 18 decimals
         uint256 feeToReporter;
         uint256 feeToExcessRecipient;
@@ -173,9 +167,7 @@ contract DIVAOracleTellor is
             // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in which case it will
             // go into the else part, hence division by zero is not a problem
             feeToReporter =
-                _maxFeeAmountUSD.divideDecimal(
-                    poolsDetail[_poolId].formattedCollateralToUSDRate
-                ) /
+                _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) /
                 _SCALING; // integer with collateral token decimals
         } else {
             feeToReporter = feeClaim;
@@ -185,7 +177,7 @@ contract DIVAOracleTellor is
 
         // Transfer fee claim to reporter and excessFeeRecipient
         _diva.transferFeeClaim(
-            poolsDetail[_poolId].tellorReporter,
+            _reporter,
             _params.collateralToken,
             feeToReporter
         );
@@ -193,19 +185,7 @@ contract DIVAOracleTellor is
             _excessFeeRecipient,
             _params.collateralToken,
             feeToExcessRecipient
-        ); 
-
-
-        PoolDetail storage _poolDetails = poolsDetail[_poolId];
-        _poolDetails.tellorReporter = _reporter;
-        _poolDetails
-            .formattedCollateralToUSDRate = _formattedCollateralToUSDRate;
-        _poolDetails.rewardClaimed = false;
-
-        // ADD claimTips function somewhere here
-        if (_withClaimFees) {
-            _claimFees(_divaDiamond, _poolId);
-        }
+        );
 
         emit FinalReferenceValueSet(
             _poolId,
@@ -247,57 +227,39 @@ contract DIVAOracleTellor is
         return _minPeriodUndisputed;
     }
 
-    /**
-     * @dev Getter function to read if a reward has been claimed
-     * @param _poolId id of reported data
-     * @return bool rewardClaimed
-     */
-    function getRewardClaimedStatus(uint256 _poolId)
-        external
-        view
-        returns (bool)
-    {
-        return poolsDetail[_poolId].rewardClaimed;
-    }
-
     function getTippingTokensLength(uint256 _poolId)
         public
         view
         override
         returns (uint256)
     {
-        return tippingTokens[_poolId].length;
+        return poolIdToTippingTokens[_poolId].length;
     }
 
     // Claim fees
-    function _claimFees(address _divaDiamond, uint256 _poolId) private {
-    
-        
-
-
-        // Claim tips
-        for (uint256 _i = 0; _i < getTippingTokensLength(_poolId); _i++) {
-            address _tippingToken = tippingTokens[_poolId][_i];
-            require(
-                IERC20(_tippingToken).transferFrom( // TODO Use transfer
-                    address(this),
-                    poolsDetail[_poolId].tellorReporter,
-                    tips[_poolId][_tippingToken]
-                ),
-                "ERC20: transfer amount exceeds balance"
+    function _claimFees(
+        address _divaDiamond,
+        uint256 _poolId,
+        address[] memory _tippingTokens
+    ) private {
+        // Claim tip
+        for (uint256 _i = 0; _i < _tippingTokens.length; ) {
+            IERC20Metadata(_tippingTokens[_i]).safeTransfer(
+                poolIdToReporter[_poolId],
+                tips[_poolId][_tippingTokens[_i]]
             );
+            unchecked {
+                _i++;
+            }
         }
 
         // TODO claim fees from DIVA Protocol via delegateCall
-        _diva.claimFees(collateralToken)
-        
-        // Set rewardClaimed
-        poolsDetail[_poolId].rewardClaimed = true;
+        // _diva.claimFees(collateralToken);
 
-        emit FeesClaimed(_poolId, poolsDetail[_poolId].tellorReporter);
+        emit FeesClaimed(_poolId, poolIdToReporter[_poolId]);
     }
 
-    // Get quesry id from poolId
+    // Get query id from poolId
     function getQueryId(uint256 _poolId) private pure returns (bytes32) {
         // Construct Tellor queryID (http://querybuilder.tellor.io/divaprotocolpolygon)
         return

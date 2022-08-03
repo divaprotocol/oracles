@@ -20,6 +20,7 @@ const { finalReferenceValueSet } = require("./events");
 
 const network = "ropsten"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
+const tippingTokenDecimals = 6;
 
 function calcSettlementFee(
   collateralBalance, // Basis for fee calcuation
@@ -43,20 +44,25 @@ function calcSettlementFee(
 }
 
 describe("DIVAOracleTellor", () => {
-  let erc20;
-  let userStartCollateralTokenBalance;
+  let collateralToken;
+  let userStartTokenBalance;
+  let initialCollateralTokenAllowance;
+  let user1, treasury, user3, reporter1, reporter2, excessFeeRecipient, tipper;
 
   let divaOracleTellor;
   let tellorPlayground;
   let tellorPlaygroundAddress = tellorPlaygroundAddresses[network]; // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
   let divaAddress = addresses[network];
-  let excessFeeRecipient;
   let referenceAsset = "BTC/USD";
   let maxFeeAmountUSD = parseEther("10");
   let minPeriodUndisputed = ONE_HOUR;
 
+  let poolExpiryTime;
+  let latestPoolId;
+  let poolParams;
+
   beforeEach(async () => {
-    [user1, treasury, user3, reporter1, reporter2, excessFeeRecipient] =
+    [user1, treasury, user3, reporter1, reporter2, excessFeeRecipient, tipper] =
       await ethers.getSigners();
 
     // Reset block
@@ -73,11 +79,11 @@ describe("DIVAOracleTellor", () => {
       ],
     });
 
-    userStartCollateralTokenBalance = parseEther("1000000");
-    erc20 = await erc20DeployFixture(
+    userStartTokenBalance = parseEther("1000000");
+    collateralToken = await erc20DeployFixture(
       "DummyToken",
       "DCT",
-      userStartCollateralTokenBalance,
+      userStartTokenBalance,
       user1.address,
       collateralTokenDecimals
     );
@@ -95,35 +101,34 @@ describe("DIVAOracleTellor", () => {
       "TellorPlayground",
       tellorPlaygroundAddress
     );
+
+    diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
+    initialCollateralTokenAllowance = parseEther("1000000");
+    await collateralToken.approve(
+      diva.address,
+      initialCollateralTokenAllowance
+    );
+
+    // Create an expired contingent pool that uses Tellor as the data provider // Create an expired contingent pool that uses Tellor as the data provider
+    poolExpiryTime = (await getLastTimestamp()) + TEN_MINS;
+    await diva.createContingentPool([
+      referenceAsset, // reference asset
+      poolExpiryTime, // expiryTime
+      parseEther("40000"), // floor
+      parseEther("60000"), // inflection
+      parseEther("80000"), // cap
+      parseEther("0.7").toString(),
+      parseUnits("100", collateralTokenDecimals), // collateral amount
+      collateralToken.address, // collateral token
+      divaOracleTellor.address, // data provider
+      parseUnits("200", collateralTokenDecimals).toString(), // capacity
+    ]);
   });
 
   describe("setFinalReferenceValue", async () => {
-    let initialCollateralTokenAllowance;
-    let poolExpiryTime;
-    let latestPoolId;
-    let poolParams;
     let abiCoder, queryData, queryId, oracleValue;
 
     beforeEach(async () => {
-      diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
-      initialCollateralTokenAllowance = parseEther("1000000");
-      await erc20.approve(diva.address, initialCollateralTokenAllowance);
-
-      // Create an expired contingent pool that uses Tellor as the data provider // Create an expired contingent pool that uses Tellor as the data provider
-      poolExpiryTime = (await getLastTimestamp()) + TEN_MINS;
-      await diva.createContingentPool([
-        referenceAsset, // reference asset
-        poolExpiryTime, // expiryTime
-        parseEther("40000"), // floor
-        parseEther("60000"), // inflection
-        parseEther("80000"), // cap
-        parseEther("0.7").toString(),
-        parseUnits("100", collateralTokenDecimals), // collateral amount
-        erc20.address, // collateral token
-        divaOracleTellor.address, // data provider
-        parseUnits("200", collateralTokenDecimals).toString(), // capacity
-      ]);
-
       latestPoolId = await diva.getLatestPoolId();
       poolParams = await diva.getPoolParameters(latestPoolId);
 
@@ -201,11 +206,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor.setFinalReferenceValue(
-        divaAddress,
-        latestPoolId,
-        true
-      );
+      await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Assert: finalReferenceValue and statusFinalReferenceValue are updated accordingly in DIVA Protocol
@@ -242,7 +243,7 @@ describe("DIVAOracleTellor", () => {
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed - 1;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await expect(
-        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId, true)
+        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
       ).to.be.revertedWith(
         "DIVAOracleTellor: must wait _minPeriodUndisputed before calling this function"
       );
@@ -260,7 +261,7 @@ describe("DIVAOracleTellor", () => {
       // Act & Assert: Confirm that setFinalReferenceValue function will revert if called when no value has been reported yet
       // ---------
       await expect(
-        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId, true)
+        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
       ).to.be.revertedWith("DIVAOracleTellor: no oracle submission");
     });
 
@@ -276,7 +277,7 @@ describe("DIVAOracleTellor", () => {
         parseEther("80000"), // cap
         parseEther("0.7").toString(),
         parseUnits("100", collateralTokenDecimals), // collateral amount
-        erc20.address, // collateral token
+        collateralToken.address, // collateral token
         divaOracleTellor.address, // data provider
         parseUnits("200", collateralTokenDecimals).toString(), // capacity
       ]);
@@ -312,7 +313,7 @@ describe("DIVAOracleTellor", () => {
       // Act & Assert: Confirm that setFinalReferenceValue function will revert if the only value reported is before expiryTime
       // ---------
       await expect(
-        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId, true)
+        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
       ).to.be.revertedWith(
         "DIVAOracleTellor: no oracle submission after expiry time"
       );
@@ -331,7 +332,7 @@ describe("DIVAOracleTellor", () => {
         parseEther("80000"), // cap
         parseEther("0.7").toString(),
         parseUnits("100", collateralTokenDecimals), // collateral amount
-        erc20.address, // collateral token
+        collateralToken.address, // collateral token
         divaOracleTellor.address, // data provider
         parseUnits("200", collateralTokenDecimals).toString(), // capacity
       ]);
@@ -373,11 +374,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed; // has to be minPeriodDisputed after the time of the second submission (assumed to be 1 second after expiration)
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor.setFinalReferenceValue(
-        divaAddress,
-        latestPoolId,
-        true
-      );
+      await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Assert: Confirm that the second value was set as the final
@@ -392,7 +389,9 @@ describe("DIVAOracleTellor", () => {
       // Arrange: Confirm that user1's fee claim balance is zero, report value and calculate USD denominated fee
       // ---------
       // Confirm that user1's fee claim balance is zero
-      expect(await diva.getClaims(erc20.address, user1.address)).to.eq(0);
+      expect(
+        await diva.getClaims(collateralToken.address, user1.address)
+      ).to.eq(0);
 
       // Prepare value submission to tellorPlayground
       finalReferenceValue = parseEther("42000");
@@ -419,20 +418,19 @@ describe("DIVAOracleTellor", () => {
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor.setFinalReferenceValue(
-        divaAddress,
-        latestPoolId,
-        true
-      );
+      await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Assert: Confirm that the reporter receives the full settlement fee payment (in collateral asset) and 0 goes to excess fee recipient
       // ---------
-      expect(await diva.getClaims(erc20.address, user1.address)).to.eq(
-        settlementFeeAmount
-      );
       expect(
-        await diva.getClaims(erc20.address, excessFeeRecipient.address)
+        await diva.getClaims(collateralToken.address, user1.address)
+      ).to.eq(settlementFeeAmount);
+      expect(
+        await diva.getClaims(
+          collateralToken.address,
+          excessFeeRecipient.address
+        )
       ).to.eq(0);
     });
 
@@ -449,7 +447,7 @@ describe("DIVAOracleTellor", () => {
         parseEther("80000"), // cap
         parseEther("0.7").toString(),
         parseUnits("100000", collateralTokenDecimals), // collateral amount
-        erc20.address, // collateral token
+        collateralToken.address, // collateral token
         divaOracleTellor.address, // data provider
         parseUnits("200000", collateralTokenDecimals).toString(), // capacity
       ]);
@@ -494,11 +492,11 @@ describe("DIVAOracleTellor", () => {
 
       // Get reporter's and excess fee recipient's fee claim before
       const feeClaimReporterBefore = await diva.getClaims(
-        erc20.address,
+        collateralToken.address,
         user1.address
       );
       const feeClaimExcessFeeRecipientBefore = await diva.getClaims(
-        erc20.address,
+        collateralToken.address,
         excessFeeRecipient.address
       );
 
@@ -510,7 +508,7 @@ describe("DIVAOracleTellor", () => {
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
         .connect(user3)
-        .setFinalReferenceValue(divaAddress, latestPoolId, true); // triggered by a random user3
+        .setFinalReferenceValue(divaAddress, latestPoolId); // triggered by a random user3
 
       // ---------
       // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and
@@ -518,11 +516,11 @@ describe("DIVAOracleTellor", () => {
       // allocated any fees
       // ---------
       const feeClaimReporterAfter = await diva.getClaims(
-        erc20.address,
+        collateralToken.address,
         user1.address
       );
       const feeClaimExcessFeeRecipientAfter = await diva.getClaims(
-        erc20.address,
+        collateralToken.address,
         excessFeeRecipient.address
       );
 
@@ -532,9 +530,11 @@ describe("DIVAOracleTellor", () => {
       expect(feeClaimExcessFeeRecipientAfter).to.eq(
         feeClaimExcessFeeRecipientBefore.add(feeAmount.sub(maxFeeAmount))
       );
-      expect(await diva.getClaims(erc20.address, user3.address)).to.eq(0);
       expect(
-        await diva.getClaims(erc20.address, divaOracleTellor.address)
+        await diva.getClaims(collateralToken.address, user3.address)
+      ).to.eq(0);
+      expect(
+        await diva.getClaims(collateralToken.address, divaOracleTellor.address)
       ).to.eq(0);
     });
 
@@ -551,7 +551,7 @@ describe("DIVAOracleTellor", () => {
         parseEther("80000"), // cap
         parseEther("0.7").toString(),
         parseUnits("100000", collateralTokenDecimals), // collateral amount
-        erc20.address, // collateral token
+        collateralToken.address, // collateral token
         divaOracleTellor.address, // data provider
         parseUnits("200000", collateralTokenDecimals).toString(), // capacity
       ]);
@@ -587,11 +587,11 @@ describe("DIVAOracleTellor", () => {
 
       // Get reporter's and excess fee recipient's fee claim before
       const feeClaimReporterBefore = await diva.getClaims(
-        erc20.address,
+        collateralToken.address,
         user1.address
       );
       const feeClaimExcessFeeRecipientBefore = await diva.getClaims(
-        erc20.address,
+        collateralToken.address,
         excessFeeRecipient.address
       );
 
@@ -603,7 +603,7 @@ describe("DIVAOracleTellor", () => {
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
         .connect(user3)
-        .setFinalReferenceValue(divaAddress, latestPoolId, true); // triggered by a random user3
+        .setFinalReferenceValue(divaAddress, latestPoolId); // triggered by a random user3
 
       // ---------
       // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and
@@ -611,19 +611,21 @@ describe("DIVAOracleTellor", () => {
       // allocated any fees
       // ---------
       const feeClaimReporterAfter = await diva.getClaims(
-        erc20.address,
+        collateralToken.address,
         user1.address
       );
       const feeClaimExcessFeeRecipientAfter = await diva.getClaims(
-        erc20.address,
+        collateralToken.address,
         excessFeeRecipient.address
       );
 
       expect(feeClaimReporterAfter).to.eq(feeAmount);
       expect(feeClaimExcessFeeRecipientAfter).to.eq(0);
-      expect(await diva.getClaims(erc20.address, user3.address)).to.eq(0);
       expect(
-        await diva.getClaims(erc20.address, divaOracleTellor.address)
+        await diva.getClaims(collateralToken.address, user3.address)
+      ).to.eq(0);
+      expect(
+        await diva.getClaims(collateralToken.address, divaOracleTellor.address)
       ).to.eq(0);
     });
 
@@ -648,11 +650,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor.setFinalReferenceValue(
-        divaAddress,
-        latestPoolId,
-        true
-      );
+      await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Assert: Confirm that a FinalReferenceValueSet event is emitted with the correct values
@@ -664,6 +662,51 @@ describe("DIVAOracleTellor", () => {
       expect(event.finalValue).to.eq(finalReferenceValue);
       expect(event.expiryTime).to.eq(poolParams.expiryTime);
       expect(event.timestamp).to.eq(timestampRetrieved);
+    });
+  });
+
+  describe("tip", async () => {
+    let tippingToken;
+    let tippingAmount;
+
+    beforeEach(async () => {
+      tippingToken = await erc20DeployFixture(
+        "TippingToken",
+        "TPT",
+        userStartTokenBalance,
+        tipper.address,
+        tippingTokenDecimals
+      );
+    });
+
+    it("Should add a value to TellorPlayground", async () => {
+      // ---------
+      // Arrange: Prepare parmas for tip function
+      // ---------
+      // Set tipping amount
+      tippingAmount = parseUnits("1000", tippingTokenDecimals);
+
+      // Approve tipping token to divaOracleTellor with tipper address
+      await tippingToken
+        .connect(tipper)
+        .approve(divaOracleTellor.address, tippingAmount);
+
+      // Get pool id from diva contract
+      latestPoolId = await diva.getLatestPoolId();
+
+      // ---------
+      // Act: Call tip function
+      // ---------
+      await divaOracleTellor
+        .connect(tipper)
+        .tip(latestPoolId, tippingAmount, tippingToken.address);
+
+      // ---------
+      // Assert: Check that tips is correct on divaOracleTellor
+      // ---------
+      expect(
+        await divaOracleTellor.tips(latestPoolId, tippingToken.address)
+      ).to.eq(tippingAmount);
     });
   });
 });

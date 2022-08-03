@@ -2,13 +2,6 @@
 pragma solidity 0.8.9;
 
 interface IDIVAOracleTellor {
-    // Struct for pool detail
-    struct PoolDetail {
-        address tellorReporter;
-        uint256 formattedCollateralToUSDRate;
-        bool rewardClaimed;
-    }
-
     /**
      * @notice Emitted when the tip is added.
      * @param poolId The Id of an existing derivatives pool
@@ -50,13 +43,9 @@ interface IDIVAOracleTellor {
      * rather than a hard-coded constant to avoid redeploying the oracle contracts
      * when a new version of DIVA Protocol is released.
      * @param _poolId The unique identifier of the pool.
-     * @param _withClaimFees The flag whether to claim the fees or not.
      */
-    function setFinalReferenceValue(
-        address _divaDiamond,
-        uint256 _poolId,
-        bool _withClaimFees
-    ) external;
+    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
+        external;
 
     /**
      * @dev Function to run a single tip
@@ -74,8 +63,13 @@ interface IDIVAOracleTellor {
      * @dev Function to claim fees
      * @param _divaDiamond Address of the diva smart contract. Used as argument
      * @param _poolId The unique identifier of the pool.
+     * @param _tippingTokens Array of tipping tokens to claim tip.
      */
-    function claimFees(address _divaDiamond, uint256 _poolId) external;
+    function claimFees(
+        address _divaDiamond,
+        uint256 _poolId,
+        address[] memory _tippingTokens
+    ) external;
 
     /**
      * @dev Function to update `minPeriodUndisputed` with minimum value of
@@ -106,15 +100,6 @@ interface IDIVAOracleTellor {
      * to remain undisputed in order to be considered valid
      */
     function getMinPeriodUndisputed() external view returns (uint32);
-
-    /**
-     * @dev Returns the reward claimed status with poolId
-     * @param _poolId The unique identifier of the pool.
-     */
-    function getRewardClaimedStatus(uint256 _poolId)
-        external
-        view
-        returns (bool);
 
     /**
      * @dev Returns the length of tipping tokens with the poolId
