@@ -47,6 +47,11 @@ contract DIVAOracleTellor is
         uint256 _amount,
         address _tippingToken
     ) external override {
+        require(
+            poolIdToReporter[_poolId] == address(0),
+            "DIVAOracleTellor: already confirmed pool"
+        );
+
         if (tips[_poolId][_tippingToken] == 0) {
             poolIdToTippingTokens[_poolId].push(_tippingToken);
         }
@@ -63,27 +68,37 @@ contract DIVAOracleTellor is
         address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens
-    ) external override {
+    ) external override nonReentrant {
         require(
             poolIdToReporter[_poolId] == msg.sender,
-            "DIVAOracleTellor: cannot claim fees for this pool"
+            "DIVAOracleTellor: not reporter"
         );
 
-        for (uint256 _i = 0; _i < _tippingTokens.length; ) {
-            IERC20Metadata(_tippingTokens[_i]).safeTransfer(
+        uint256 len = _tippingTokens.length;
+        for (uint256 i = 0; i < len; ) {
+            address _tippingToken = _tippingTokens[i];
+            IERC20Metadata(_tippingToken).safeTransfer(
                 poolIdToReporter[_poolId],
-                tips[_poolId][_tippingTokens[_i]]
+                tips[_poolId][_tippingToken]
             );
+
+            emit FeeClaimed(
+                _poolId,
+                poolIdToReporter[_poolId],
+                _tippingToken,
+                tips[_poolId][_tippingToken]
+            );
+
+            tips[_poolId][_tippingToken] = 0;
+
             unchecked {
-                _i++;
+                ++i;
             }
         }
 
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
         _diva.claimFee(_params.collateralToken, poolIdToReporter[_poolId]);
-
-        emit FeesClaimed(_poolId, poolIdToReporter[_poolId]);
     }
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
@@ -118,7 +133,7 @@ contract DIVAOracleTellor is
             );
 
             // Increment index to get the first data point after `_expiryTime`
-            _index++;
+            ++_index;
 
             // Get timestamp of first data point after `_expiryTime`
             _timestampRetrieved = getTimestampbyQueryIdandIndex(
@@ -249,27 +264,28 @@ contract DIVAOracleTellor is
         return _minPeriodUndisputed;
     }
 
-    function getTippingTokensLength(uint256 _poolId)
+    function getTippingTokens(uint256 _poolId)
         public
         view
         override
-        returns (uint256)
+        returns (address[] memory)
     {
-        return poolIdToTippingTokens[_poolId].length;
+        return poolIdToTippingTokens[_poolId];
     }
 
-    // Get query id from poolId
     function getQueryId(uint256 _poolId, address _divaDiamond)
-        private
-        pure
+        public
+        view
+        override
         returns (bytes32)
     {
-        // Construct Tellor queryID (http://querybuilder.tellor.io/divaprotocolpolygon)
+        // Construct Tellor queryID
+        // https://github.com/tellor-io/dataSpecs/blob/main/types/DIVAProtocolPolygon.md
         return
             keccak256(
                 abi.encode(
-                    "DIVAProtocolPolygon",
-                    abi.encode(_poolId, _divaDiamond)
+                    "DIVAProtocol",
+                    abi.encode(_poolId, _divaDiamond, block.chainid)
                 )
             );
     }

@@ -20,8 +20,15 @@ interface IDIVAOracleTellor {
      * @notice Emitted when the fees are claimed.
      * @param poolId The Id of an existing derivatives pool
      * @param tellorReporter Address of Tellor reporter
+     * @param tippingToken Address of tipping token
+     * @param amount Claimed tipping token amount
      */
-    event FeesClaimed(uint256 poolId, address tellorReporter);
+    event FeeClaimed(
+        uint256 poolId,
+        address tellorReporter,
+        address tippingToken,
+        uint256 amount
+    );
 
     /**
      * @notice Emitted when the final reference value is set.
@@ -61,7 +68,7 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Function to claim fees
-     * @param _divaDiamond Address of the diva smart contract. Used as argument
+     * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      */
@@ -105,8 +112,18 @@ interface IDIVAOracleTellor {
      * @dev Returns the length of tipping tokens with the poolId
      * @param _poolId The unique identifier of the pool.
      */
-    function getTippingTokensLength(uint256 _poolId)
+    function getTippingTokens(uint256 _poolId)
         external
         view
-        returns (uint256);
+        returns (address[] memory);
+
+    /**
+     * @dev Returns query id
+     * @param _poolId The unique identifier of the pool.
+     * @param _divaDiamond Address of the diva smart contract.
+     */
+    function getQueryId(uint256 _poolId, address _divaDiamond)
+        external
+        view
+        returns (bytes32);
 }

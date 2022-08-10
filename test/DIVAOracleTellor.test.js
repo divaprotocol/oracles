@@ -58,6 +58,10 @@ describe("DIVAOracleTellor", () => {
   let tippingToken;
   let tippingAmount;
 
+  let chainId;
+  let finalReferenceValue, collateralToUSDRate;
+  let abiCoder, queryData, queryId, oracleValue;
+
   beforeEach(async () => {
     [user1, user2, reporter, excessFeeRecipient, tipper] =
       await ethers.getSigners();
@@ -121,6 +125,31 @@ describe("DIVAOracleTellor", () => {
       parseUnits("200", collateralTokenDecimals).toString(), // capacity
     ]);
 
+    latestPoolId = await diva.getLatestPoolId();
+    poolParams = await diva.getPoolParameters(latestPoolId);
+
+    // Get chain id
+    chainId = (await ethers.provider.getNetwork()).chainId;
+
+    // Calculate settlement fee expressed in collateral token
+    settlementFeeAmount = poolParams.collateralBalance
+      .mul(parseUnits("1", 18 - collateralTokenDecimals))
+      .mul(poolParams.settlementFee)
+      .div(parseEther("1"))
+      .div(parseUnits("1", 18 - collateralTokenDecimals));
+
+    // Prepare Tellor value submission
+    abiCoder = new ethers.utils.AbiCoder();
+    queryDataArgs = abiCoder.encode(
+      ["uint256", "address", "uint256"],
+      [latestPoolId, divaAddress, chainId]
+    );
+    queryData = abiCoder.encode(
+      ["string", "bytes"],
+      ["DIVAProtocol", queryDataArgs]
+    );
+    queryId = ethers.utils.keccak256(queryData);
+
     // deploy tipping token
     tippingToken = await erc20DeployFixture(
       "TippingToken",
@@ -140,32 +169,6 @@ describe("DIVAOracleTellor", () => {
   });
 
   describe("setFinalReferenceValue", async () => {
-    let abiCoder, queryData, queryId, oracleValue;
-
-    beforeEach(async () => {
-      latestPoolId = await diva.getLatestPoolId();
-      poolParams = await diva.getPoolParameters(latestPoolId);
-
-      // Calculate settlement fee expressed in collateral token
-      settlementFeeAmount = poolParams.collateralBalance
-        .mul(parseUnits("1", 18 - collateralTokenDecimals))
-        .mul(poolParams.settlementFee)
-        .div(parseEther("1"))
-        .div(parseUnits("1", 18 - collateralTokenDecimals));
-
-      // Prepare Tellor value submission
-      abiCoder = new ethers.utils.AbiCoder();
-      queryDataArgs = abiCoder.encode(
-        ["uint256", "address"],
-        [latestPoolId, divaAddress]
-      );
-      queryData = abiCoder.encode(
-        ["string", "bytes"],
-        ["DIVAProtocolPolygon", queryDataArgs]
-      );
-      queryId = ethers.utils.keccak256(queryData);
-    });
-
     it("Should add a value to TellorPlayground", async () => {
       // ---------
       // Arrange: Prepare values and submit to tellorPlayground
@@ -316,12 +319,12 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       // Re-construct as latestPoolId changed in this test
       queryDataArgs = abiCoder.encode(
-        ["uint256", "address"],
-        [latestPoolId, divaAddress]
+        ["uint256", "address", "uint256"],
+        [latestPoolId, divaAddress, chainId]
       );
       queryData = abiCoder.encode(
         ["string", "bytes"],
-        ["DIVAProtocolPolygon", queryDataArgs]
+        ["DIVAProtocol", queryDataArgs]
       );
       queryId = ethers.utils.keccak256(queryData);
       finalReferenceValue = parseEther("42000");
@@ -379,12 +382,12 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       // Re-construct as latestPoolId changed in this test
       queryDataArgs = abiCoder.encode(
-        ["uint256", "address"],
-        [latestPoolId, divaAddress]
+        ["uint256", "address", "uint256"],
+        [latestPoolId, divaAddress, chainId]
       );
       queryData = abiCoder.encode(
         ["string", "bytes"],
-        ["DIVAProtocolPolygon", queryDataArgs]
+        ["DIVAProtocol", queryDataArgs]
       );
       queryId = ethers.utils.keccak256(queryData);
 
@@ -508,12 +511,12 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       // Re-construct as latestPoolId changed in this test
       queryDataArgs = abiCoder.encode(
-        ["uint256", "address"],
-        [latestPoolId, divaAddress]
+        ["uint256", "address", "uint256"],
+        [latestPoolId, divaAddress, chainId]
       );
       queryData = abiCoder.encode(
         ["string", "bytes"],
-        ["DIVAProtocolPolygon", queryDataArgs]
+        ["DIVAProtocol", queryDataArgs]
       );
       queryId = ethers.utils.keccak256(queryData);
 
@@ -618,12 +621,12 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       // Re-construct as latestPoolId changed in this test
       queryDataArgs = abiCoder.encode(
-        ["uint256", "address"],
-        [latestPoolId, divaAddress]
+        ["uint256", "address", "uint256"],
+        [latestPoolId, divaAddress, chainId]
       );
       queryData = abiCoder.encode(
         ["string", "bytes"],
-        ["DIVAProtocolPolygon", queryDataArgs]
+        ["DIVAProtocol", queryDataArgs]
       );
       queryId = ethers.utils.keccak256(queryData);
 
@@ -733,12 +736,12 @@ describe("DIVAOracleTellor", () => {
   });
 
   describe("tip", async () => {
-    it("Should add tip to DIVAOracleTellor", async () => {
-      // ---------
-      // Arrange: Get pool id from diva contract
-      // ---------
+    beforeEach(async () => {
+      // Get pool id
       latestPoolId = await diva.getLatestPoolId();
+    });
 
+    it("Should add tip to DIVAOracleTellor", async () => {
       // ---------
       // Act: Add tip
       // ---------
@@ -752,6 +755,47 @@ describe("DIVAOracleTellor", () => {
       expect(
         await divaOracleTellor.tips(latestPoolId, tippingToken.address)
       ).to.eq(tippingAmount);
+    });
+
+    // ---------
+    // Revert
+    // ---------
+
+    it("Should revert if users want to add tip on the already confirmed pool", async () => {
+      // ---------
+      // Arrange: Set final reference value on DIVAOracleTellor
+      // ---------
+      // Prepare value submission to tellorPlayground
+      finalReferenceValue = parseEther("42000");
+      collateralToUSDRate = parseEther("1.14");
+      oracleValue = abiCoder.encode(
+        ["uint256", "uint256"],
+        [finalReferenceValue, collateralToUSDRate]
+      );
+      // Submit value to Tellor playground contract
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
+
+      // Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
+
+      // ---------
+      // Act & Assert: Call tip function after calling setFinalReferenceValue function
+      // ---------
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed - 1;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await expect(
+        divaOracleTellor
+          .connect(tipper)
+          .tip(latestPoolId, tippingAmount, tippingToken.address)
+      ).to.be.revertedWith("DIVAOracleTellor: already confirmed pool");
     });
   });
 
@@ -767,12 +811,12 @@ describe("DIVAOracleTellor", () => {
       // Prepare Tellor value submission
       abiCoder = new ethers.utils.AbiCoder();
       queryDataArgs = abiCoder.encode(
-        ["uint256", "address"],
-        [latestPoolId, divaAddress]
+        ["uint256", "address", "uint256"],
+        [latestPoolId, divaAddress, chainId]
       );
       queryData = abiCoder.encode(
         ["string", "bytes"],
-        ["DIVAProtocolPolygon", queryDataArgs]
+        ["DIVAProtocol", queryDataArgs]
       );
       queryId = ethers.utils.keccak256(queryData);
 

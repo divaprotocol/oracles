@@ -5,6 +5,7 @@ const { addresses } = require("../utils/constants");
 async function main() {
   // Get DIVA address
   const network = "ropsten";
+  const chainId = 3;
   const divaAddress = addresses[network];
 
   // Load ABI code from ethers library
@@ -13,12 +14,12 @@ async function main() {
   // Generate queryId for Tellor submission
   const latestPoolId = 1;
   const queryDataArgs = abiCoder.encode(
-    ["uint256", "address"],
-    [latestPoolId, divaAddress]
+    ["uint256", "address", "uint256"],
+    [latestPoolId, divaAddress, chainId]
   );
   const queryData = abiCoder.encode(
     ["string", "bytes"],
-    ["DIVAProtocolPolygon", queryDataArgs]
+    ["DIVAProtocol", queryDataArgs]
   );
   const queryId = ethers.utils.keccak256(queryData);
 
