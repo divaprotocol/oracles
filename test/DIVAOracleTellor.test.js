@@ -1,14 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
-const { BigNumber } = require("ethers");
 const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture");
-const {
-  parseEther,
-  parseUnits,
-  formatEther,
-  formatUnits,
-} = require("@ethersproject/units");
+const { parseEther, parseUnits } = require("@ethersproject/units");
 const {
   getLastTimestamp,
   setNextTimestamp,
@@ -47,7 +41,7 @@ describe("DIVAOracleTellor", () => {
   let collateralToken;
   let userStartTokenBalance;
   let initialCollateralTokenAllowance;
-  let user1, treasury, user3, reporter1, reporter2, excessFeeRecipient, tipper;
+  let user1, user2, reporter, excessFeeRecipient, tipper;
 
   let divaOracleTellor;
   let tellorPlayground;
@@ -61,8 +55,11 @@ describe("DIVAOracleTellor", () => {
   let latestPoolId;
   let poolParams;
 
+  let tippingToken;
+  let tippingAmount;
+
   beforeEach(async () => {
-    [user1, treasury, user3, reporter1, reporter2, excessFeeRecipient, tipper] =
+    [user1, user2, reporter, excessFeeRecipient, tipper] =
       await ethers.getSigners();
 
     // Reset block
@@ -73,7 +70,7 @@ describe("DIVAOracleTellor", () => {
           forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
             // blockNumber: 10932590, // Rinkeby; choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
-            blockNumber: 12435703, // Ropsten; choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
+            blockNumber: 12750642, // Ropsten; choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
           },
         },
       ],
@@ -123,6 +120,23 @@ describe("DIVAOracleTellor", () => {
       divaOracleTellor.address, // data provider
       parseUnits("200", collateralTokenDecimals).toString(), // capacity
     ]);
+
+    // deploy tipping token
+    tippingToken = await erc20DeployFixture(
+      "TippingToken",
+      "TPT",
+      userStartTokenBalance,
+      tipper.address,
+      tippingTokenDecimals
+    );
+
+    // Set tipping amount
+    tippingAmount = parseUnits("1000", tippingTokenDecimals);
+
+    // Approve tipping token to divaOracleTellor with tipper address
+    await tippingToken
+      .connect(tipper)
+      .approve(divaOracleTellor.address, tippingAmount);
   });
 
   describe("setFinalReferenceValue", async () => {
@@ -141,7 +155,10 @@ describe("DIVAOracleTellor", () => {
 
       // Prepare Tellor value submission
       abiCoder = new ethers.utils.AbiCoder();
-      queryDataArgs = abiCoder.encode(["uint256"], [latestPoolId]);
+      queryDataArgs = abiCoder.encode(
+        ["uint256", "address"],
+        [latestPoolId, divaAddress]
+      );
       queryData = abiCoder.encode(
         ["string", "bytes"],
         ["DIVAProtocolPolygon", queryDataArgs]
@@ -163,7 +180,9 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Act: Submit value to tellorPlayground
       // ---------
-      await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
 
       // ---------
       // Assert: Check that timestamp and values have been set in tellorPlayground contract
@@ -199,14 +218,18 @@ describe("DIVAOracleTellor", () => {
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
-      await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
 
       // ---------
       // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Assert: finalReferenceValue and statusFinalReferenceValue are updated accordingly in DIVA Protocol
@@ -235,7 +258,9 @@ describe("DIVAOracleTellor", () => {
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
-      await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
 
       // ---------
       // Act & Assert: Call setFinalReferenceValue function inside DIVAOracleTellor contract shortly after minPeriodUndisputed period has passed
@@ -243,7 +268,9 @@ describe("DIVAOracleTellor", () => {
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed - 1;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await expect(
-        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
+        divaOracleTellor
+          .connect(user2)
+          .setFinalReferenceValue(divaAddress, latestPoolId)
       ).to.be.revertedWith(
         "DIVAOracleTellor: must wait _minPeriodUndisputed before calling this function"
       );
@@ -261,7 +288,9 @@ describe("DIVAOracleTellor", () => {
       // Act & Assert: Confirm that setFinalReferenceValue function will revert if called when no value has been reported yet
       // ---------
       await expect(
-        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
+        divaOracleTellor
+          .connect(user2)
+          .setFinalReferenceValue(divaAddress, latestPoolId)
       ).to.be.revertedWith("DIVAOracleTellor: no oracle submission");
     });
 
@@ -285,7 +314,11 @@ describe("DIVAOracleTellor", () => {
       poolParams = await diva.getPoolParameters(latestPoolId);
 
       // Prepare value submission to tellorPlayground
-      queryDataArgs = abiCoder.encode(["uint256"], [latestPoolId]); // Re-construct as latestPoolId changed in this test
+      // Re-construct as latestPoolId changed in this test
+      queryDataArgs = abiCoder.encode(
+        ["uint256", "address"],
+        [latestPoolId, divaAddress]
+      );
       queryData = abiCoder.encode(
         ["string", "bytes"],
         ["DIVAProtocolPolygon", queryDataArgs]
@@ -299,7 +332,9 @@ describe("DIVAOracleTellor", () => {
       );
 
       // Submit value to Tellor playground contract
-      await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
 
       // Confirm that timestamp of reported value is non-zero and smaller than expiryTime
       expect(
@@ -313,7 +348,9 @@ describe("DIVAOracleTellor", () => {
       // Act & Assert: Confirm that setFinalReferenceValue function will revert if the only value reported is before expiryTime
       // ---------
       await expect(
-        divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId)
+        divaOracleTellor
+          .connect(user2)
+          .setFinalReferenceValue(divaAddress, latestPoolId)
       ).to.be.revertedWith(
         "DIVAOracleTellor: no oracle submission after expiry time"
       );
@@ -340,7 +377,11 @@ describe("DIVAOracleTellor", () => {
       poolParams = await diva.getPoolParameters(latestPoolId);
 
       // Prepare value submission to tellorPlayground
-      queryDataArgs = abiCoder.encode(["uint256"], [latestPoolId]); // Re-construct as latestPoolId changed in this test
+      // Re-construct as latestPoolId changed in this test
+      queryDataArgs = abiCoder.encode(
+        ["uint256", "address"],
+        [latestPoolId, divaAddress]
+      );
       queryData = abiCoder.encode(
         ["string", "bytes"],
         ["DIVAProtocolPolygon", queryDataArgs]
@@ -356,7 +397,9 @@ describe("DIVAOracleTellor", () => {
       );
       nextBlockTimestamp = poolParams.expiryTime.sub(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
-      await tellorPlayground.submitValue(queryId, oracleValue1, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue1, 0, queryData);
 
       // Second reporter submission after expiration
       finalReferenceValue2 = parseEther("42500");
@@ -367,14 +410,18 @@ describe("DIVAOracleTellor", () => {
       );
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
-      await tellorPlayground.submitValue(queryId, oracleValue2, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue2, 0, queryData);
 
       // ---------
       // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after minPeriodUndisputed has passed
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed; // has to be minPeriodDisputed after the time of the second submission (assumed to be 1 second after expiration)
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Assert: Confirm that the second value was set as the final
@@ -404,7 +451,9 @@ describe("DIVAOracleTellor", () => {
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
-      await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
 
       // Calculate USD denominated fee
       settlementFeeAmountUSD = settlementFeeAmount
@@ -418,13 +467,15 @@ describe("DIVAOracleTellor", () => {
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Assert: Confirm that the reporter receives the full settlement fee payment (in collateral asset) and 0 goes to excess fee recipient
       // ---------
       expect(
-        await diva.getClaims(collateralToken.address, user1.address)
+        await diva.getClaims(collateralToken.address, reporter.address)
       ).to.eq(settlementFeeAmount);
       expect(
         await diva.getClaims(
@@ -455,7 +506,11 @@ describe("DIVAOracleTellor", () => {
       poolParams = await diva.getPoolParameters(latestPoolId);
 
       // Prepare value submission to tellorPlayground
-      queryDataArgs = abiCoder.encode(["uint256"], [latestPoolId]); // Re-construct as latestPoolId changed in this test
+      // Re-construct as latestPoolId changed in this test
+      queryDataArgs = abiCoder.encode(
+        ["uint256", "address"],
+        [latestPoolId, divaAddress]
+      );
       queryData = abiCoder.encode(
         ["string", "bytes"],
         ["DIVAProtocolPolygon", queryDataArgs]
@@ -471,7 +526,9 @@ describe("DIVAOracleTellor", () => {
       );
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
 
       // Calculate settlement fee expressed in both collateral token and USD
       const { feeAmount, feeAmountUSD } = calcSettlementFee(
@@ -502,22 +559,22 @@ describe("DIVAOracleTellor", () => {
 
       // ---------
       // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after minPeriodUndisputed
-      // from a random user account (user3)
+      // from a random user account (user2)
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
-        .connect(user3)
-        .setFinalReferenceValue(divaAddress, latestPoolId); // triggered by a random user3
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId); // triggered by a random user2
 
       // ---------
       // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and
-      // user3 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not
+      // user2 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not
       // allocated any fees
       // ---------
       const feeClaimReporterAfter = await diva.getClaims(
         collateralToken.address,
-        user1.address
+        reporter.address
       );
       const feeClaimExcessFeeRecipientAfter = await diva.getClaims(
         collateralToken.address,
@@ -531,7 +588,7 @@ describe("DIVAOracleTellor", () => {
         feeClaimExcessFeeRecipientBefore.add(feeAmount.sub(maxFeeAmount))
       );
       expect(
-        await diva.getClaims(collateralToken.address, user3.address)
+        await diva.getClaims(collateralToken.address, user2.address)
       ).to.eq(0);
       expect(
         await diva.getClaims(collateralToken.address, divaOracleTellor.address)
@@ -559,7 +616,11 @@ describe("DIVAOracleTellor", () => {
       poolParams = await diva.getPoolParameters(latestPoolId);
 
       // Prepare value submission to tellorPlayground
-      queryDataArgs = abiCoder.encode(["uint256"], [latestPoolId]); // Re-construct as latestPoolId changed in this test
+      // Re-construct as latestPoolId changed in this test
+      queryDataArgs = abiCoder.encode(
+        ["uint256", "address"],
+        [latestPoolId, divaAddress]
+      );
       queryData = abiCoder.encode(
         ["string", "bytes"],
         ["DIVAProtocolPolygon", queryDataArgs]
@@ -575,7 +636,9 @@ describe("DIVAOracleTellor", () => {
       );
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
 
       // Calculate settlement fee expressed in both collateral token and USD
       const { feeAmount } = calcSettlementFee(
@@ -597,22 +660,22 @@ describe("DIVAOracleTellor", () => {
 
       // ---------
       // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after minPeriodUndisputed
-      // from a random user account (user3)
+      // from a random user account (user2)
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
-        .connect(user3)
-        .setFinalReferenceValue(divaAddress, latestPoolId); // triggered by a random user3
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId); // triggered by a random user2
 
       // ---------
       // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and
-      // user3 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not
+      // user2 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not
       // allocated any fees
       // ---------
       const feeClaimReporterAfter = await diva.getClaims(
         collateralToken.address,
-        user1.address
+        reporter.address
       );
       const feeClaimExcessFeeRecipientAfter = await diva.getClaims(
         collateralToken.address,
@@ -622,7 +685,7 @@ describe("DIVAOracleTellor", () => {
       expect(feeClaimReporterAfter).to.eq(feeAmount);
       expect(feeClaimExcessFeeRecipientAfter).to.eq(0);
       expect(
-        await diva.getClaims(collateralToken.address, user3.address)
+        await diva.getClaims(collateralToken.address, user2.address)
       ).to.eq(0);
       expect(
         await diva.getClaims(collateralToken.address, divaOracleTellor.address)
@@ -643,14 +706,18 @@ describe("DIVAOracleTellor", () => {
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
-      await tellorPlayground.submitValue(queryId, oracleValue, 0, queryData);
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
 
       // ---------
       // Act: Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor.setFinalReferenceValue(divaAddress, latestPoolId);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Assert: Confirm that a FinalReferenceValueSet event is emitted with the correct values
@@ -666,47 +733,85 @@ describe("DIVAOracleTellor", () => {
   });
 
   describe("tip", async () => {
-    let tippingToken;
-    let tippingAmount;
-
-    beforeEach(async () => {
-      tippingToken = await erc20DeployFixture(
-        "TippingToken",
-        "TPT",
-        userStartTokenBalance,
-        tipper.address,
-        tippingTokenDecimals
-      );
-    });
-
-    it("Should add a value to TellorPlayground", async () => {
+    it("Should add tip to DIVAOracleTellor", async () => {
       // ---------
-      // Arrange: Prepare parmas for tip function
+      // Arrange: Get pool id from diva contract
       // ---------
-      // Set tipping amount
-      tippingAmount = parseUnits("1000", tippingTokenDecimals);
-
-      // Approve tipping token to divaOracleTellor with tipper address
-      await tippingToken
-        .connect(tipper)
-        .approve(divaOracleTellor.address, tippingAmount);
-
-      // Get pool id from diva contract
       latestPoolId = await diva.getLatestPoolId();
 
       // ---------
-      // Act: Call tip function
+      // Act: Add tip
       // ---------
       await divaOracleTellor
         .connect(tipper)
         .tip(latestPoolId, tippingAmount, tippingToken.address);
 
       // ---------
-      // Assert: Check that tips is correct on divaOracleTellor
+      // Assert: Check that tip is added on divaOracleTellor
       // ---------
       expect(
         await divaOracleTellor.tips(latestPoolId, tippingToken.address)
       ).to.eq(tippingAmount);
+    });
+  });
+
+  describe("claimFees", async () => {
+    beforeEach(async () => {
+      latestPoolId = await diva.getLatestPoolId();
+      poolParams = await diva.getPoolParameters(latestPoolId);
+
+      // Add tip
+      await divaOracleTellor
+        .connect(tipper)
+        .tip(latestPoolId, tippingAmount, tippingToken.address);
+      // Prepare Tellor value submission
+      abiCoder = new ethers.utils.AbiCoder();
+      queryDataArgs = abiCoder.encode(
+        ["uint256", "address"],
+        [latestPoolId, divaAddress]
+      );
+      queryData = abiCoder.encode(
+        ["string", "bytes"],
+        ["DIVAProtocolPolygon", queryDataArgs]
+      );
+      queryId = ethers.utils.keccak256(queryData);
+
+      finalReferenceValue = parseEther("42000");
+      collateralToUSDRate = parseEther("1.14");
+      oracleValue = abiCoder.encode(
+        ["uint256", "uint256"],
+        [finalReferenceValue, collateralToUSDRate]
+      );
+      // Submit value to Tellor playground contract
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
+
+      // Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
+    });
+
+    it("Should claim fees after final reference value is set", async () => {
+      // ---------
+      // Arrange: Set final reference value
+      // ---------
+
+      // ---------
+      // Act: Call tip function
+      // ---------
+      await divaOracleTellor
+        .connect(reporter)
+        .claimFees(divaAddress, latestPoolId, [tippingToken.address]);
+
+      // ---------
+      // Assert: Check that tips is correct on divaOracleTellor
+      // ---------
     });
   });
 });

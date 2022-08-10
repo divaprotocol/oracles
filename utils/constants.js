@@ -1,7 +1,7 @@
 // DIVA contract addresses on different networks (v1.0.0)
 const addresses = {
   rinkeby: "0x4F7ad4674e67aFc2169984f194d7a5e77926327C",
-  ropsten: "0xe4B55fC1968C8913AA120E42846d233Bbcb803F6", // audited contract
+  ropsten: "0x67965e27cC17aa8073Da4cB19236bDddAD285E91", // audited contract
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
   kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101",
   polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B",
@@ -28,8 +28,8 @@ const tellorPlaygroundAddresses = {
 };
 
 const divaTellorOracleAddresses = {
-  ropsten: "0x2f4218C9262216B7B73A76334e5A98F3eF71A61c" // That's connecting to DIVA version 0.9.1!
-}
+  ropsten: "0x2f4218C9262216B7B73A76334e5A98F3eF71A61c", // That's connecting to DIVA version 0.9.1!
+};
 
 // Status mapping
 const status = {

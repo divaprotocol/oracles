@@ -9,6 +9,7 @@ import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
 import "./libraries/SafeDecimalMath.sol";
+import "hardhat/console.sol";
 
 contract DIVAOracleTellor is
     UsingTellor,
@@ -67,7 +68,22 @@ contract DIVAOracleTellor is
             poolIdToReporter[_poolId] == msg.sender,
             "DIVAOracleTellor: cannot claim fees for this pool"
         );
-        _claimFees(_divaDiamond, _poolId, _tippingTokens);
+
+        for (uint256 _i = 0; _i < _tippingTokens.length; ) {
+            IERC20Metadata(_tippingTokens[_i]).safeTransfer(
+                poolIdToReporter[_poolId],
+                tips[_poolId][_tippingTokens[_i]]
+            );
+            unchecked {
+                _i++;
+            }
+        }
+
+        IDIVA _diva = IDIVA(_divaDiamond);
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+        _diva.claimFee(_params.collateralToken, poolIdToReporter[_poolId]);
+
+        emit FeesClaimed(_poolId, poolIdToReporter[_poolId]);
     }
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
@@ -79,7 +95,7 @@ contract DIVAOracleTellor is
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
 
         // Get queryId from poolId
-        bytes32 _queryId = getQueryId(_poolId);
+        bytes32 _queryId = getQueryId(_poolId, _divaDiamond);
 
         // Find first oracle submission
         uint256 _timestampRetrieved = getTimestampbyQueryIdandIndex(
@@ -141,6 +157,9 @@ contract DIVAOracleTellor is
             _timestampRetrieved
         );
 
+        // Set reporter with pool id
+        poolIdToReporter[_poolId] = _reporter;
+
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(
             _poolId,
@@ -176,16 +195,19 @@ contract DIVAOracleTellor is
         feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
 
         // Transfer fee claim to reporter and excessFeeRecipient
-        _diva.transferFeeClaim(
-            _reporter,
+        IDIVA.FeeClaimTransfer[]
+            memory _feeClaimTransfers = new IDIVA.FeeClaimTransfer[](2);
+        _feeClaimTransfers[0] = IDIVA.FeeClaimTransfer(
             _params.collateralToken,
+            _reporter,
             feeToReporter
         );
-        _diva.transferFeeClaim(
-            _excessFeeRecipient,
+        _feeClaimTransfers[1] = IDIVA.FeeClaimTransfer(
             _params.collateralToken,
+            _excessFeeRecipient,
             feeToExcessRecipient
         );
+        _diva.batchTransferFeeClaim(_feeClaimTransfers);
 
         emit FinalReferenceValueSet(
             _poolId,
@@ -236,42 +258,19 @@ contract DIVAOracleTellor is
         return poolIdToTippingTokens[_poolId].length;
     }
 
-    // Claim fees
-    function _claimFees(
-        address _divaDiamond,
-        uint256 _poolId,
-        address[] memory _tippingTokens
-    ) private {
-        // Claim tip
-        for (uint256 _i = 0; _i < _tippingTokens.length; ) {
-            IERC20Metadata(_tippingTokens[_i]).safeTransfer(
-                poolIdToReporter[_poolId],
-                tips[_poolId][_tippingTokens[_i]]
-            );
-            unchecked {
-                _i++;
-            }
-        }
-
-        // TODO claim fees from DIVA Protocol via delegateCall
-        // _diva.claimFees(collateralToken);
-
-        emit FeesClaimed(_poolId, poolIdToReporter[_poolId]);
-    }
-
     // Get query id from poolId
-    function getQueryId(uint256 _poolId) private pure returns (bytes32) {
+    function getQueryId(uint256 _poolId, address _divaDiamond)
+        private
+        pure
+        returns (bytes32)
+    {
         // Construct Tellor queryID (http://querybuilder.tellor.io/divaprotocolpolygon)
         return
-            keccak256(abi.encode("DIVAProtocolPolygon", abi.encode(_poolId)));
+            keccak256(
+                abi.encode(
+                    "DIVAProtocolPolygon",
+                    abi.encode(_poolId, _divaDiamond)
+                )
+            );
     }
-
-    /**
-     * @dev Getter function for poolIds with current tips
-     */
-    // TODO
-    // QUESTION: need this function?
-    // function getTippedPoolIds() external view returns (uint256[] memory) {
-    //     // return poolIdsWithFunding;
-    // }
 }
