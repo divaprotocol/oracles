@@ -289,19 +289,21 @@ contract DIVAOracleTellor is
         uint256 len = _tippingTokens.length;
         for (uint256 i = 0; i < len; ) {
             address _tippingToken = _tippingTokens[i];
+
+            uint256 _tipAmount = tips[_poolId][_tippingToken];
+            tips[_poolId][_tippingToken] = 0;
+
             IERC20Metadata(_tippingToken).safeTransfer(
                 poolIdToReporter[_poolId],
-                tips[_poolId][_tippingToken]
+                _tipAmount
             );
 
-            emit FeeClaimed(
+            emit TipClaimed(
                 _poolId,
                 poolIdToReporter[_poolId],
                 _tippingToken,
-                tips[_poolId][_tippingToken]
+                _tipAmount
             );
-
-            tips[_poolId][_tippingToken] = 0;
 
             unchecked {
                 ++i;

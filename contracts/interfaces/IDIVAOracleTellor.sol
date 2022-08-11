@@ -17,13 +17,13 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when the fees are claimed.
+     * @notice Emitted when the tip is claimed.
      * @param poolId The Id of an existing derivatives pool
      * @param tellorReporter Address of Tellor reporter
      * @param tippingToken Address of tipping token
      * @param amount Claimed tipping token amount
      */
-    event FeeClaimed(
+    event TipClaimed(
         uint256 poolId,
         address tellorReporter,
         address tippingToken,
