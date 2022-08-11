@@ -71,7 +71,7 @@ contract DIVAOracleTellor is
     ) external override nonReentrant {
         require(
             poolIdToReporter[_poolId] == msg.sender,
-            "DIVAOracleTellor: not reporter"
+            "DIVAOracleTellor: not reporter or not confirmed pool"
         );
 
         uint256 len = _tippingTokens.length;

@@ -787,7 +787,7 @@ describe("DIVAOracleTellor", () => {
         .setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
-      // Act & Assert: Call tip function after calling setFinalReferenceValue function
+      // Act & Assert: Confirm that tip function will fail if called after setFinalReferenceValue function is called
       // ---------
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed - 1;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
@@ -832,19 +832,18 @@ describe("DIVAOracleTellor", () => {
       await tellorPlayground
         .connect(reporter)
         .submitValue(queryId, oracleValue, 0, queryData);
-
-      // Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
-      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
-      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor
-        .connect(user2)
-        .setFinalReferenceValue(divaAddress, latestPoolId);
     });
 
     it("Should claim fees after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value
       // ---------
+      // Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
 
       // ---------
       // Act: Call tip function
@@ -856,6 +855,48 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Assert: Check that tips is correct on divaOracleTellor
       // ---------
+    });
+
+    // ---------
+    // Reverts
+    // ---------
+
+    it("Should revert if non-reporter tries to claim fees", async () => {
+      // ---------
+      // Arrange: Set final reference value on DIVAOracleTellor
+      // ---------
+      // Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
+
+      // ---------
+      // Act & Assert: Confirm that claimFees function will fail if called from non reporter
+      // ---------
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed - 1;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await expect(
+        divaOracleTellor.claimFees(divaAddress, latestPoolId, [
+          tippingToken.address,
+        ])
+      ).to.be.revertedWith(
+        "DIVAOracleTellor: not reporter or not confirmed pool"
+      );
+    });
+
+    it("Should revert if users try to claim fees for not confirmed pool", async () => {
+      // ---------
+      // Act & Assert: Confirm that claimFees function will fail if called before setFinalReferenceValue function is called
+      // ---------
+      await expect(
+        divaOracleTellor
+          .connect(reporter)
+          .claimFees(divaAddress, latestPoolId, [tippingToken.address])
+      ).to.be.revertedWith(
+        "DIVAOracleTellor: not reporter or not confirmed pool"
+      );
     });
   });
 });
