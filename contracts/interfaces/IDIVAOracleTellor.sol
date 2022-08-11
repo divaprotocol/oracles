@@ -67,12 +67,20 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @dev Function to claim fees
+     * @dev Function to claim tips
+     * @param _poolId The unique identifier of the pool.
+     * @param _tippingTokens Array of tipping tokens to claim tip.
+     */
+    function claimTips(uint256 _poolId, address[] memory _tippingTokens)
+        external;
+
+    /**
+     * @dev Function to claim tips from DIVAOracleTellor and claim fee from DIVA
      * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      */
-    function claimFees(
+    function claimTipsAndDIVAFee(
         address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens

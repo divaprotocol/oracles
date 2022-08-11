@@ -64,7 +64,20 @@ contract DIVAOracleTellor is
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
-    function claimFees(
+    function claimTips(uint256 _poolId, address[] memory _tippingTokens)
+        external
+        override
+        nonReentrant
+    {
+        require(
+            poolIdToReporter[_poolId] == msg.sender,
+            "DIVAOracleTellor: not reporter or not confirmed pool"
+        );
+
+        _claimTips(_poolId, _tippingTokens);
+    }
+
+    function claimTipsAndDIVAFee(
         address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens
@@ -74,27 +87,7 @@ contract DIVAOracleTellor is
             "DIVAOracleTellor: not reporter or not confirmed pool"
         );
 
-        uint256 len = _tippingTokens.length;
-        for (uint256 i = 0; i < len; ) {
-            address _tippingToken = _tippingTokens[i];
-            IERC20Metadata(_tippingToken).safeTransfer(
-                poolIdToReporter[_poolId],
-                tips[_poolId][_tippingToken]
-            );
-
-            emit FeeClaimed(
-                _poolId,
-                poolIdToReporter[_poolId],
-                _tippingToken,
-                tips[_poolId][_tippingToken]
-            );
-
-            tips[_poolId][_tippingToken] = 0;
-
-            unchecked {
-                ++i;
-            }
-        }
+        _claimTips(_poolId, _tippingTokens);
 
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
@@ -288,5 +281,31 @@ contract DIVAOracleTellor is
                     abi.encode(_poolId, _divaDiamond, block.chainid)
                 )
             );
+    }
+
+    function _claimTips(uint256 _poolId, address[] memory _tippingTokens)
+        private
+    {
+        uint256 len = _tippingTokens.length;
+        for (uint256 i = 0; i < len; ) {
+            address _tippingToken = _tippingTokens[i];
+            IERC20Metadata(_tippingToken).safeTransfer(
+                poolIdToReporter[_poolId],
+                tips[_poolId][_tippingToken]
+            );
+
+            emit FeeClaimed(
+                _poolId,
+                poolIdToReporter[_poolId],
+                _tippingToken,
+                tips[_poolId][_tippingToken]
+            );
+
+            tips[_poolId][_tippingToken] = 0;
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 }
