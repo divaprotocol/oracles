@@ -54,7 +54,7 @@ contract DIVAOracleTellor is
         uint256 _poolId,
         uint256 _amount,
         address _tippingToken
-    ) external override {
+    ) external override nonReentrant {
         require(
             poolIdToReporter[_poolId] == address(0),
             "DIVAOracleTellor: already confirmed pool"
@@ -111,7 +111,7 @@ contract DIVAOracleTellor is
         address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens
-    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+    ) external override nonReentrant {
         _setFinalReferenceValue(_divaDiamond, _poolId);
         _claimTips(_poolId, _tippingTokens);
     }
@@ -119,7 +119,7 @@ contract DIVAOracleTellor is
     function setFinalRerenceValueAndClaimDIVAFee(
         address _divaDiamond,
         uint256 _poolId
-    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+    ) external override nonReentrant {
         _setFinalReferenceValue(_divaDiamond, _poolId);
         _claimDIVAFee(_poolId, _divaDiamond);
     }
@@ -128,7 +128,7 @@ contract DIVAOracleTellor is
         address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens
-    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+    ) external override nonReentrant {
         _setFinalReferenceValue(_divaDiamond, _poolId);
         _claimTips(_poolId, _tippingTokens);
         _claimDIVAFee(_poolId, _divaDiamond);

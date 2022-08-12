@@ -810,6 +810,7 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor
         .connect(tipper)
         .tip(latestPoolId, tippingAmount, tippingToken.address);
+
       // Prepare Tellor value submission
       abiCoder = new ethers.utils.AbiCoder();
       queryDataArgs = abiCoder.encode(
@@ -836,7 +837,7 @@ describe("DIVAOracleTellor", () => {
         .submitValue(queryId, oracleValue, 0, queryData);
     });
 
-    it("Should claim fees after final reference value is set", async () => {
+    it("Should claim tips after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value
       // ---------
@@ -868,7 +869,7 @@ describe("DIVAOracleTellor", () => {
     // Revert
     // ---------
 
-    it("Should revert if users try to claim fees for not confirmed pool", async () => {
+    it("Should revert if users try to claim tips for not confirmed pool", async () => {
       // ---------
       // Act & Assert: Confirm that claimTips function will fail if called before setFinalReferenceValue function is called
       // ---------
@@ -878,15 +879,11 @@ describe("DIVAOracleTellor", () => {
     });
   });
 
-  describe("claimTipsAndDIVAFee", async () => {
+  describe("claimDIVAFee", async () => {
     beforeEach(async () => {
       latestPoolId = await diva.getLatestPoolId();
       poolParams = await diva.getPoolParameters(latestPoolId);
 
-      // Add tip
-      await divaOracleTellor
-        .connect(tipper)
-        .tip(latestPoolId, tippingAmount, tippingToken.address);
       // Prepare Tellor value submission
       abiCoder = new ethers.utils.AbiCoder();
       queryDataArgs = abiCoder.encode(
@@ -913,7 +910,81 @@ describe("DIVAOracleTellor", () => {
         .submitValue(queryId, oracleValue, 0, queryData);
     });
 
-    it("Should claim fees after final reference value is set", async () => {
+    it("Should claim DIVA fee after final reference value is set", async () => {
+      // ---------
+      // Arrange: Set final reference value
+      // ---------
+      // Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(divaAddress, latestPoolId);
+
+      // ---------
+      // Act: Call claimDIVAFee function
+      // ---------
+      await divaOracleTellor.claimDIVAFee(latestPoolId, divaAddress);
+
+      // ---------
+      // Assert: Check collateral token balance of reporter
+      // ---------
+      expect(await collateralToken.balanceOf(reporter.address)).to.eq(
+        settlementFeeAmount
+      );
+    });
+
+    // ---------
+    // Revert
+    // ---------
+
+    it("Should revert if users try to claim diva fee for not confirmed pool", async () => {
+      // ---------
+      // Act & Assert: Confirm that claimDIVAFee function will fail if called before setFinalReferenceValue function is called
+      // ---------
+      await expect(
+        divaOracleTellor.claimDIVAFee(latestPoolId, divaAddress)
+      ).to.be.revertedWith("DIVAOracleTellor: not confirmed pool");
+    });
+  });
+
+  describe("claimTipsAndDIVAFee", async () => {
+    beforeEach(async () => {
+      latestPoolId = await diva.getLatestPoolId();
+      poolParams = await diva.getPoolParameters(latestPoolId);
+
+      // Add tip
+      await divaOracleTellor
+        .connect(tipper)
+        .tip(latestPoolId, tippingAmount, tippingToken.address);
+
+      // Prepare Tellor value submission
+      abiCoder = new ethers.utils.AbiCoder();
+      queryDataArgs = abiCoder.encode(
+        ["uint256", "address", "uint256"],
+        [latestPoolId, divaAddress, chainId]
+      );
+      queryData = abiCoder.encode(
+        ["string", "bytes"],
+        ["DIVAProtocol", queryDataArgs]
+      );
+      queryId = ethers.utils.keccak256(queryData);
+
+      finalReferenceValue = parseEther("42000");
+      collateralToUSDRate = parseEther("1.14");
+      oracleValue = abiCoder.encode(
+        ["uint256", "uint256"],
+        [finalReferenceValue, collateralToUSDRate]
+      );
+      // Submit value to Tellor playground contract
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
+    });
+
+    it("Should claim tpis and DIVA fee after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value
       // ---------
@@ -934,7 +1005,7 @@ describe("DIVAOracleTellor", () => {
       );
 
       // ---------
-      // Assert: Check tipping token balances of divaOracleTellor and reporter, and tips on divaOracleTellor
+      // Assert: Check token balances of divaOracleTellor and reporter, and tips on divaOracleTellor
       // ---------
       expect(
         await divaOracleTellor.tips(latestPoolId, tippingToken.address)
@@ -943,13 +1014,16 @@ describe("DIVAOracleTellor", () => {
       expect(await tippingToken.balanceOf(reporter.address)).to.eq(
         tippingAmount
       );
+      expect(await collateralToken.balanceOf(reporter.address)).to.eq(
+        settlementFeeAmount
+      );
     });
 
     // ---------
     // Revert
     // ---------
 
-    it("Should revert if users try to claim fees for not confirmed pool", async () => {
+    it("Should revert if users try to claim tips and DIVA fee for not confirmed pool", async () => {
       // ---------
       // Act & Assert: Confirm that claimTipsAndDIVAFee function will fail if called before setFinalReferenceValue function is called
       // ---------
