@@ -45,16 +45,6 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @dev Function to set the final reference value for a given `poolId`.
-     * @param _divaDiamond Address of the diva smart contract. Used as argument
-     * rather than a hard-coded constant to avoid redeploying the oracle contracts
-     * when a new version of DIVA Protocol is released.
-     * @param _poolId The unique identifier of the pool.
-     */
-    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
-        external;
-
-    /**
      * @dev Function to run a single tip
      * @param _poolId The unique identifier of the pool.
      * @param _amount amount to tip
@@ -75,12 +65,66 @@ interface IDIVAOracleTellor {
         external;
 
     /**
+     * @dev Function to claim fee from DIVA
+     * @param _poolId The unique identifier of the pool.
+     * @param _divaDiamond Array of tipping tokens to claim tip.
+     */
+    function claimDIVAFee(uint256 _poolId, address _divaDiamond) external;
+
+    /**
      * @dev Function to claim tips from DIVAOracleTellor and claim fee from DIVA
+     * @param _poolId The unique identifier of the pool.
+     * @param _tippingTokens Array of tipping tokens to claim tip.
+     * @param _divaDiamond Address of the diva smart contract.
+     */
+    function claimTipsAndDIVAFee(
+        uint256 _poolId,
+        address[] memory _tippingTokens,
+        address _divaDiamond
+    ) external;
+
+    /**
+     * @dev Function to set the final reference value for a given `poolId`.
+     * @param _divaDiamond Address of the diva smart contract. Used as argument
+     * rather than a hard-coded constant to avoid redeploying the oracle contracts
+     * when a new version of DIVA Protocol is released.
+     * @param _poolId The unique identifier of the pool.
+     */
+    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
+        external;
+
+    /**
+     * @dev Function to set the final reference value and claim tips for a given
+     * `poolId` with given tipping tokens.
      * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      */
-    function claimTipsAndDIVAFee(
+    function setFinalReferenceValueAndClaimTips(
+        address _divaDiamond,
+        uint256 _poolId,
+        address[] memory _tippingTokens
+    ) external;
+
+    /**
+     * @dev Function to set the final reference value and claim DIVA fee
+     * for a given `poolId` with given tipping tokens.
+     * @param _divaDiamond Address of the diva smart contract.
+     * @param _poolId The unique identifier of the pool.
+     */
+    function setFinalRerenceValueAndClaimDIVAFee(
+        address _divaDiamond,
+        uint256 _poolId
+    ) external;
+
+    /**
+     * @dev Function to set the final reference value and claim tips and DIVA fee
+     * for a given `poolId` with given tipping tokens.
+     * @param _divaDiamond Address of the diva smart contract.
+     * @param _poolId The unique identifier of the pool.
+     * @param _tippingTokens Array of tipping tokens to claim tip.
+     */
+    function setFinalRerenceValueAndClaimTipsAndDIVAFee(
         address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens

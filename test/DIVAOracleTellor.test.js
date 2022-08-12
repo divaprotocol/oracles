@@ -274,9 +274,7 @@ describe("DIVAOracleTellor", () => {
         divaOracleTellor
           .connect(user2)
           .setFinalReferenceValue(divaAddress, latestPoolId)
-      ).to.be.revertedWith(
-        "DIVAOracleTellor: must wait _minPeriodUndisputed before calling this function"
-      );
+      ).to.be.revertedWith("DIVAOracleTellor: _minPeriodUndisputed not passed");
     });
 
     it("Should revert if no value was reported yet", async () => {
@@ -852,9 +850,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Act: Call claimTips function
       // ---------
-      await divaOracleTellor
-        .connect(reporter)
-        .claimTips(latestPoolId, [tippingToken.address]);
+      await divaOracleTellor.claimTips(latestPoolId, [tippingToken.address]);
 
       // ---------
       // Assert: Check tipping token balances of divaOracleTellor and reporter, and tips on divaOracleTellor
@@ -869,41 +865,16 @@ describe("DIVAOracleTellor", () => {
     });
 
     // ---------
-    // Reverts
+    // Revert
     // ---------
-
-    it("Should revert if non-reporter tries to claim fees", async () => {
-      // ---------
-      // Arrange: Set final reference value on DIVAOracleTellor
-      // ---------
-      // Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
-      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
-      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor
-        .connect(user2)
-        .setFinalReferenceValue(divaAddress, latestPoolId);
-
-      // ---------
-      // Act & Assert: Confirm that claimTips function will fail if called from non reporter
-      // ---------
-      await expect(
-        divaOracleTellor.claimTips(latestPoolId, [tippingToken.address])
-      ).to.be.revertedWith(
-        "DIVAOracleTellor: not reporter or not confirmed pool"
-      );
-    });
 
     it("Should revert if users try to claim fees for not confirmed pool", async () => {
       // ---------
       // Act & Assert: Confirm that claimTips function will fail if called before setFinalReferenceValue function is called
       // ---------
       await expect(
-        divaOracleTellor
-          .connect(reporter)
-          .claimTips(latestPoolId, [tippingToken.address])
-      ).to.be.revertedWith(
-        "DIVAOracleTellor: not reporter or not confirmed pool"
-      );
+        divaOracleTellor.claimTips(latestPoolId, [tippingToken.address])
+      ).to.be.revertedWith("DIVAOracleTellor: not confirmed pool");
     });
   });
 
@@ -956,9 +927,11 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Act: Call claimTipsAndDIVAFee function
       // ---------
-      await divaOracleTellor
-        .connect(reporter)
-        .claimTipsAndDIVAFee(divaAddress, latestPoolId, [tippingToken.address]);
+      await divaOracleTellor.claimTipsAndDIVAFee(
+        latestPoolId,
+        [tippingToken.address],
+        divaAddress
+      );
 
       // ---------
       // Assert: Check tipping token balances of divaOracleTellor and reporter, and tips on divaOracleTellor
@@ -973,45 +946,20 @@ describe("DIVAOracleTellor", () => {
     });
 
     // ---------
-    // Reverts
+    // Revert
     // ---------
-
-    it("Should revert if non-reporter tries to claim fees", async () => {
-      // ---------
-      // Arrange: Set final reference value on DIVAOracleTellor
-      // ---------
-      // Call setFinalReferenceValue function inside DIVAOracleTellor contract after exactly minPeriodUndisputed period has passed
-      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
-      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
-      await divaOracleTellor
-        .connect(user2)
-        .setFinalReferenceValue(divaAddress, latestPoolId);
-
-      // ---------
-      // Act & Assert: Confirm that claimTipsAndDIVAFee function will fail if called from non reporter
-      // ---------
-      await expect(
-        divaOracleTellor.claimTipsAndDIVAFee(divaAddress, latestPoolId, [
-          tippingToken.address,
-        ])
-      ).to.be.revertedWith(
-        "DIVAOracleTellor: not reporter or not confirmed pool"
-      );
-    });
 
     it("Should revert if users try to claim fees for not confirmed pool", async () => {
       // ---------
       // Act & Assert: Confirm that claimTipsAndDIVAFee function will fail if called before setFinalReferenceValue function is called
       // ---------
       await expect(
-        divaOracleTellor
-          .connect(reporter)
-          .claimTipsAndDIVAFee(divaAddress, latestPoolId, [
-            tippingToken.address,
-          ])
-      ).to.be.revertedWith(
-        "DIVAOracleTellor: not reporter or not confirmed pool"
-      );
+        divaOracleTellor.claimTipsAndDIVAFee(
+          latestPoolId,
+          [tippingToken.address],
+          divaAddress
+        )
+      ).to.be.revertedWith("DIVAOracleTellor: not confirmed pool");
     });
   });
 });

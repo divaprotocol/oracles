@@ -30,6 +30,14 @@ contract DIVAOracleTellor is
     uint32 private _minPeriodUndisputed;
     bool private immutable _challengeable;
 
+    modifier onlyConfirmedPool(uint256 _poolId) {
+        require(
+            poolIdToReporter[_poolId] != address(0),
+            "DIVAOracleTellor: not confirmed pool"
+        );
+        _;
+    }
+
     constructor(
         address payable tellorAddress_,
         address excessFeeRecipient_,
@@ -55,12 +63,12 @@ contract DIVAOracleTellor is
         if (tips[_poolId][_tippingToken] == 0) {
             poolIdToTippingTokens[_poolId].push(_tippingToken);
         }
-        tips[_poolId][_tippingToken] += _amount;
         IERC20Metadata(_tippingToken).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
+        tips[_poolId][_tippingToken] += _amount;
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
@@ -68,36 +76,158 @@ contract DIVAOracleTellor is
         external
         override
         nonReentrant
+        onlyConfirmedPool(_poolId)
     {
-        require(
-            poolIdToReporter[_poolId] == msg.sender,
-            "DIVAOracleTellor: not reporter or not confirmed pool"
-        );
-
         _claimTips(_poolId, _tippingTokens);
     }
 
+    function claimDIVAFee(uint256 _poolId, address _divaDiamond)
+        external
+        override
+        nonReentrant
+        onlyConfirmedPool(_poolId)
+    {
+        _claimDIVAFee(_poolId, _divaDiamond);
+    }
+
     function claimTipsAndDIVAFee(
-        address _divaDiamond,
         uint256 _poolId,
-        address[] memory _tippingTokens
-    ) external override nonReentrant {
-        require(
-            poolIdToReporter[_poolId] == msg.sender,
-            "DIVAOracleTellor: not reporter or not confirmed pool"
-        );
-
+        address[] memory _tippingTokens,
+        address _divaDiamond
+    ) external override nonReentrant onlyConfirmedPool(_poolId) {
         _claimTips(_poolId, _tippingTokens);
-
-        IDIVA _diva = IDIVA(_divaDiamond);
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
-        _diva.claimFee(_params.collateralToken, poolIdToReporter[_poolId]);
+        _claimDIVAFee(_poolId, _divaDiamond);
     }
 
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
         external
         override
         nonReentrant
+    {
+        _setFinalReferenceValue(_divaDiamond, _poolId);
+    }
+
+    function setFinalReferenceValueAndClaimTips(
+        address _divaDiamond,
+        uint256 _poolId,
+        address[] memory _tippingTokens
+    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+        _setFinalReferenceValue(_divaDiamond, _poolId);
+        _claimTips(_poolId, _tippingTokens);
+    }
+
+    function setFinalRerenceValueAndClaimDIVAFee(
+        address _divaDiamond,
+        uint256 _poolId
+    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+        _setFinalReferenceValue(_divaDiamond, _poolId);
+        _claimDIVAFee(_poolId, _divaDiamond);
+    }
+
+    function setFinalRerenceValueAndClaimTipsAndDIVAFee(
+        address _divaDiamond,
+        uint256 _poolId,
+        address[] memory _tippingTokens
+    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+        _setFinalReferenceValue(_divaDiamond, _poolId);
+        _claimTips(_poolId, _tippingTokens);
+        _claimDIVAFee(_poolId, _divaDiamond);
+    }
+
+    function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed)
+        external
+        override
+        onlyOwner
+    {
+        require(
+            _newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800,
+            "DIVAOracleTellor: out of range"
+        );
+        _minPeriodUndisputed = _newMinPeriodUndisputed;
+    }
+
+    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD)
+        external
+        override
+        onlyOwner
+    {
+        _maxFeeAmountUSD = _newMaxFeeAmountUSD;
+    }
+
+    function challengeable() external view override returns (bool) {
+        return _challengeable;
+    }
+
+    function getExcessFeeRecipient() external view override returns (address) {
+        return _excessFeeRecipient;
+    }
+
+    function getMinPeriodUndisputed() external view override returns (uint32) {
+        return _minPeriodUndisputed;
+    }
+
+    function getTippingTokens(uint256 _poolId)
+        public
+        view
+        override
+        returns (address[] memory)
+    {
+        return poolIdToTippingTokens[_poolId];
+    }
+
+    function getQueryId(uint256 _poolId, address _divaDiamond)
+        public
+        view
+        override
+        returns (bytes32)
+    {
+        // Construct Tellor queryID
+        // https://github.com/tellor-io/dataSpecs/blob/main/types/DIVAProtocolPolygon.md
+        return
+            keccak256(
+                abi.encode(
+                    "DIVAProtocol",
+                    abi.encode(_poolId, _divaDiamond, block.chainid)
+                )
+            );
+    }
+
+    function _claimDIVAFee(uint256 _poolId, address _divaDiamond) private {
+        IDIVA _diva = IDIVA(_divaDiamond);
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+        _diva.claimFee(_params.collateralToken, poolIdToReporter[_poolId]);
+    }
+
+    function _claimTips(uint256 _poolId, address[] memory _tippingTokens)
+        private
+    {
+        uint256 len = _tippingTokens.length;
+        for (uint256 i = 0; i < len; ) {
+            address _tippingToken = _tippingTokens[i];
+
+            uint256 _tipAmount = tips[_poolId][_tippingToken];
+            tips[_poolId][_tippingToken] = 0;
+
+            IERC20Metadata(_tippingToken).safeTransfer(
+                poolIdToReporter[_poolId],
+                _tipAmount
+            );
+
+            emit TipClaimed(
+                _poolId,
+                poolIdToReporter[_poolId],
+                _tippingToken,
+                _tipAmount
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function _setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
+        private
     {
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
@@ -144,7 +274,7 @@ contract DIVAOracleTellor is
         // Check that _minPeriodUndisputed has passed after _timestampRetrieved
         require(
             block.timestamp - _timestampRetrieved >= _minPeriodUndisputed,
-            "DIVAOracleTellor: must wait _minPeriodUndisputed before calling this function"
+            "DIVAOracleTellor: _minPeriodUndisputed not passed"
         );
 
         // Retrieve values (final reference value and USD value of collateral asset)
@@ -223,91 +353,5 @@ contract DIVAOracleTellor is
             _params.expiryTime,
             _timestampRetrieved
         );
-    }
-
-    function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed)
-        external
-        override
-        onlyOwner
-    {
-        require(
-            _newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800,
-            "DIVAOracleTellor: out of range"
-        );
-        _minPeriodUndisputed = _newMinPeriodUndisputed;
-    }
-
-    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD)
-        external
-        override
-        onlyOwner
-    {
-        _maxFeeAmountUSD = _newMaxFeeAmountUSD;
-    }
-
-    function challengeable() external view override returns (bool) {
-        return _challengeable;
-    }
-
-    function getExcessFeeRecipient() external view override returns (address) {
-        return _excessFeeRecipient;
-    }
-
-    function getMinPeriodUndisputed() external view override returns (uint32) {
-        return _minPeriodUndisputed;
-    }
-
-    function getTippingTokens(uint256 _poolId)
-        public
-        view
-        override
-        returns (address[] memory)
-    {
-        return poolIdToTippingTokens[_poolId];
-    }
-
-    function getQueryId(uint256 _poolId, address _divaDiamond)
-        public
-        view
-        override
-        returns (bytes32)
-    {
-        // Construct Tellor queryID
-        // https://github.com/tellor-io/dataSpecs/blob/main/types/DIVAProtocolPolygon.md
-        return
-            keccak256(
-                abi.encode(
-                    "DIVAProtocol",
-                    abi.encode(_poolId, _divaDiamond, block.chainid)
-                )
-            );
-    }
-
-    function _claimTips(uint256 _poolId, address[] memory _tippingTokens)
-        private
-    {
-        uint256 len = _tippingTokens.length;
-        for (uint256 i = 0; i < len; ) {
-            address _tippingToken = _tippingTokens[i];
-
-            uint256 _tipAmount = tips[_poolId][_tippingToken];
-            tips[_poolId][_tippingToken] = 0;
-
-            IERC20Metadata(_tippingToken).safeTransfer(
-                poolIdToReporter[_poolId],
-                _tipAmount
-            );
-
-            emit TipClaimed(
-                _poolId,
-                poolIdToReporter[_poolId],
-                _tippingToken,
-                _tipAmount
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
     }
 }
