@@ -20,7 +20,7 @@ async function main() {
   
   await divaOracleTellor.deployed();
 
-  console.log("Tellor oracle deployed to:", divaOracleTellor.address);
+  console.log("DIVAOracleTellor deployed to:", divaOracleTellor.address);
 }
 
 main()
