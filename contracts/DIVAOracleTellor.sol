@@ -21,9 +21,9 @@ contract DIVAOracleTellor is
     using SafeDecimalMath for uint256;
 
     // Ordered to optimize storage
-    mapping(uint256 => mapping(address => uint256)) public tips; // mapping poolId => tipping token address => tip amount
-    mapping(uint256 => address[]) public poolIdToTippingTokens; // mapping poolId to tipping tokens
-    mapping(uint256 => address) public poolIdToReporter; // mapping poolId to reporter address
+    mapping(uint256 => mapping(address => uint256)) private _tips; // mapping poolId => tipping token address => tip amount
+    mapping(uint256 => address[]) private _poolIdToTippingTokens; // mapping poolId to tipping tokens
+    mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
 
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
     address private _excessFeeRecipient;
@@ -32,7 +32,7 @@ contract DIVAOracleTellor is
 
     modifier onlyConfirmedPool(uint256 _poolId) {
         require(
-            poolIdToReporter[_poolId] != address(0),
+            _poolIdToReporter[_poolId] != address(0),
             "DIVAOracleTellor: not confirmed pool"
         );
         _;
@@ -56,23 +56,23 @@ contract DIVAOracleTellor is
         address _tippingToken
     ) external override nonReentrant {
         require(
-            poolIdToReporter[_poolId] == address(0),
+            _poolIdToReporter[_poolId] == address(0),
             "DIVAOracleTellor: already confirmed pool"
         );
 
-        if (tips[_poolId][_tippingToken] == 0) {
-            poolIdToTippingTokens[_poolId].push(_tippingToken);
+        if (_tips[_poolId][_tippingToken] == 0) {
+            _poolIdToTippingTokens[_poolId].push(_tippingToken);
         }
         IERC20Metadata(_tippingToken).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
-        tips[_poolId][_tippingToken] += _amount;
+        _tips[_poolId][_tippingToken] += _amount;
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
-    function claimTips(uint256 _poolId, address[] memory _tippingTokens)
+    function claimTips(uint256 _poolId, address[] calldata _tippingTokens)
         external
         override
         nonReentrant
@@ -92,7 +92,7 @@ contract DIVAOracleTellor is
 
     function claimTipsAndDIVAFee(
         uint256 _poolId,
-        address[] memory _tippingTokens,
+        address[] calldata _tippingTokens,
         address _divaDiamond
     ) external override nonReentrant onlyConfirmedPool(_poolId) {
         _claimTips(_poolId, _tippingTokens);
@@ -110,13 +110,13 @@ contract DIVAOracleTellor is
     function setFinalReferenceValueAndClaimTips(
         address _divaDiamond,
         uint256 _poolId,
-        address[] memory _tippingTokens
+        address[] calldata _tippingTokens
     ) external override nonReentrant {
         _setFinalReferenceValue(_divaDiamond, _poolId);
         _claimTips(_poolId, _tippingTokens);
     }
 
-    function setFinalRerenceValueAndClaimDIVAFee(
+    function setFinalReferenceValueAndClaimDIVAFee(
         address _divaDiamond,
         uint256 _poolId
     ) external override nonReentrant {
@@ -124,14 +124,26 @@ contract DIVAOracleTellor is
         _claimDIVAFee(_poolId, _divaDiamond);
     }
 
-    function setFinalRerenceValueAndClaimTipsAndDIVAFee(
+    function setFinalReferenceValueAndClaimTipsAndDIVAFee(
         address _divaDiamond,
         uint256 _poolId,
-        address[] memory _tippingTokens
+        address[] calldata _tippingTokens
     ) external override nonReentrant {
         _setFinalReferenceValue(_divaDiamond, _poolId);
         _claimTips(_poolId, _tippingTokens);
         _claimDIVAFee(_poolId, _divaDiamond);
+    }
+
+    function setExcessFeeRecipient(address _newExcessFeeRecipient)
+        external
+        override
+        onlyOwner
+    {
+        require(
+            _newExcessFeeRecipient != address(0),
+            "DIVAOracleTellor: excessFeeRecipient cannot be zero address"
+        );
+        _excessFeeRecipient = _newExcessFeeRecipient;
     }
 
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed)
@@ -162,17 +174,30 @@ contract DIVAOracleTellor is
         return _excessFeeRecipient;
     }
 
+    function getMaxFeeAmountUSD() external view override returns (uint256) {
+        return _maxFeeAmountUSD;
+    }
+
     function getMinPeriodUndisputed() external view override returns (uint32) {
         return _minPeriodUndisputed;
     }
 
     function getTippingTokens(uint256 _poolId)
-        public
+        external
         view
         override
         returns (address[] memory)
     {
-        return poolIdToTippingTokens[_poolId];
+        return _poolIdToTippingTokens[_poolId];
+    }
+
+    function getTips(uint256 _poolId, address _tippingToken)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return _tips[_poolId][_tippingToken];
     }
 
     function getQueryId(uint256 _poolId, address _divaDiamond)
@@ -195,27 +220,27 @@ contract DIVAOracleTellor is
     function _claimDIVAFee(uint256 _poolId, address _divaDiamond) private {
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
-        _diva.claimFee(_params.collateralToken, poolIdToReporter[_poolId]);
+        _diva.claimFee(_params.collateralToken, _poolIdToReporter[_poolId]);
     }
 
-    function _claimTips(uint256 _poolId, address[] memory _tippingTokens)
+    function _claimTips(uint256 _poolId, address[] calldata _tippingTokens)
         private
     {
         uint256 len = _tippingTokens.length;
         for (uint256 i = 0; i < len; ) {
             address _tippingToken = _tippingTokens[i];
 
-            uint256 _tipAmount = tips[_poolId][_tippingToken];
-            tips[_poolId][_tippingToken] = 0;
+            uint256 _tipAmount = _tips[_poolId][_tippingToken];
+            _tips[_poolId][_tippingToken] = 0;
 
             IERC20Metadata(_tippingToken).safeTransfer(
-                poolIdToReporter[_poolId],
+                _poolIdToReporter[_poolId],
                 _tipAmount
             );
 
             emit TipClaimed(
                 _poolId,
-                poolIdToReporter[_poolId],
+                _poolIdToReporter[_poolId],
                 _tippingToken,
                 _tipAmount
             );
@@ -296,7 +321,7 @@ contract DIVAOracleTellor is
         );
 
         // Set reporter with pool id
-        poolIdToReporter[_poolId] = _reporter;
+        _poolIdToReporter[_poolId] = _reporter;
 
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(

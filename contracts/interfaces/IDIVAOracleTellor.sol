@@ -19,13 +19,13 @@ interface IDIVAOracleTellor {
     /**
      * @notice Emitted when the tip is claimed.
      * @param poolId The Id of an existing derivatives pool
-     * @param tellorReporter Address of Tellor reporter
+     * @param recipient Address of the tip recipient
      * @param tippingToken Address of tipping token
      * @param amount Claimed tipping token amount
      */
     event TipClaimed(
         uint256 poolId,
-        address tellorReporter,
+        address recipient,
         address tippingToken,
         uint256 amount
     );
@@ -72,7 +72,8 @@ interface IDIVAOracleTellor {
     function claimDIVAFee(uint256 _poolId, address _divaDiamond) external;
 
     /**
-     * @dev Function to claim tips from DIVAOracleTellor and claim fee from DIVA
+     * @dev Function to claim tips from DIVAOracleTellor and claim fee
+     * from DIVA
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      * @param _divaDiamond Address of the diva smart contract.
@@ -84,18 +85,18 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @dev Function to set the final reference value for a given `poolId`.
+     * @dev Function to set the final reference value for a given `_poolId`.
      * @param _divaDiamond Address of the diva smart contract. Used as argument
-     * rather than a hard-coded constant to avoid redeploying the oracle contracts
-     * when a new version of DIVA Protocol is released.
+     * rather than a hard-coded constant to avoid redeploying the oracle
+     * contracts when a new version of DIVA Protocol is released.
      * @param _poolId The unique identifier of the pool.
      */
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
         external;
 
     /**
-     * @dev Function to set the final reference value and claim tips for a given
-     * `poolId` with given tipping tokens.
+     * @dev Function to set the final reference value and claim tips for a
+     * given `_poolId` with given tipping tokens.
      * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
@@ -108,38 +109,48 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Function to set the final reference value and claim DIVA fee
-     * for a given `poolId` with given tipping tokens.
+     * for a given `_poolId` with given tipping tokens.
      * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      */
-    function setFinalRerenceValueAndClaimDIVAFee(
+    function setFinalReferenceValueAndClaimDIVAFee(
         address _divaDiamond,
         uint256 _poolId
     ) external;
 
     /**
-     * @dev Function to set the final reference value and claim tips and DIVA fee
-     * for a given `poolId` with given tipping tokens.
+     * @dev Function to set the final reference value and claim tips and DIVA
+     * fee for a given `_poolId` with given tipping tokens.
      * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      */
-    function setFinalRerenceValueAndClaimTipsAndDIVAFee(
+    function setFinalReferenceValueAndClaimTipsAndDIVAFee(
         address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens
     ) external;
 
     /**
-     * @dev Function to update `minPeriodUndisputed` with minimum value of
+     * @dev Function to update `_excessFeeRecipient`.
+     * Only callable by contract owner.
+     * @param _newExcessFeeRecipient New `_excessFeeRecipient`.
+     */
+    function setExcessFeeRecipient(address _newExcessFeeRecipient) external;
+
+    /**
+     * @dev Function to update `_minPeriodUndisputed` with minimum value of
      * 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds).
-     * @param _newMinPeriodUndisputed New `minPeriodUndisputed` in seconds.
+     * Only callable by contract owner.
+     * @param _newMinPeriodUndisputed New `_minPeriodUndisputed` in seconds.
      */
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external;
 
     /**
-     * @dev Function to update `_maxFeeAmountUSD`. Only callable by contract owner.
-     * @param _newMaxFeeAmountUSD New amount expressed as an integer with 18 decimals.
+     * @dev Function to update `_maxFeeAmountUSD`.
+     * Only callable by contract owner.
+     * @param _newMaxFeeAmountUSD New amount expressed as an integer with
+     * 18 decimals.
      */
     function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
 
@@ -161,6 +172,11 @@ interface IDIVAOracleTellor {
     function getMinPeriodUndisputed() external view returns (uint32);
 
     /**
+     * @dev Returns the max fee amount usd value with 18 decimals
+     */
+    function getMaxFeeAmountUSD() external view returns (uint256);
+
+    /**
      * @dev Returns the length of tipping tokens with the poolId
      * @param _poolId The unique identifier of the pool.
      */
@@ -168,6 +184,16 @@ interface IDIVAOracleTellor {
         external
         view
         returns (address[] memory);
+
+    /**
+     * @dev Returns the tipping amount
+     * @param _poolId The unique identifier of the pool.
+     * @param _tippingToken Address of tipping token.
+     */
+    function getTips(uint256 _poolId, address _tippingToken)
+        external
+        view
+        returns (uint256);
 
     /**
      * @dev Returns query id
