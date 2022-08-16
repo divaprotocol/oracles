@@ -6,7 +6,7 @@ async function main() {
 
   const network = "ropsten"
   let divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  let poolId = 7
+  let poolId = 8
   divaAddress = addresses[network]
   console.log("divaAddress: " + divaAddress)
   console.log("divaOracleTellorAddress: " + divaOracleTellorAddress)

@@ -15,7 +15,7 @@ const { addresses, tellorPlaygroundAddresses, divaTellorOracleAddresses } = requ
 async function main() {
 
     network = "ropsten"
-    const poolId = 7
+    const poolId = 8
     const divaAddress = addresses[network]
 
     // Connect to DIVA contract
@@ -73,8 +73,8 @@ async function main() {
 
     // Submit value to tellorPlayground
     const tx = await tellorPlayground
-    .connect(reporter)
-    .submitValue(queryId, oracleValue, 0, queryData);
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
     await tx.wait()
 
     // Check that timestamp and values have been set in tellorPlayground contract
