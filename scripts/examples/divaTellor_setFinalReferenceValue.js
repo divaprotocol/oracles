@@ -6,7 +6,7 @@ async function main() {
 
   const network = "ropsten"
   let divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  let poolId = 1
+  let poolId = 7
   divaAddress = addresses[network]
   console.log("divaAddress: " + divaAddress)
   console.log("divaOracleTellorAddress: " + divaOracleTellorAddress)
@@ -21,7 +21,9 @@ async function main() {
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId)
-  console.log(poolParams)
+  console.log('poolId', poolId)
+  console.log('dataProvider', poolParams.dataProvider)
+  console.log('statusFinalReferenceValue: ', poolParams.statusFinalReferenceValue)
 }
 
 main()
