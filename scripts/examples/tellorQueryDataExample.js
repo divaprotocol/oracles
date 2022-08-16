@@ -1,6 +1,6 @@
 const { ethers } = require("hardhat");
 
-const { addresses } = require("../utils/constants");
+const { addresses } = require("../../utils/constants");
 
 async function main() {
   // Get DIVA address

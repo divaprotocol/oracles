@@ -1,6 +1,5 @@
 const hre = require("hardhat");
-const DIVA_ABI = require('../contracts/abi/DIVA.json');
-const { divaTellorOracleAddresses } = require('../utils/constants');
+const { divaTellorOracleAddresses } = require('../../utils/constants');
 
 async function main() {
 
