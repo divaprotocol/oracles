@@ -1,14 +1,15 @@
 const hre = require("hardhat");
-const DIVA_ABI = require('../contracts/abi/DIVA.json');
-const { addresses } = require('../utils/constants');
+const DIVA_ABI = require('../../contracts/abi/DIVA.json');
+const { addresses, divaTellorOracleAddresses } = require('../../utils/constants');
 
 async function main() {
 
   const network = "ropsten"
-  let divaOracleTellorAddress = "0x2f4218C9262216B7B73A76334e5A98F3eF71A61c" // Ropsten
-  let poolId = 157
+  let divaOracleTellorAddress = divaTellorOracleAddresses[network]
+  let poolId = 1
   divaAddress = addresses[network]
   console.log("divaAddress: " + divaAddress)
+  console.log("divaOracleTellorAddress: " + divaOracleTellorAddress)
 
   // Connect to Tellor oracle contract
   const divaOracleTellor = await hre.ethers.getContractAt("DIVAOracleTellor", divaOracleTellorAddress);

@@ -1,15 +1,15 @@
 /**
- * Script to create a contingent pool on DIVA Protocol
- * Run: `yarn hardhat run scripts/createContingentPool.js --network ropsten`
+ * Script to create a contingent pool on DIVA Protocol.
+ * Run: `yarn hardhat run scripts/examples/diva_createContingentPool.js --network ropsten`
  * Replace ropsten with any other network that is listed under addresses in constants.js
  */
 
  const { ethers } = require('hardhat');
- const ERC20_ABI = require('../contracts/abi/ERC20.json');
- const DIVA_ABI = require('../contracts/abi/DIVA.json');
+ const ERC20_ABI = require('../../contracts/abi/ERC20.json');
+ const DIVA_ABI = require('../../contracts/abi/DIVA.json');
  const { parseEther, parseUnits, formatUnits } = require('@ethersproject/units')
- const { addresses, divaTellorOracleAddresses } = require('../utils/constants')
- const { getExpiryInSeconds } = require('../test/utils.js');
+ const { addresses, divaTellorOracleAddresses } = require('../../utils/constants')
+ const { getExpiryInSeconds } = require('../../test/utils.js');
  
  
  async function main() {
@@ -116,13 +116,9 @@
    // Get pool parameters
    const poolParams = await diva.getPoolParameters(poolId);
  
-   // Get instances of short and long position token
-   const shortTokenInstance = await ethers.getContractAt(ERC20_ABI, poolParams.shortToken)
-   const longTokenInstance = await ethers.getContractAt(ERC20_ABI, poolParams.longToken)
-   console.log("Short token address: " + poolParams.shortToken)
-   console.log("Long token address: " + poolParams.longToken)
-   console.log("Supply short token: " + await shortTokenInstance.totalSupply())
-   console.log("Supply long token: " + await longTokenInstance.totalSupply())
+   // Log relevant info
+   console.log("Data provider: " + poolParams.dataProvider)
+   console.log("Expiry time: " + new Date(poolParams.expiryTime * 1000).toLocaleString())
    
  }
  

@@ -1,12 +1,12 @@
 /**
- * Script to get the pool parameters for an existing poolId in DIVA Protocol
- * Run: `yarn hardhat run scripts/getPoolParameters.js --network ropsten`
+ * Script to get the pool parameters for an existing poolId in DIVA Protocol.
+ * Run: `yarn hardhat run scripts/examples/diva_getPoolParameters.js --network ropsten`
  * Replace ropsten with any other network that is listed under addresses in constants.js
  */
 
  const { ethers } = require('hardhat');
- const DIVA_ABI = require('../contracts/abi/DIVA.json');
- const { addresses } = require('../utils/constants')
+ const DIVA_ABI = require('../../contracts/abi/DIVA.json');
+ const { addresses } = require('../../utils/constants')
  
  
  async function main() {
@@ -15,7 +15,7 @@
      const network = "ropsten"     
      
      // INPUT: id of existing pool
-     const poolId = 1
+     const poolId = 7
  
      // Connect to DIVA contract
      let diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);

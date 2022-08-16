@@ -28,7 +28,7 @@ const tellorPlaygroundAddresses = {
 };
 
 const divaTellorOracleAddresses = {
-  ropsten: "0x98AB2A96214913453C7Ccd207C17e60b3AFA6887", // Deployed on 16 Aug 2022
+  ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
 };
 
 // Status mapping
