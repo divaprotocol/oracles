@@ -10,8 +10,7 @@
  const { parseEther, parseUnits, formatUnits } = require('@ethersproject/units')
  const { addresses, divaTellorOracleAddresses } = require('../utils/constants')
  const { getExpiryInSeconds } = require('../test/utils.js');
-const { collapseTextChangeRangesAcrossMultipleVersions } = require('typescript');
-
+ 
  
  async function main() {
  
