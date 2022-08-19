@@ -50,7 +50,7 @@ interface IDIVAOracleTellor {
      * @param _amount amount to tip
      * @param _tippingToken tipping token address
      */
-    function tip(
+    function addTip(
         uint256 _poolId,
         uint256 _amount,
         address _tippingToken

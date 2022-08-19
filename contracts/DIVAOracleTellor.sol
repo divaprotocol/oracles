@@ -50,7 +50,7 @@ contract DIVAOracleTellor is
         _maxFeeAmountUSD = maxFeeAmountUSD_;
     }
 
-    function tip(
+    function addTip(
         uint256 _poolId,
         uint256 _amount,
         address _tippingToken
