@@ -37,6 +37,8 @@ module.exports = {
         // blockNumber: 10932590,
         url: process.env.ALCHEMY_URL_ROPSTEN,
         blockNumber: 12750642,
+        // url: process.env.ALCHEMY_URL_GOERLI,
+        // blockNumber: 7452153,
       },
       accounts: {
         mnemonic: MNEMONIC,

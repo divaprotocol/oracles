@@ -36,14 +36,21 @@ const calcSettlementFee = (
   ];
 };
 
-const getOracleValue = (finalReferenceValue, collateralToUSDRate) => {
+const encodeOracleValue = (finalReferenceValue, collateralToUSDRate) => {
   return new ethers.utils.AbiCoder().encode(
     ["uint256", "uint256"],
     [finalReferenceValue, collateralToUSDRate]
   );
 };
 
-const genQueryDataAndId = (latestPoolId, divaAddress, chainId) => {
+const decodeOracleValue = (tellorValue) => {
+  return new ethers.utils.AbiCoder().decode(
+    ["uint256", "uint256"],
+    tellorValue
+  );
+};
+
+const getQueryDataAndId = (latestPoolId, divaAddress, chainId) => {
   const abiCoder = new ethers.utils.AbiCoder();
   const queryDataArgs = abiCoder.encode(
     ["uint256", "address", "uint256"],
@@ -101,6 +108,7 @@ describe("DIVAOracleTellor", () => {
             // blockNumber: Choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
             // blockNumber: 10932590, // Rinkeby
             blockNumber: 12750642, // Ropsten
+            // blockNumber: 7452153, // Goerli
           },
         },
       ],
@@ -160,7 +168,7 @@ describe("DIVAOracleTellor", () => {
     chainId = (await ethers.provider.getNetwork()).chainId;
 
     // Prepare Tellor value submission
-    [queryData, queryId] = genQueryDataAndId(
+    [queryData, queryId] = getQueryDataAndId(
       latestPoolId,
       divaAddress,
       chainId
@@ -212,7 +220,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
 
       // ---------
       // Act: Submit value to tellorPlayground
@@ -230,10 +238,7 @@ describe("DIVAOracleTellor", () => {
         queryId,
         tellorDataTimestamp
       );
-      const formattedTellorValue = new ethers.utils.AbiCoder().decode(
-        ["uint256", "uint256"],
-        tellorValue
-      );
+      const formattedTellorValue = decodeOracleValue(tellorValue);
       expect(tellorDataTimestamp).to.eq(lastBlockTimestamp);
       expect(formattedTellorValue[0]).to.eq(finalReferenceValue);
       expect(formattedTellorValue[1]).to.eq(collateralToUSDRate);
@@ -269,7 +274,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
@@ -354,7 +359,7 @@ describe("DIVAOracleTellor", () => {
 
       // Prepare value submission to tellorPlayground
       // Re-construct as latestPoolId changed in this test
-      [queryData, queryId] = genQueryDataAndId(
+      [queryData, queryId] = getQueryDataAndId(
         latestPoolId,
         divaAddress,
         chainId
@@ -363,7 +368,7 @@ describe("DIVAOracleTellor", () => {
       // First reporter submission prior to expiration
       finalReferenceValue1 = parseEther("42000");
       collateralToUSDRate1 = parseEther("1.14");
-      oracleValue1 = getOracleValue(finalReferenceValue1, collateralToUSDRate1);
+      oracleValue1 = encodeOracleValue(finalReferenceValue1, collateralToUSDRate1);
       nextBlockTimestamp = poolParams.expiryTime.sub(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
       await tellorPlayground
@@ -373,7 +378,7 @@ describe("DIVAOracleTellor", () => {
       // Second reporter submission after expiration
       finalReferenceValue2 = parseEther("42500");
       collateralToUSDRate2 = parseEther("1.15");
-      oracleValue2 = getOracleValue(finalReferenceValue2, collateralToUSDRate2);
+      oracleValue2 = encodeOracleValue(finalReferenceValue2, collateralToUSDRate2);
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
       await tellorPlayground
@@ -409,7 +414,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
 
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
@@ -472,7 +477,7 @@ describe("DIVAOracleTellor", () => {
 
       // Prepare value submission to tellorPlayground
       // Re-construct as latestPoolId changed in this test
-      [queryData, queryId] = genQueryDataAndId(
+      [queryData, queryId] = getQueryDataAndId(
         latestPoolId,
         divaAddress,
         chainId
@@ -481,7 +486,7 @@ describe("DIVAOracleTellor", () => {
       // Report value to tellor playground
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await tellorPlayground
@@ -575,7 +580,7 @@ describe("DIVAOracleTellor", () => {
 
       // Prepare value submission to tellorPlayground
       // Re-construct as latestPoolId changed in this test
-      [queryData, queryId] = genQueryDataAndId(
+      [queryData, queryId] = getQueryDataAndId(
         latestPoolId,
         divaAddress,
         chainId
@@ -584,7 +589,7 @@ describe("DIVAOracleTellor", () => {
       // Report value to tellor playground with collateralToUSDRate = 0
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("0");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
       nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await tellorPlayground
@@ -645,7 +650,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
@@ -705,7 +710,7 @@ describe("DIVAOracleTellor", () => {
 
       // Prepare value submission to tellorPlayground
       // Re-construct as latestPoolId changed in this test
-      [queryData, queryId] = genQueryDataAndId(
+      [queryData, queryId] = getQueryDataAndId(
         latestPoolId,
         divaAddress,
         chainId
@@ -713,7 +718,7 @@ describe("DIVAOracleTellor", () => {
 
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
 
       // Submit value to Tellor playground contract
       await tellorPlayground
@@ -752,7 +757,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
@@ -865,7 +870,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
@@ -930,7 +935,7 @@ describe("DIVAOracleTellor", () => {
         .addTip(latestPoolId, tippingAmount2, tippingToken2.address);
 
       // Prepare Tellor value submission
-      [queryData, queryId] = genQueryDataAndId(
+      [queryData, queryId] = getQueryDataAndId(
         latestPoolId,
         divaAddress,
         chainId
@@ -938,7 +943,7 @@ describe("DIVAOracleTellor", () => {
 
       finalReferenceValue = parseEther("42000");
       collateralToUSDRate = parseEther("1.14");
-      oracleValue = getOracleValue(finalReferenceValue, collateralToUSDRate);
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
       // Submit value to Tellor playground contract
       nextBlockTimestamp = poolParams.expiryTime.add(1);
       await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
