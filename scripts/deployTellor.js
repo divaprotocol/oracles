@@ -5,9 +5,9 @@ const { tellorPlaygroundAddresses } = require('../utils/constants') //  DIVA Pro
 
 async function main() {
 
-  const tellorPlaygroundAddress = tellorPlaygroundAddresses["rinkeby"] 
+  const tellorPlaygroundAddress = tellorPlaygroundAddresses["goerli"] 
   const excessFeeRecipient = '0x1EE5730C710cF06dFA7952D61A321eC8e16b9d3A' // temporary address
-  const periodMinPeriodUndisputed = 10; // 1 hour 
+  const periodMinPeriodUndisputed = 10; // 10 sec for testing purposes only 
   const maxFeeAmountUSD = parseEther('10') // $10
 
   const divaOracleTellorFactory = await hre.ethers.getContractFactory("DIVAOracleTellor");
