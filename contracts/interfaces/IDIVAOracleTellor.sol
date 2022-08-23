@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
+error NotConfirmedPool();
+error AlreadyConfirmedPool();
+error ZeroExcessFeeRecipient();
+error OutOfRange();
+error NoOracleSubmission();
+error NoOracleSubmissionAfterExpiryTime();
+error MinPeriodUndisputedNotPassed();
+
 interface IDIVAOracleTellor {
     /**
      * @notice Emitted when the tip is added.

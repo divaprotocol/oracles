@@ -31,10 +31,9 @@ contract DIVAOracleTellor is
     bool private immutable _challengeable;
 
     modifier onlyConfirmedPool(uint256 _poolId) {
-        require(
-            _poolIdToReporter[_poolId] != address(0),
-            "DIVAOracleTellor: not confirmed pool"
-        );
+        if (_poolIdToReporter[_poolId] == address(0)) {
+            revert NotConfirmedPool();
+        }
         _;
     }
 
@@ -55,10 +54,9 @@ contract DIVAOracleTellor is
         uint256 _amount,
         address _tippingToken
     ) external override nonReentrant {
-        require(
-            _poolIdToReporter[_poolId] == address(0),
-            "DIVAOracleTellor: already confirmed pool"
-        );
+        if (_poolIdToReporter[_poolId] != address(0)) {
+            revert AlreadyConfirmedPool();
+        }
 
         if (_tips[_poolId][_tippingToken] == 0) {
             _poolIdToTippingTokens[_poolId].push(_tippingToken);
@@ -139,10 +137,9 @@ contract DIVAOracleTellor is
         override
         onlyOwner
     {
-        require(
-            _newExcessFeeRecipient != address(0),
-            "DIVAOracleTellor: excessFeeRecipient cannot be zero address"
-        );
+        if (_newExcessFeeRecipient == address(0)) {
+            revert ZeroExcessFeeRecipient();
+        }
         _excessFeeRecipient = _newExcessFeeRecipient;
     }
 
@@ -151,10 +148,9 @@ contract DIVAOracleTellor is
         override
         onlyOwner
     {
-        require(
-            _newMinPeriodUndisputed >= 3600 && _newMinPeriodUndisputed <= 64800,
-            "DIVAOracleTellor: out of range"
-        );
+        if (_newMinPeriodUndisputed < 3600 || _newMinPeriodUndisputed > 64800) {
+            revert OutOfRange();
+        }
         _minPeriodUndisputed = _newMinPeriodUndisputed;
     }
 
@@ -269,10 +265,9 @@ contract DIVAOracleTellor is
         // Handle case where data was submitted before expiryTime
         if (_timestampRetrieved < _params.expiryTime) {
             // Check that data exists (_timestampRetrieved = 0 if it doesn't)
-            require(
-                _timestampRetrieved > 0,
-                "DIVAOracleTellor: no oracle submission"
-            );
+            if (_timestampRetrieved == 0) {
+                revert NoOracleSubmission();
+            }
 
             // Retrieve latest array index of data before `_expiryTime` for the queryId
             (, uint256 _index) = getIndexForDataBefore(
@@ -290,17 +285,15 @@ contract DIVAOracleTellor is
             );
 
             // _timestampRetrieved = 0 if there is no submission
-            require(
-                _timestampRetrieved > 0,
-                "DIVAOracleTellor: no oracle submission after expiry time"
-            );
+            if (_timestampRetrieved == 0) {
+                revert NoOracleSubmissionAfterExpiryTime();
+            }
         }
 
         // Check that _minPeriodUndisputed has passed after _timestampRetrieved
-        require(
-            block.timestamp - _timestampRetrieved >= _minPeriodUndisputed,
-            "DIVAOracleTellor: _minPeriodUndisputed not passed"
-        );
+        if (block.timestamp - _timestampRetrieved < _minPeriodUndisputed) {
+            revert MinPeriodUndisputedNotPassed();
+        }
 
         // Retrieve values (final reference value and USD value of collateral asset)
         bytes memory _valueRetrieved = retrieveData(
