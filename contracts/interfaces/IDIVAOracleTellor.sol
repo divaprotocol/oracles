@@ -1,15 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-error NotConfirmedPool();
-error AlreadyConfirmedPool();
-error ZeroExcessFeeRecipient();
-error OutOfRange();
-error NoOracleSubmission();
-error NoOracleSubmissionAfterExpiryTime();
-error MinPeriodUndisputedNotPassed();
-
 interface IDIVAOracleTellor {
+
+    // Thrown if user tries to claim fees/tips for a pool that was not yet confirmed
+    error NotConfirmedPool();
+
+    // Thrown if user tries to add a tip for an already confirmed pool
+    error AlreadyConfirmedPool();
+
+    // Thrown if the zero address is passed as input into `setExcessFeeRecipient`
+    error ZeroExcessFeeRecipient();
+
+    // Thrown if `_minPeriodUndisputed` passed into `setMinPeriodUndisputed` is
+    // not within the expected range (min 1h, max 18h) 
+    error OutOfRange();
+
+    // Thrown when user calls `setFinalReferenceValue` (or a variant of it) but
+    // there is no data sitting in the Tellor contract 
+    error NoOracleSubmission();
+
+    // Thrown if a value was reported to the Tellor contract but it was before
+    // the expiry time of the underlying pool
+    error NoOracleSubmissionAfterExpiryTime();
+
+    // Thrown if user tries to call `setFinalReferenceValue` (or a variant of it)
+    // before the minimum period undisputed period has passed
+    error MinPeriodUndisputedNotPassed();
+
     /**
      * @notice Emitted when the tip is added.
      * @param poolId The Id of an existing derivatives pool
