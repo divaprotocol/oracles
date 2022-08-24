@@ -1,5 +1,5 @@
 const hre = require("hardhat");
-const { bondFactoryInfo } = require("../../utils/constants");
+const { bondFactoryInfo } = require("../utils/constants");
 
 async function main() {
   const network = "goerli";

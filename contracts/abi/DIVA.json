@@ -36,7 +36,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "recipient",
+        "name": "by",
         "type": "address"
       },
       {
@@ -52,51 +52,8 @@
         "type": "uint256"
       }
     ],
-    "name": "FeeClaimed",
+    "name": "FeesClaimed",
     "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "collateralToken",
-            "type": "address"
-          },
-          { "internalType": "address", "name": "recipient", "type": "address" }
-        ],
-        "internalType": "struct IClaim.FeeClaim[]",
-        "name": "_feeClaims",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "batchClaimFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "collateralToken",
-            "type": "address"
-          },
-          { "internalType": "address", "name": "recipient", "type": "address" },
-          { "internalType": "uint256", "name": "amount", "type": "uint256" }
-        ],
-        "internalType": "struct IClaim.FeeClaimTransfer[]",
-        "name": "_feeClaimTransfers",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "batchTransferFeeClaim",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   },
   {
     "inputs": [
@@ -104,10 +61,9 @@
         "internalType": "address",
         "name": "_collateralToken",
         "type": "address"
-      },
-      { "internalType": "address", "name": "_recipient", "type": "address" }
+      }
     ],
-    "name": "claimFee",
+    "name": "claimFees",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -949,43 +905,6 @@
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "nonpayable",
     "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "poolId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "positionToken",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amountPositionToken",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "collateralAmountReturned",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "returnedTo",
-        "type": "address"
-      }
-    ],
-    "name": "PositionTokenRedeemed",
-    "type": "event"
   },
   {
     "anonymous": false,
