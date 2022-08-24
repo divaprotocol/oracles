@@ -15,8 +15,8 @@
  async function main() {
  
    // Set network, collateral token and data provider address
-   const network = "ropsten" 
-   const erc20CollateralTokenAddress = "0x134e62bd2ee247d4186A1fdbaA9e076cb26c1355" // dUSD
+   const network = "goerli" 
+   const erc20CollateralTokenAddress = "0xFA158C9B780A4213f3201Ae74Cca013712c8538d" // dUSD
    const dataProviderAddress = divaTellorOracleAddresses[network]
  
    // Get signers

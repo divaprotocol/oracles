@@ -4,7 +4,7 @@ const { addresses, divaTellorOracleAddresses } = require('../../utils/constants'
 async function main() {
 
   const network = "goerli"
-  const poolId = 20
+  const poolId = 1150
   const divaAddress = addresses[network]
   console.log('divaAddress: ', divaAddress)
 
