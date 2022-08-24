@@ -5,6 +5,12 @@ pragma solidity 0.8.9;
  * @title Shortened version of the interface including required functions only
  */
 interface IDIVA {
+    struct FeeClaimTransfer {
+        address collateralToken;
+        address recipient;
+        uint256 amount;
+    }
+
     // Settlement status
     enum Status {
         Open,
@@ -86,6 +92,26 @@ interface IDIVA {
         address _collateralToken,
         uint256 _amount
     ) external;
+
+    /**
+     * @notice Function to transfer fee claim from entitled address
+     * to another address
+     * @param _feeClaimTransfers Struct array containing collateral tokens,
+     * recipient addresses and amounts (expressed as an integer with collateral
+     * token decimals) to transfer to recipient
+     */
+    function batchTransferFeeClaim(
+        FeeClaimTransfer[] calldata _feeClaimTransfers
+    ) external;
+
+    /**
+     * @notice Function to claim allocated fee
+     * @dev List of collateral token addresses has to be obtained off-chain
+     * (e.g., from TheGraph)
+     * @param _collateralToken Collateral token address
+     * @param _recipient Fee recipient address
+     */
+    function claimFee(address _collateralToken, address _recipient) external;
 
     /**
      * @notice Function to issue long and the short position tokens to

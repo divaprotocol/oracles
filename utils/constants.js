@@ -1,7 +1,7 @@
-// DIVA contract addresses on different networks (v0.9.0)
+// DIVA contract addresses on different networks (v1.0.0)
 const addresses = {
   rinkeby: "0x4F7ad4674e67aFc2169984f194d7a5e77926327C",
-  ropsten: "0xe4B55fC1968C8913AA120E42846d233Bbcb803F6", // audited contract
+  ropsten: "0x67965e27cC17aa8073Da4cB19236bDddAD285E91",
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
   kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101",
   polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B",
@@ -24,6 +24,13 @@ const bondFactoryInfo = {
 const tellorPlaygroundAddresses = {
   ropsten: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A", // new used for testnet
   kovan: "0x320f09D9f92Cfa0e9C272b179e530634D873aeFa",
+  rinkeby: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A",
+  goerli: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A",
+};
+
+const divaTellorOracleAddresses = {
+  ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
+  goerli: "0x66f84344c786a106AcaE8f54bbb0BdA44Fec6723", // Deployed on 22 Aug 2022
 };
 
 // Status mapping
@@ -38,3 +45,4 @@ exports.addresses = addresses;
 exports.bondFactoryInfo = bondFactoryInfo;
 exports.status = status;
 exports.tellorPlaygroundAddresses = tellorPlaygroundAddresses;
+exports.divaTellorOracleAddresses = divaTellorOracleAddresses;

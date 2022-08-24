@@ -9,7 +9,7 @@ import "./interfaces/ITellor.sol";
  * by helping smart contracts to read data from Tellor
  */
 contract UsingTellor {
-    ITellor private tellor;
+    ITellor internal tellor;
 
     /*Constructor*/
     /**
@@ -187,10 +187,9 @@ contract UsingTellor {
         return
             _governance
                 .getVoteRounds(
-                keccak256(abi.encodePacked(_queryId, _timestamp))
-            )
-                .length >
-            0;
+                    keccak256(abi.encodePacked(_queryId, _timestamp))
+                )
+                .length > 0;
     }
 
     /**
