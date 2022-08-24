@@ -9,7 +9,8 @@
     "t": "yarn hardhat test",
     "c": "yarn hardhat compile",
     "size": "yarn hardhat size-contracts",
-    "coverage": "npx hardhat coverage"
+    "coverage": "npx hardhat coverage",
+    "verify-divatellor": "npx hardhat verify --constructor-args deploy-args.js <DIVAOracleTellor address> --network goerli"
   },
   "repository": {
     "type": "git",
