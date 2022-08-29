@@ -1,4 +1,6 @@
 [
+  { "inputs": [], "name": "AmountExceedsClaimableFee", "type": "error" },
+  { "inputs": [], "name": "RecipientIsZeroAddress", "type": "error" },
   {
     "anonymous": false,
     "inputs": [
@@ -127,6 +129,7 @@
     "stateMutability": "nonpayable",
     "type": "function"
   },
+  { "inputs": [], "name": "NotContractOwner", "type": "error" },
   {
     "anonymous": false,
     "inputs": [
@@ -150,7 +153,7 @@
         ],
         "indexed": false,
         "internalType": "struct IDiamondCut.FacetCut[]",
-        "name": "_diamondCut",
+        "name": "_facetCut",
         "type": "tuple[]"
       },
       {
@@ -190,7 +193,7 @@
           }
         ],
         "internalType": "struct IDiamondCut.FacetCut[]",
-        "name": "_diamondCut",
+        "name": "_facetCut",
         "type": "tuple[]"
       },
       { "internalType": "address", "name": "_init", "type": "address" },
@@ -278,6 +281,312 @@
     "stateMutability": "view",
     "type": "function"
   },
+  { "inputs": [], "name": "InvalidSignature", "type": "error" },
+  { "inputs": [], "name": "OfferFilledCancelledOrExpired", "type": "error" },
+  { "inputs": [], "name": "PoolCapacityExceeded", "type": "error" },
+  { "inputs": [], "name": "PoolExpired", "type": "error" },
+  {
+    "inputs": [],
+    "name": "TakerFillAmountExceedsFillableAmount",
+    "type": "error"
+  },
+  { "inputs": [], "name": "TakerFillAmountSmallerMinimum", "type": "error" },
+  { "inputs": [], "name": "UnauthorizedTaker", "type": "error" },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "typedOfferHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "maker",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "taker",
+        "type": "address"
+      }
+    ],
+    "name": "OfferFilled",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "makerCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerCollateralAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "poolId", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferAddLiquidity",
+        "name": "_offerAddLiquidity",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          { "internalType": "uint8", "name": "v", "type": "uint8" },
+          { "internalType": "bytes32", "name": "r", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "s", "type": "bytes32" }
+        ],
+        "internalType": "struct LibEIP712.Signature",
+        "name": "_signature",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_takerFillAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "fillOfferAddLiquidity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  { "inputs": [], "name": "MsgSenderNotMaker", "type": "error" },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "typedOfferHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "maker",
+        "type": "address"
+      }
+    ],
+    "name": "OfferCancelled",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "makerCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerCollateralAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "poolId", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferAddLiquidity",
+        "name": "_offerAddLiquidity",
+        "type": "tuple"
+      }
+    ],
+    "name": "cancelOfferAddLiquidity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "makerCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerCollateralAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "referenceAsset",
+            "type": "string"
+          },
+          { "internalType": "uint96", "name": "expiryTime", "type": "uint96" },
+          { "internalType": "uint256", "name": "floor", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "inflection",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "cap", "type": "uint256" },
+          { "internalType": "uint256", "name": "gradient", "type": "uint256" },
+          {
+            "internalType": "address",
+            "name": "collateralToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "dataProvider",
+            "type": "address"
+          },
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferCreateContingentPool",
+        "name": "_offerCreateContingentPool",
+        "type": "tuple"
+      }
+    ],
+    "name": "cancelOfferCreateContingentPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidInputParamsCreateContingentPool",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "makerCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerCollateralAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "referenceAsset",
+            "type": "string"
+          },
+          { "internalType": "uint96", "name": "expiryTime", "type": "uint96" },
+          { "internalType": "uint256", "name": "floor", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "inflection",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "cap", "type": "uint256" },
+          { "internalType": "uint256", "name": "gradient", "type": "uint256" },
+          {
+            "internalType": "address",
+            "name": "collateralToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "dataProvider",
+            "type": "address"
+          },
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferCreateContingentPool",
+        "name": "_offerCreateContingentPool",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          { "internalType": "uint8", "name": "v", "type": "uint8" },
+          { "internalType": "bytes32", "name": "r", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "s", "type": "bytes32" }
+        ],
+        "internalType": "struct LibEIP712.Signature",
+        "name": "_signature",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_takerFillAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "fillOfferCreateContingentPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getChainId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
   {
     "inputs": [
       {
@@ -287,7 +596,7 @@
       },
       { "internalType": "address", "name": "_recipient", "type": "address" }
     ],
-    "name": "getClaims",
+    "name": "getClaim",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -336,7 +645,7 @@
             "type": "uint96"
           }
         ],
-        "internalType": "struct LibDiamond.GovernanceStorage",
+        "internalType": "struct LibDIVAStorage.GovernanceStorage",
         "name": "",
         "type": "tuple"
       }
@@ -347,6 +656,207 @@
   {
     "inputs": [],
     "name": "getLatestPoolId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "makerCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerCollateralAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "poolId", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferAddLiquidity",
+        "name": "_offerAddLiquidity",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          { "internalType": "uint8", "name": "v", "type": "uint8" },
+          { "internalType": "bytes32", "name": "r", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "s", "type": "bytes32" }
+        ],
+        "internalType": "struct LibEIP712.Signature",
+        "name": "_signature",
+        "type": "tuple"
+      }
+    ],
+    "name": "getOfferRelevantStateAddLiquidity",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "typedOfferHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "enum LibEIP712.OfferStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerFilledAmount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct LibEIP712.OfferInfo",
+        "name": "offerInfo",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualTakerFillableAmount",
+        "type": "uint256"
+      },
+      { "internalType": "bool", "name": "isSignatureValid", "type": "bool" },
+      { "internalType": "bool", "name": "poolExists", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "makerCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerCollateralAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "referenceAsset",
+            "type": "string"
+          },
+          { "internalType": "uint96", "name": "expiryTime", "type": "uint96" },
+          { "internalType": "uint256", "name": "floor", "type": "uint256" },
+          {
+            "internalType": "uint256",
+            "name": "inflection",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "cap", "type": "uint256" },
+          { "internalType": "uint256", "name": "gradient", "type": "uint256" },
+          {
+            "internalType": "address",
+            "name": "collateralToken",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "dataProvider",
+            "type": "address"
+          },
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferCreateContingentPool",
+        "name": "_offerCreateContingentPool",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          { "internalType": "uint8", "name": "v", "type": "uint8" },
+          { "internalType": "bytes32", "name": "r", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "s", "type": "bytes32" }
+        ],
+        "internalType": "struct LibEIP712.Signature",
+        "name": "_signature",
+        "type": "tuple"
+      }
+    ],
+    "name": "getOfferRelevantStateCreateContingentPool",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "typedOfferHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "enum LibEIP712.OfferStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerFilledAmount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct LibEIP712.OfferInfo",
+        "name": "offerInfo",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualTakerFillableAmount",
+        "type": "uint256"
+      },
+      { "internalType": "bool", "name": "isSignatureValid", "type": "bool" },
+      {
+        "internalType": "bool",
+        "name": "isValidInputParamsCreateContingentPool",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_typedOfferHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getPoolIdByTypedOfferHash",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -409,7 +919,7 @@
             "type": "uint96"
           },
           {
-            "internalType": "enum LibDiamond.Status",
+            "internalType": "enum LibDIVAStorage.Status",
             "name": "statusFinalReferenceValue",
             "type": "uint8"
           },
@@ -419,7 +929,7 @@
             "type": "string"
           }
         ],
-        "internalType": "struct LibDiamond.Pool",
+        "internalType": "struct LibDIVAStorage.Pool",
         "name": "",
         "type": "tuple"
       }
@@ -485,7 +995,7 @@
             "type": "uint96"
           },
           {
-            "internalType": "enum LibDiamond.Status",
+            "internalType": "enum LibDIVAStorage.Status",
             "name": "statusFinalReferenceValue",
             "type": "uint8"
           },
@@ -495,7 +1005,7 @@
             "type": "string"
           }
         ],
-        "internalType": "struct LibDiamond.Pool",
+        "internalType": "struct LibDIVAStorage.Pool",
         "name": "",
         "type": "tuple"
       }
@@ -503,6 +1013,33 @@
     "stateMutability": "view",
     "type": "function"
   },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_typedOfferHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getTakerFilledAmount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      { "internalType": "address", "name": "owner_", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  { "inputs": [], "name": "FeeAboveMaximum", "type": "error" },
+  { "inputs": [], "name": "FeeBelowMinimum", "type": "error" },
+  { "inputs": [], "name": "OutOfBounds", "type": "error" },
+  { "inputs": [], "name": "TooEarlyToPauseAgain", "type": "error" },
+  { "inputs": [], "name": "ZeroAddress", "type": "error" },
   {
     "anonymous": false,
     "inputs": [
@@ -770,6 +1307,21 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "AmountExceedsPoolCollateralBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FeeAmountExceedsPoolCollateralBalance",
+    "type": "error"
+  },
+  { "inputs": [], "name": "FinalValueAlreadyConfirmed", "type": "error" },
+  { "inputs": [], "name": "InsufficientShortOrLongBalance", "type": "error" },
+  { "inputs": [], "name": "ReturnCollateralPaused", "type": "error" },
+  { "inputs": [], "name": "ZeroProtocolFee", "type": "error" },
+  { "inputs": [], "name": "ZeroSettlementFee", "type": "error" },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -781,7 +1333,38 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "from",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeeClaimAllocated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "poolId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "longRecipient",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "shortRecipient",
         "type": "address"
       },
       {
@@ -826,6 +1409,16 @@
         "internalType": "uint256",
         "name": "_collateralAmountIncr",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_longRecipient",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_shortRecipient",
+        "type": "address"
       }
     ],
     "name": "addLiquidity",
@@ -863,15 +1456,6 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      { "internalType": "address", "name": "owner_", "type": "address" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       { "internalType": "address", "name": "_newOwner", "type": "address" }
     ],
@@ -892,7 +1476,13 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "from",
+        "name": "longRecipient",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "shortRecipient",
         "type": "address"
       },
       {
@@ -938,9 +1528,19 @@
             "name": "dataProvider",
             "type": "address"
           },
-          { "internalType": "uint256", "name": "capacity", "type": "uint256" }
+          { "internalType": "uint256", "name": "capacity", "type": "uint256" },
+          {
+            "internalType": "address",
+            "name": "longRecipient",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "shortRecipient",
+            "type": "address"
+          }
         ],
-        "internalType": "struct IPool.PoolParams",
+        "internalType": "struct LibDIVA.PoolParams",
         "name": "_poolParams",
         "type": "tuple"
       }
@@ -950,6 +1550,18 @@
     "stateMutability": "nonpayable",
     "type": "function"
   },
+  { "inputs": [], "name": "AlreadySubmittedOrConfirmed", "type": "error" },
+  { "inputs": [], "name": "ChallengePeriodExpired", "type": "error" },
+  { "inputs": [], "name": "ChallengePeriodNotExpired", "type": "error" },
+  { "inputs": [], "name": "FinalReferenceValueNotSet", "type": "error" },
+  { "inputs": [], "name": "InvalidPositionToken", "type": "error" },
+  { "inputs": [], "name": "NoPositionTokens", "type": "error" },
+  { "inputs": [], "name": "NotDataProvider", "type": "error" },
+  { "inputs": [], "name": "NotFallbackDataProvider", "type": "error" },
+  { "inputs": [], "name": "NothingToChallenge", "type": "error" },
+  { "inputs": [], "name": "PoolNotExpired", "type": "error" },
+  { "inputs": [], "name": "ReviewPeriodExpired", "type": "error" },
+  { "inputs": [], "name": "ReviewPeriodNotExpired", "type": "error" },
   {
     "anonymous": false,
     "inputs": [
@@ -992,7 +1604,7 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "enum LibDiamond.Status",
+        "internalType": "enum LibDIVAStorage.Status",
         "name": "statusFinalReferenceValue",
         "type": "uint8"
       },
@@ -1059,6 +1671,27 @@
     "name": "setFinalReferenceValue",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UNIT",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unit",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "pure",
     "type": "function"
   }
 ]
