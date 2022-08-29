@@ -41,6 +41,8 @@
    const collateralToken = erc20CollateralTokenAddress 
    const dataProvider = dataProviderAddress
    const capacity = parseUnits("200", decimals)
+   const longRecipient = user.address
+   const shortRecipient = user.address
  
    // Input checks
    if (referenceAsset.length === 0) {
@@ -105,7 +107,9 @@
      collateralAmount,  
      collateralToken, 
      dataProvider,
-     capacity
+     capacity,
+     longRecipient,
+     shortRecipient
    ]); 
    await tx.wait();
  
