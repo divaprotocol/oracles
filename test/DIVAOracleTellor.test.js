@@ -107,8 +107,8 @@ describe("DIVAOracleTellor", () => {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
             // blockNumber: Choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
             // blockNumber: 10932590, // Rinkeby
-            blockNumber: 12750642, // Ropsten
-            // blockNumber: 7452153, // Goerli
+            // blockNumber: 12750642, // Ropsten
+            blockNumber: 7496645, // Goerli
           },
         },
       ],
@@ -157,11 +157,13 @@ describe("DIVAOracleTellor", () => {
       parseEther("40000"), // floor
       parseEther("60000"), // inflection
       parseEther("80000"), // cap
-      parseEther("0.7").toString(),
+      parseEther("0.7").toString(), // gradient
       parseUnits("100", collateralTokenDecimals), // collateral amount
       collateralToken.address, // collateral token
       divaOracleTellor.address, // data provider
       parseUnits("200", collateralTokenDecimals).toString(), // capacity
+      user1.address, // longRecipient
+      user1.address // shortRecipient
     ]);
     latestPoolId = await diva.getLatestPoolId();
     poolParams = await diva.getPoolParameters(latestPoolId);
@@ -326,7 +328,7 @@ describe("DIVAOracleTellor", () => {
 
         // Check that the fee claim was allocated to the reporter in DIVA Protocol
         expect(
-          await diva.getClaims(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralToken.address, reporter.address)
         ).to.eq(settlementFeeAmount);
 
         // Check that tips and balances for tippinToken1 are unchanged
@@ -367,6 +369,8 @@ describe("DIVAOracleTellor", () => {
           collateralToken.address, // collateral token
           divaOracleTellor.address, // data provider
           parseUnits("200", collateralTokenDecimals).toString(), // capacity
+          user1.address, // longRecipient
+          user1.address // shortRecipient
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -428,7 +432,7 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Confirm that user1's fee claim balance is zero
         expect(
-          await diva.getClaims(collateralToken.address, user1.address)
+          await diva.getClaim(collateralToken.address, user1.address)
         ).to.eq(0);
 
         // Prepare value submission to tellorPlayground
@@ -468,10 +472,10 @@ describe("DIVAOracleTellor", () => {
         // Assert: Confirm that the reporter receives the full settlement fee payment (in collateral asset) and 0 goes to excess fee recipient
         // ---------
         expect(
-          await diva.getClaims(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralToken.address, reporter.address)
         ).to.eq(settlementFeeAmount);
         expect(
-          await diva.getClaims(
+          await diva.getClaim(
             collateralToken.address,
             excessFeeRecipient.address
           )
@@ -494,6 +498,8 @@ describe("DIVAOracleTellor", () => {
           collateralToken.address, // collateral token
           divaOracleTellor.address, // data provider
           parseUnits("200000", collateralTokenDecimals).toString(), // capacity
+          user1.address, // longRecipient
+          user1.address // shortRecipient
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -537,11 +543,11 @@ describe("DIVAOracleTellor", () => {
           .div(parseUnits("1", 18 - collateralTokenDecimals)); // in collateral token decimals
 
         // Get reporter's and excess fee recipient's fee claim before
-        const feeClaimReporterBefore = await diva.getClaims(
+        const feeClaimReporterBefore = await diva.getClaim(
           collateralToken.address,
           reporter.address
         );
-        const feeClaimExcessFeeRecipientBefore = await diva.getClaims(
+        const feeClaimExcessFeeRecipientBefore = await diva.getClaim(
           collateralToken.address,
           excessFeeRecipient.address
         );
@@ -561,11 +567,11 @@ describe("DIVAOracleTellor", () => {
         // user2 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not
         // allocated any fees
         // ---------
-        const feeClaimReporterAfter = await diva.getClaims(
+        const feeClaimReporterAfter = await diva.getClaim(
           collateralToken.address,
           reporter.address
         );
-        const feeClaimExcessFeeRecipientAfter = await diva.getClaims(
+        const feeClaimExcessFeeRecipientAfter = await diva.getClaim(
           collateralToken.address,
           excessFeeRecipient.address
         );
@@ -577,10 +583,10 @@ describe("DIVAOracleTellor", () => {
           feeClaimExcessFeeRecipientBefore.add(feeAmount.sub(maxFeeAmount))
         );
         expect(
-          await diva.getClaims(collateralToken.address, user2.address)
+          await diva.getClaim(collateralToken.address, user2.address)
         ).to.eq(0);
         expect(
-          await diva.getClaims(
+          await diva.getClaim(
             collateralToken.address,
             divaOracleTellor.address
           )
@@ -603,6 +609,8 @@ describe("DIVAOracleTellor", () => {
           collateralToken.address, // collateral token
           divaOracleTellor.address, // data provider
           parseUnits("200000", collateralTokenDecimals).toString(), // capacity
+          user1.address, // longRecipient
+          user1.address // shortRecipient
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -651,11 +659,11 @@ describe("DIVAOracleTellor", () => {
         // user2 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not
         // allocated any fees
         // ---------
-        const feeClaimReporterAfter = await diva.getClaims(
+        const feeClaimReporterAfter = await diva.getClaim(
           collateralToken.address,
           reporter.address
         );
-        const feeClaimExcessFeeRecipientAfter = await diva.getClaims(
+        const feeClaimExcessFeeRecipientAfter = await diva.getClaim(
           collateralToken.address,
           excessFeeRecipient.address
         );
@@ -663,10 +671,10 @@ describe("DIVAOracleTellor", () => {
         expect(feeClaimReporterAfter).to.eq(feeAmount);
         expect(feeClaimExcessFeeRecipientAfter).to.eq(0);
         expect(
-          await diva.getClaims(collateralToken.address, user2.address)
+          await diva.getClaim(collateralToken.address, user2.address)
         ).to.eq(0);
         expect(
-          await diva.getClaims(
+          await diva.getClaim(
             collateralToken.address,
             divaOracleTellor.address
           )
@@ -743,6 +751,8 @@ describe("DIVAOracleTellor", () => {
           collateralToken.address, // collateral token
           divaOracleTellor.address, // data provider
           parseUnits("200", collateralTokenDecimals).toString(), // capacity
+          user1.address, // longRecipient
+          user1.address // shortRecipient
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -892,7 +902,7 @@ describe("DIVAOracleTellor", () => {
 
         // Check that reporter's fee claim on DIVA Protocol dropped to zero
         expect(
-          await diva.getClaims(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralToken.address, reporter.address)
         ).to.eq(0);
       });
 
@@ -1047,7 +1057,7 @@ describe("DIVAOracleTellor", () => {
 
         // Check that reporter's fee claim on DIVA Protocol dropped to zero
         expect(
-          await diva.getClaims(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralToken.address, reporter.address)
         ).to.eq(0);
 
         // Check that the reporter's collateral token balance increased to `settlementFeeAmount`
@@ -1174,7 +1184,7 @@ describe("DIVAOracleTellor", () => {
 
         // Check the reporter's fee claim on DIVA Protocol is unchanged
         expect(
-          await diva.getClaims(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralToken.address, reporter.address)
         ).to.eq(settlementFeeAmount);
 
         // Check that the reporter's collateral token balance is unchanged
@@ -1386,7 +1396,7 @@ describe("DIVAOracleTellor", () => {
 
       // Check fee claim in DIVA
       expect(
-        await diva.getClaims(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralToken.address, reporter.address)
       ).to.eq(settlementFeeAmount);
 
       // ---------
@@ -1418,7 +1428,7 @@ describe("DIVAOracleTellor", () => {
 
       // Confirm that DIVA fee remains remains unchanged
       expect(
-        await diva.getClaims(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralToken.address, reporter.address)
       ).to.eq(settlementFeeAmount);
     });
 
@@ -1461,7 +1471,7 @@ describe("DIVAOracleTellor", () => {
 
       // Check fee claim in DIVA
       expect(
-        await diva.getClaims(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralToken.address, reporter.address)
       ).to.eq(settlementFeeAmount);
 
       // ---------
@@ -1477,7 +1487,7 @@ describe("DIVAOracleTellor", () => {
         settlementFeeAmount
       );
       expect(
-        await diva.getClaims(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralToken.address, reporter.address)
       ).to.eq(0);
 
       // Check that tips and balances for tippingToken1 are unchanged
@@ -1538,7 +1548,7 @@ describe("DIVAOracleTellor", () => {
 
       // Check fee claim in DIVA
       expect(
-        await diva.getClaims(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralToken.address, reporter.address)
       ).to.eq(settlementFeeAmount);
 
       // ---------
@@ -1574,7 +1584,7 @@ describe("DIVAOracleTellor", () => {
         settlementFeeAmount
       );
       expect(
-        await diva.getClaims(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralToken.address, reporter.address)
       ).to.eq(0);
     });
 
