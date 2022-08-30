@@ -32,7 +32,7 @@
    
    // INPUTS for `createContingentPool` function
    const referenceAsset = "BTC/USD" // "BTC/USD" 
-   const expiryTime = getExpiryInSeconds(60) // 10 means expiry in 10 seconds from now
+   const expiryTime = getExpiryInSeconds(100) // 10 means expiry in 10 seconds from now
    const floor = parseEther("20000") 
    const inflection = parseEther("20000")
    const cap = parseEther("45000")

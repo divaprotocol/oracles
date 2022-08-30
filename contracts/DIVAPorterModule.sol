@@ -64,7 +64,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         );
 
         // Get the current fee claim allocated to this contract address (msg.sender)
-        uint256 feeClaim = _diva.getClaims(
+        uint256 feeClaim = _diva.getClaim(
             _params.collateralToken,
             address(this)
         );
