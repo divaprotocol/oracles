@@ -11,7 +11,7 @@ const {
 } = require("./utils.js");
 const { addresses, tellorPlaygroundAddresses } = require("../utils/constants"); //  DIVA Protocol v1.0.0
 
-const network = "ropsten"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
+const network = "goerli"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
 const tippingTokenDecimals = 6;
 
@@ -163,7 +163,7 @@ describe("DIVAOracleTellor", () => {
       divaOracleTellor.address, // data provider
       parseUnits("200", collateralTokenDecimals).toString(), // capacity
       user1.address, // longRecipient
-      user1.address // shortRecipient
+      user1.address, // shortRecipient
     ]);
     latestPoolId = await diva.getLatestPoolId();
     poolParams = await diva.getPoolParameters(latestPoolId);
@@ -370,7 +370,7 @@ describe("DIVAOracleTellor", () => {
           divaOracleTellor.address, // data provider
           parseUnits("200", collateralTokenDecimals).toString(), // capacity
           user1.address, // longRecipient
-          user1.address // shortRecipient
+          user1.address, // shortRecipient
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -499,7 +499,7 @@ describe("DIVAOracleTellor", () => {
           divaOracleTellor.address, // data provider
           parseUnits("200000", collateralTokenDecimals).toString(), // capacity
           user1.address, // longRecipient
-          user1.address // shortRecipient
+          user1.address, // shortRecipient
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -586,10 +586,7 @@ describe("DIVAOracleTellor", () => {
           await diva.getClaim(collateralToken.address, user2.address)
         ).to.eq(0);
         expect(
-          await diva.getClaim(
-            collateralToken.address,
-            divaOracleTellor.address
-          )
+          await diva.getClaim(collateralToken.address, divaOracleTellor.address)
         ).to.eq(0);
       });
 
@@ -610,7 +607,7 @@ describe("DIVAOracleTellor", () => {
           divaOracleTellor.address, // data provider
           parseUnits("200000", collateralTokenDecimals).toString(), // capacity
           user1.address, // longRecipient
-          user1.address // shortRecipient
+          user1.address, // shortRecipient
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -674,10 +671,7 @@ describe("DIVAOracleTellor", () => {
           await diva.getClaim(collateralToken.address, user2.address)
         ).to.eq(0);
         expect(
-          await diva.getClaim(
-            collateralToken.address,
-            divaOracleTellor.address
-          )
+          await diva.getClaim(collateralToken.address, divaOracleTellor.address)
         ).to.eq(0);
       });
 
@@ -752,7 +746,7 @@ describe("DIVAOracleTellor", () => {
           divaOracleTellor.address, // data provider
           parseUnits("200", collateralTokenDecimals).toString(), // capacity
           user1.address, // longRecipient
-          user1.address // shortRecipient
+          user1.address, // shortRecipient
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
