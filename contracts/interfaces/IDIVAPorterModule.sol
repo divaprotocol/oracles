@@ -12,6 +12,8 @@ interface IDIVAPorterModule {
         uint256 collateralAmount;
         address collateralToken;
         uint256 capacity;
+        address longRecipient;
+        address shortRecipient;
     }
 
     /**
@@ -50,6 +52,8 @@ interface IDIVAPorterModule {
          back the position tokens.
      * - collateralToken: ERC20 collateral token address.
      * - capacity: The maximum collateral amount that the pool can accept.
+     * - longRecipient: Address that shall receive the long token.
+     * - shortRecipient: Address that shall receive the short token.
      * @return poolId
      */
     function createContingentPool(

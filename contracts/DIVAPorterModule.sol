@@ -115,6 +115,8 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         _poolParams.collateralToken = _porterPoolParams.collateralToken;
         _poolParams.dataProvider = address(this);
         _poolParams.capacity = _porterPoolParams.capacity;
+        _poolParams.longRecipient = _porterPoolParams.longRecipient;
+        _poolParams.shortRecipient = _porterPoolParams.shortRecipient;
 
         IDIVA _diva = IDIVA(_divaDiamond);
         uint256 _poolId = _diva.createContingentPool(_poolParams);
