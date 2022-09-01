@@ -16,10 +16,9 @@ const network = "goerli"; // should be the same as in hardhat -> forking -> url 
 const collateralTokenDecimals = 6;
 const paymentTokenDecimals = 18;
 const tokenAmount = "1000000000";
-const transferAmount = "100000000";
 
 describe("DIVAPorterModule", () => {
-  let user1, longRecipient, shortRecipient;
+  let user1, issuer, longRecipient, shortRecipient;
   let divaPorterModule;
   let divaAddress = addresses[network];
   let bondFactoryAddr = bondFactoryInfo.address[network];
@@ -28,7 +27,7 @@ describe("DIVAPorterModule", () => {
   let bond;
   let latestPoolId;
   let poolParams;
-  let collateralToken;
+  let collateralToken, bondCollateralToken;
   let paymentToken;
   let gracePeriodEnd;
   let bondTotalSupply;
@@ -36,7 +35,7 @@ describe("DIVAPorterModule", () => {
 
   beforeEach(async () => {
     // Get users
-    [user1, longRecipient, shortRecipient] = await ethers.getSigners();
+    [user1, issuer, longRecipient, shortRecipient] = await ethers.getSigners();
 
     // Get DIVA protocol contract
     diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -79,10 +78,13 @@ describe("DIVAPorterModule", () => {
       parseUnits(tokenAmount, collateralTokenDecimals)
     );
 
-    // Transfer CollateralToken to issuer of BondFactory
-    await collateralToken.transfer(
-      bondFactoryAdmin,
-      parseUnits(transferAmount, collateralTokenDecimals)
+    // Deploy CollateralToken for Bond
+    bondCollateralToken = await erc20DeployFixture(
+      "BondCollateralToken",
+      "BCT",
+      parseUnits(tokenAmount, collateralTokenDecimals),
+      issuer.address,
+      collateralTokenDecimals
     );
 
     // Deploy PaymentToken
@@ -90,7 +92,7 @@ describe("DIVAPorterModule", () => {
       "PaymentToken",
       "PAT",
       parseUnits(tokenAmount, paymentTokenDecimals),
-      user1.address,
+      issuer.address,
       paymentTokenDecimals
     );
 
@@ -100,33 +102,33 @@ describe("DIVAPorterModule", () => {
     await bondFactory
       .connect(bondFactoryAdminSigner)
       .grantRole(bondFactoryInfo.roles.allowedToken, paymentToken.address);
-    
-    // Using same collateral token as for `createContingentPool` for simplicity
     await bondFactory
       .connect(bondFactoryAdminSigner)
-      .grantRole(bondFactoryInfo.roles.allowedToken, collateralToken.address);
+      .grantRole(
+        bondFactoryInfo.roles.allowedToken,
+        bondCollateralToken.address
+      );
 
-    // Grant issuer role to user1
+    // Grant issuerRole to issuer
     await bondFactory
       .connect(bondFactoryAdminSigner)
-      .grantRole(bondFactoryInfo.roles.issuerRole, user1.address);
-
-    // Approve CollateralToken to BondFactory contract with user1
-    await collateralToken
-      .connect(user1)
+      .grantRole(bondFactoryInfo.roles.issuerRole, issuer.address);
+    // Approve CollateralToken to BondFactory contract with issuer
+    await bondCollateralToken
+      .connect(issuer)
       .approve(
         bondFactory.address,
-        parseUnits(transferAmount, collateralTokenDecimals)
+        parseUnits(tokenAmount, collateralTokenDecimals)
       );
 
     // Create Bond contract using BondFactory contract
     const currentBlockTimestamp = await getLastTimestamp();
-    const tx = await bondFactory.connect(user1).createBond(
+    const tx = await bondFactory.connect(issuer).createBond(
       "DummyBond", // name
       "DBD", // symbol
       currentBlockTimestamp + 1000, // maturity
       paymentToken.address, // paymentToken
-      collateralToken.address, // collateralToken
+      bondCollateralToken.address, // collateralToken
       parseUnits("2000", collateralTokenDecimals), // collateralTokenAmount
       parseUnits("1000", collateralTokenDecimals), // convertibleTokenAmount
       parseUnits("1000", paymentTokenDecimals) // bonds
