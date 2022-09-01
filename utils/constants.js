@@ -17,8 +17,14 @@ const bondFactoryInfo = {
   roles: {
     allowedToken:
       "0x94a5b40e9ddb843bda953e14636ea28eec9c9e9913064fe7321def93f0bc7d95", // hash of a the ALLOWED_TOKEN role: https://rinkeby.etherscan.io/address/0x0ae42cF40Fb46A926e2dcCE92b2Fe785d2D1E0A0#readContract
+    issuerRole:
+      "0x114e74f6ea3bd819998f78687bfcb11b140da08e9b7d222fa9c1f1ba1f2aa122",
   },
-  issuer: "0xfab4AF4EA2EB609868cDb4f744155d67f0A5BF41",
+  admin: {
+    rinkeby: "0xfab4AF4EA2EB609868cDb4f744155d67f0A5BF41",
+    ropsten: "0x2EA4c665AED1bAe0D1C00BB402Bde36F1a30668A",
+    goerli: "0x2EA4c665AED1bAe0D1C00BB402Bde36F1a30668A",
+  },
 };
 
 const tellorPlaygroundAddresses = {
@@ -30,7 +36,7 @@ const tellorPlaygroundAddresses = {
 
 const divaTellorOracleAddresses = {
   ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
-  goerli: "0x66f84344c786a106AcaE8f54bbb0BdA44Fec6723", // Deployed on 22 Aug 2022
+  goerli: "0xF3F62041113c92F080E88200481dFE392369d17b", // Deployed on 30 Aug 2022
 };
 
 // Status mapping

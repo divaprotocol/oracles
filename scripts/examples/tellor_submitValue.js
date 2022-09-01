@@ -14,8 +14,8 @@ const { addresses, tellorPlaygroundAddresses, divaTellorOracleAddresses } = requ
 
 async function main() {
 
-    network = "ropsten"
-    const poolId = 8
+    network = "goerli"
+    const poolId = 13
     const divaAddress = addresses[network]
 
     // Connect to DIVA contract

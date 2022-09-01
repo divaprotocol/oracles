@@ -64,7 +64,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         );
 
         // Get the current fee claim allocated to this contract address (msg.sender)
-        uint256 feeClaim = _diva.getClaims(
+        uint256 feeClaim = _diva.getClaim(
             _params.collateralToken,
             address(this)
         );
@@ -79,8 +79,10 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     ) external override nonReentrant returns (uint256) {
         IBondFactory _bondFactory = IBondFactory(_bondFactoryAddress);
         address _porterBond = _porterPoolParams.referenceAsset;
+        
+        // Check if Bond address is valid from Bond factory contract
         require(
-            _bondFactory.isBond(_porterBond), // check if Bond address is valid from Bond factory contract
+            _bondFactory.isBond(_porterBond),
             "DIVAPorterModule: invalid Bond address"
         );
 
@@ -115,6 +117,8 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         _poolParams.collateralToken = _porterPoolParams.collateralToken;
         _poolParams.dataProvider = address(this);
         _poolParams.capacity = _porterPoolParams.capacity;
+        _poolParams.longRecipient = _porterPoolParams.longRecipient;
+        _poolParams.shortRecipient = _porterPoolParams.shortRecipient;
 
         IDIVA _diva = IDIVA(_divaDiamond);
         uint256 _poolId = _diva.createContingentPool(_poolParams);

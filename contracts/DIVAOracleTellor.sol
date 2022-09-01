@@ -327,7 +327,7 @@ contract DIVAOracleTellor is
             10**(18 - IERC20Metadata(_params.collateralToken).decimals())
         );
         // Get the current fee claim allocated to this contract address (msg.sender)
-        uint256 feeClaim = _diva.getClaims(
+        uint256 feeClaim = _diva.getClaim(
             _params.collateralToken,
             address(this)
         ); // denominated in collateral token; integer with collateral token decimals

@@ -4,9 +4,9 @@ const { addresses, divaTellorOracleAddresses } = require('../../utils/constants'
 
 async function main() {
 
-  const network = "ropsten"
+  const network = "goerli"
   let divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  let poolId = 8
+  let poolId = 13
   divaAddress = addresses[network]
   console.log("divaAddress: " + divaAddress)
   console.log("divaOracleTellorAddress: " + divaOracleTellorAddress)

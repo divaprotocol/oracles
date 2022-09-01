@@ -3,8 +3,10 @@ pragma solidity 0.8.9;
 
 interface IDIVAPorterModule {
     // Argument for `createContingentPool` function inside DIVAPorterModule contract.
-    // Note that expiryTime is automatically set to the end of the grace period.
-    // Further note that referenceAsset is an address rather than a string.
+    // Note that `expiryTime` is automatically set to the end of the grace period,
+    // `floor` to zero, `cap` to the total bond supply and `dataProvider` to `this` inside
+    // the DIVAPorterModule's `createContingentPool` function.
+    // Further note that `referenceAsset` is an address rather than a string.
     struct PorterPoolParams {
         address referenceAsset;
         uint256 inflection;
@@ -12,6 +14,8 @@ interface IDIVAPorterModule {
         uint256 collateralAmount;
         address collateralToken;
         uint256 capacity;
+        address longRecipient;
+        address shortRecipient;
     }
 
     /**
@@ -50,6 +54,8 @@ interface IDIVAPorterModule {
          back the position tokens.
      * - collateralToken: ERC20 collateral token address.
      * - capacity: The maximum collateral amount that the pool can accept.
+     * - longRecipient: Address that shall receive the long token.
+     * - shortRecipient: Address that shall receive the short token.
      * @return poolId
      */
     function createContingentPool(

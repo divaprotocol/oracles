@@ -54,6 +54,8 @@ interface IDIVA {
         address collateralToken;
         address dataProvider;
         uint256 capacity;
+        address longRecipient;
+        address shortRecipient;
     }
 
     /**
@@ -146,6 +148,8 @@ interface IDIVA {
      * - dataProvider: Address that is supposed to report the final value of
          the reference asset.
      * - capacity: The maximum collateral amount that the pool can accept.
+     * - longRecipient: Address that shall receive the long token.
+     * - shortRecipient: Address that shall receive the short token.
      * @return poolId
      */
     function createContingentPool(PoolParams calldata _poolParams)
@@ -168,7 +172,7 @@ interface IDIVA {
      * @param _collateralToken Collateral token address
      * @return Array of Claim structs
      */
-    function getClaims(address _collateralToken, address _recipient)
+    function getClaim(address _collateralToken, address _recipient)
         external
         view
         returns (uint256);
