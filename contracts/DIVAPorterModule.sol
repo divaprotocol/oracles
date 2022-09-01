@@ -79,8 +79,10 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     ) external override nonReentrant returns (uint256) {
         IBondFactory _bondFactory = IBondFactory(_bondFactoryAddress);
         address _porterBond = _porterPoolParams.referenceAsset;
+        
+        // Check if Bond address is valid from Bond factory contract
         require(
-            _bondFactory.isBond(_porterBond), // check if Bond address is valid from Bond factory contract
+            _bondFactory.isBond(_porterBond),
             "DIVAPorterModule: invalid Bond address"
         );
 

@@ -41,7 +41,7 @@ describe("DIVAPorterModule", () => {
     // Get DIVA protocol contract
     diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
 
-    // Impersonate with bondFactoryAdmin
+    // Impersonate bondFactoryAdmin
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",
       params: [bondFactoryAdmin],
@@ -94,13 +94,14 @@ describe("DIVAPorterModule", () => {
       paymentTokenDecimals
     );
 
-    // Grant allowed token role for payment token and collateral token in order to use them for creating bonds
-    // Only needed if `isTokenAllowListEnabled` is true (which it is in the current contract)
+    // Grant allowed token role for payment token and collateral token in order to use them for creating bonds.
+    // Only needed if `isTokenAllowListEnabled` is true (which it is in the current contract).
     // Check out the contract: https://github.com/porter-finance/v1-core/blob/main/contracts/BondFactory.sol#L150
     await bondFactory
       .connect(bondFactoryAdminSigner)
       .grantRole(bondFactoryInfo.roles.allowedToken, paymentToken.address);
-    // Using same collateral token as for createContingentPool for simplicity
+    
+    // Using same collateral token as for `createContingentPool` for simplicity
     await bondFactory
       .connect(bondFactoryAdminSigner)
       .grantRole(bondFactoryInfo.roles.allowedToken, collateralToken.address);
