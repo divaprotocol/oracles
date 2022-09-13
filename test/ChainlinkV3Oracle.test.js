@@ -20,7 +20,7 @@
 // // blockNumber at that timestamp: 29133203 (note that Kovan network is forked as of block 29134000)
 // // blockNumber after that timestamp: 29133204
 
-// // MAINNET (ETH/USD) (change to ALCHEMY_URL_MAINNET in hardhat.config and parameters in script if you want to work with a mainnet fork)
+// // MAINNET (ETH/USD) (change to RPC_URL_MAINNET in hardhat.config and parameters in script if you want to work with a mainnet fork)
 // // https://etherscan.io/address/0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419#readContract
 // // roundId: 92233720368547774243
 // // price: 400959124073

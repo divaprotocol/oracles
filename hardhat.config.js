@@ -33,11 +33,11 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        // url: process.env.ALCHEMY_URL_RINKEBY,
+        // url: process.env.RPC_URL_RINKEBY,
         // blockNumber: 10932590,
-        // url: process.env.ALCHEMY_URL_ROPSTEN,
+        // url: process.env.RPC_URL_ROPSTEN,
         // blockNumber: 12750642,
-        url: process.env.ALCHEMY_URL_GOERLI,
+        url: process.env.RPC_URL_GOERLI,
         blockNumber: 7496645,
       },
       accounts: {
@@ -45,33 +45,33 @@ module.exports = {
       },
     },
     ropsten: {
-      url: process.env.ALCHEMY_URL_ROPSTEN,
+      url: process.env.RPC_URL_ROPSTEN,
       accounts: {
         mnemonic: MNEMONIC,
       },
       gasPrice: 8000000000,
     },
     rinkeby: {
-      url: process.env.ALCHEMY_URL_RINKEBY,
+      url: process.env.RPC_URL_RINKEBY,
       accounts: {
         mnemonic: MNEMONIC,
       },
     },
     kovan: {
-      url: process.env.ALCHEMY_URL_KOVAN,
+      url: process.env.RPC_URL_KOVAN,
       accounts: {
         mnemonic: MNEMONIC,
       },
     },
     polygon_mumbai: {
-      url: process.env.ALCHEMY_URL_POLYGON_MUMBAI,
+      url: process.env.RPC_URL_POLYGON_MUMBAI,
       accounts: {
         mnemonic: MNEMONIC,
       },
       gasPrice: 8000000000,
     },
     goerli: {
-      url: process.env.ALCHEMY_URL_GOERLI,
+      url: process.env.RPC_URL_GOERLI,
       accounts: {
         mnemonic: MNEMONIC,
       },

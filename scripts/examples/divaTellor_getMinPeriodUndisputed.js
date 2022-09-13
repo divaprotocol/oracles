@@ -1,3 +1,7 @@
+/**
+ * Run `divaTellor:getMinPeriodUndisputed`
+ */
+
 const hre = require("hardhat");
 const { divaTellorOracleAddresses } = require('../../utils/constants');
 

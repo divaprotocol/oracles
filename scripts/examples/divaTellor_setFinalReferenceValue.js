@@ -1,3 +1,7 @@
+/**
+ * Run `divaTellor:setFinalReferenceValue`
+ */
+
 const hre = require("hardhat");
 const DIVA_ABI = require('../../contracts/abi/DIVA.json');
 const { addresses, divaTellorOracleAddresses } = require('../../utils/constants');
@@ -6,7 +10,7 @@ async function main() {
 
   const network = "goerli"
   let divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  let poolId = 13
+  let poolId = 2
   divaAddress = addresses[network]
   console.log("divaAddress: " + divaAddress)
   console.log("divaOracleTellorAddress: " + divaOracleTellorAddress)

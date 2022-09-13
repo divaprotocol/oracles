@@ -2,8 +2,7 @@
 /**
  * Script to submit a value to the tellor playground. Make sure you run this script after the pool expired.
  * Note that one address can only submit one value. It will fail if you try to submit a value with the same address again.
- * Run: `yarn hardhat run scripts/examples/tellor_submitValue.js --network ropsten`
- * Replace ropsten with any other network that is listed under addresses in constants.js
+ * Run: `tellor:submitValue`
  */
 
 const { ethers } = require('hardhat');
@@ -15,7 +14,7 @@ const { addresses, tellorPlaygroundAddresses, divaTellorOracleAddresses } = requ
 async function main() {
 
     network = "goerli"
-    const poolId = 13
+    const poolId = 2
     const divaAddress = addresses[network]
 
     // Connect to DIVA contract

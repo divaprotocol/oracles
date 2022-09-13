@@ -1,7 +1,6 @@
 /**
  * Script to get the pool parameters for an existing poolId in DIVA Protocol.
- * Run: `yarn hardhat run scripts/examples/diva_getPoolParameters.js --network ropsten`
- * Replace ropsten with any other network that is listed under addresses in constants.js
+ * Run: `diva:getPoolParameters`
  */
 
  const { ethers } = require('hardhat');
