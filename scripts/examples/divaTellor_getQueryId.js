@@ -1,3 +1,6 @@
+/**
+ * Run `divaTellor:getQueryId`
+ */
 const hre = require("hardhat");
 const { addresses, divaTellorOracleAddresses } = require('../../utils/constants');
 

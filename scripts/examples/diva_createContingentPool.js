@@ -1,7 +1,6 @@
 /**
  * Script to create a contingent pool on DIVA Protocol.
- * Run: `yarn hardhat run scripts/examples/diva_createContingentPool.js --network ropsten`
- * Replace ropsten with any other network that is listed under addresses in constants.js
+ * Run: `diva:createContingentPool`
  */
 
  const { ethers } = require('hardhat');
