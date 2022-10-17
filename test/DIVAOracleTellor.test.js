@@ -84,6 +84,7 @@ describe("DIVAOracleTellor", () => {
   let poolExpiryTime;
   let latestPoolId;
   let poolParams;
+  let feesParams;
 
   let tippingToken1;
   let tippingToken2;
@@ -108,7 +109,7 @@ describe("DIVAOracleTellor", () => {
             // blockNumber: Choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
             // blockNumber: 10932590, // Rinkeby
             // blockNumber: 12750642, // Ropsten
-            blockNumber: 7496645, // Goerli
+            blockNumber: 7786398, // Goerli
           },
         },
       ],
@@ -157,16 +158,19 @@ describe("DIVAOracleTellor", () => {
       parseEther("40000"), // floor
       parseEther("60000"), // inflection
       parseEther("80000"), // cap
-      parseEther("0.7").toString(), // gradient
+      parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
       parseUnits("100", collateralTokenDecimals), // collateral amount
       collateralToken.address, // collateral token
       divaOracleTellor.address, // data provider
       parseUnits("200", collateralTokenDecimals).toString(), // capacity
       user1.address, // longRecipient
       user1.address, // shortRecipient
+      ethers.constants.AddressZero,
     ]);
     latestPoolId = await diva.getLatestPoolId();
     poolParams = await diva.getPoolParameters(latestPoolId);
+
+    feesParams = await diva.getFees(latestPoolId);
 
     // Get chain id
     chainId = (await ethers.provider.getNetwork()).chainId;
@@ -302,7 +306,7 @@ describe("DIVAOracleTellor", () => {
         // Calculate settlement fee expressed in collateral token
         const [settlementFeeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
-          poolParams.settlementFee,
+          feesParams.settlementFee,
           collateralTokenDecimals,
           collateralToUSDRate
         );
@@ -364,13 +368,14 @@ describe("DIVAOracleTellor", () => {
           parseEther("40000"), // floor
           parseEther("60000"), // inflection
           parseEther("80000"), // cap
-          parseEther("0.7").toString(),
+          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
           parseUnits("100", collateralTokenDecimals), // collateral amount
           collateralToken.address, // collateral token
           divaOracleTellor.address, // data provider
           parseUnits("200", collateralTokenDecimals).toString(), // capacity
           user1.address, // longRecipient
           user1.address, // shortRecipient
+          ethers.constants.AddressZero,
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -453,7 +458,7 @@ describe("DIVAOracleTellor", () => {
         // Calculate settlement fee expressed in collateral token and USD denominated fee
         const [settlementFeeAmount, settlementFeeAmountUSD] = calcSettlementFee(
           poolParams.collateralBalance,
-          poolParams.settlementFee,
+          feesParams.settlementFee,
           collateralTokenDecimals,
           collateralToUSDRate
         );
@@ -493,13 +498,14 @@ describe("DIVAOracleTellor", () => {
           parseEther("40000"), // floor
           parseEther("60000"), // inflection
           parseEther("80000"), // cap
-          parseEther("0.7").toString(),
+          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
           parseUnits("100000", collateralTokenDecimals), // collateral amount
           collateralToken.address, // collateral token
           divaOracleTellor.address, // data provider
           parseUnits("200000", collateralTokenDecimals).toString(), // capacity
           user1.address, // longRecipient
           user1.address, // shortRecipient
+          ethers.constants.AddressZero,
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -528,7 +534,7 @@ describe("DIVAOracleTellor", () => {
         // Calculate settlement fee expressed in both collateral token and USD
         const [feeAmount, feeAmountUSD] = calcSettlementFee(
           poolParams.collateralBalance,
-          poolParams.settlementFee,
+          feesParams.settlementFee,
           collateralTokenDecimals,
           collateralToUSDRate
         ); // feeAmount is expressed as an integer with collateral token decimals and feeAmountUSD with 18 decimals
@@ -551,21 +557,21 @@ describe("DIVAOracleTellor", () => {
           collateralToken.address,
           excessFeeRecipient.address
         );
-        expect(feeClaimReporterBefore).to.eq(0)
-        expect(feeClaimExcessFeeRecipientBefore).to.eq(0)
+        expect(feeClaimReporterBefore).to.eq(0);
+        expect(feeClaimExcessFeeRecipientBefore).to.eq(0);
 
         // Set random user that is going to trigger the `setFinalReferenceValue` function after the value has been submitted to the Tellor oracle
         // and confirm that the diva claim balance is zero
-        const randomUser = user3
+        const randomUser = user3;
         const feeClaimRandomUserBefore = await diva.getClaim(
           collateralToken.address,
           randomUser.address
         );
-        expect(feeClaimRandomUserBefore).to.eq(0)
+        expect(feeClaimRandomUserBefore).to.eq(0);
 
         // Confirm that the random user is not the DIVA treasury address
-        const governanceParameters = await diva.getGovernanceParameters()
-        expect(randomUser).to.not.eq(governanceParameters.treasury)
+        const governanceParameters = await diva.getGovernanceParameters();
+        expect(randomUser).to.not.eq(governanceParameters.treasury);
 
         // ---------
         // Act: Call `setFinalReferenceValue` function inside DIVAOracleTellor contract after `minPeriodUndisputed`
@@ -593,7 +599,7 @@ describe("DIVAOracleTellor", () => {
         const feeClaimRandomUserAfter = await diva.getClaim(
           collateralToken.address,
           randomUser.address
-        )
+        );
 
         expect(feeClaimReporterAfter).to.eq(
           feeClaimReporterBefore.add(maxFeeAmount)
@@ -618,13 +624,14 @@ describe("DIVAOracleTellor", () => {
           parseEther("40000"), // floor
           parseEther("60000"), // inflection
           parseEther("80000"), // cap
-          parseEther("0.7").toString(),
+          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
           parseUnits("100000", collateralTokenDecimals), // collateral amount
           collateralToken.address, // collateral token
           divaOracleTellor.address, // data provider
           parseUnits("200000", collateralTokenDecimals).toString(), // capacity
           user1.address, // longRecipient
           user1.address, // shortRecipient
+          ethers.constants.AddressZero,
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -653,7 +660,7 @@ describe("DIVAOracleTellor", () => {
         // Calculate settlement fee expressed in both collateral token and USD
         const [feeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
-          poolParams.settlementFee,
+          feesParams.settlementFee,
           collateralTokenDecimals,
           collateralToUSDRate
         ); // feeAmount is expressed as an integer with collateral token decimals and feeAmountUSD with 18 decimals
@@ -667,21 +674,21 @@ describe("DIVAOracleTellor", () => {
           collateralToken.address,
           excessFeeRecipient.address
         );
-        expect(feeClaimReporterBefore).to.eq(0)
-        expect(feeClaimExcessFeeRecipientBefore).to.eq(0)
+        expect(feeClaimReporterBefore).to.eq(0);
+        expect(feeClaimExcessFeeRecipientBefore).to.eq(0);
 
         // Set random user that is going to trigger the `setFinalReferenceValue` function after the value has been submitted to the Tellor oracle
         // and confirm that the diva claim balance is zero
-        const randomUser = user3
+        const randomUser = user3;
         const feeClaimRandomUserBefore = await diva.getClaim(
           collateralToken.address,
           randomUser.address
         );
-        expect(feeClaimRandomUserBefore).to.eq(0)
+        expect(feeClaimRandomUserBefore).to.eq(0);
 
         // Confirm that the random user is not the DIVA treasury address
-        const governanceParameters = await diva.getGovernanceParameters()
-        expect(randomUser).to.not.eq(governanceParameters.treasury)
+        const governanceParameters = await diva.getGovernanceParameters();
+        expect(randomUser).to.not.eq(governanceParameters.treasury);
 
         // ---------
         // Act: Call `setFinalReferenceValue` function inside DIVAOracleTellor contract after `minPeriodUndisputed`
@@ -709,7 +716,7 @@ describe("DIVAOracleTellor", () => {
         const feeClaimRandomUserAfter = await diva.getClaim(
           collateralToken.address,
           randomUser.address
-        )
+        );
 
         expect(feeClaimReporterAfter).to.eq(feeAmount);
         expect(feeClaimExcessFeeRecipientAfter).to.eq(0);
@@ -784,13 +791,14 @@ describe("DIVAOracleTellor", () => {
           parseEther("40000"), // floor
           parseEther("60000"), // inflection
           parseEther("80000"), // cap
-          parseEther("0.7").toString(),
+          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
           parseUnits("100", collateralTokenDecimals), // collateral amount
           collateralToken.address, // collateral token
           divaOracleTellor.address, // data provider
           parseUnits("200", collateralTokenDecimals).toString(), // capacity
           user1.address, // longRecipient
           user1.address, // shortRecipient
+          ethers.constants.AddressZero,
         ]);
         latestPoolId = await diva.getLatestPoolId();
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -883,7 +891,7 @@ describe("DIVAOracleTellor", () => {
         // Calculate settlement fee expressed in collateral token
         const [settlementFeeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
-          poolParams.settlementFee,
+          feesParams.settlementFee,
           collateralTokenDecimals,
           collateralToUSDRate
         );
@@ -1069,7 +1077,7 @@ describe("DIVAOracleTellor", () => {
         // Calculate settlement fee expressed in collateral token
         const [settlementFeeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
-          poolParams.settlementFee,
+          feesParams.settlementFee,
           collateralTokenDecimals,
           collateralToUSDRate
         );
@@ -1171,7 +1179,7 @@ describe("DIVAOracleTellor", () => {
         // Calculate settlement fee expressed in collateral token
         const [settlementFeeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
-          poolParams.settlementFee,
+          feesParams.settlementFee,
           collateralTokenDecimals,
           collateralToUSDRate
         );
@@ -1427,7 +1435,7 @@ describe("DIVAOracleTellor", () => {
       // Calculate settlement fee expressed in collateral token
       const [settlementFeeAmount] = calcSettlementFee(
         poolParams.collateralBalance,
-        poolParams.settlementFee,
+        feesParams.settlementFee,
         collateralTokenDecimals,
         collateralToUSDRate
       );
@@ -1502,7 +1510,7 @@ describe("DIVAOracleTellor", () => {
       // Calculate settlement fee expressed in collateral token
       const [settlementFeeAmount] = calcSettlementFee(
         poolParams.collateralBalance,
-        poolParams.settlementFee,
+        feesParams.settlementFee,
         collateralTokenDecimals,
         collateralToUSDRate
       );
@@ -1579,7 +1587,7 @@ describe("DIVAOracleTellor", () => {
       // Calculate settlement fee expressed in collateral token
       const [settlementFeeAmount] = calcSettlementFee(
         poolParams.collateralBalance,
-        poolParams.settlementFee,
+        feesParams.settlementFee,
         collateralTokenDecimals,
         collateralToUSDRate
       );

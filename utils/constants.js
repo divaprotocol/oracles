@@ -5,7 +5,7 @@ const addresses = {
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
   kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101",
   polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B",
-  goerli: "0x36a10DDa1d71fE161e8856dA1db271e75190c727", // 13.09.2022
+  goerli: "0x41E26a0A0FB621cCF870f930010CCE87Fe95CDe3", // 17.10.2022
 };
 
 const bondFactoryInfo = {
@@ -36,7 +36,7 @@ const tellorPlaygroundAddresses = {
 
 const divaTellorOracleAddresses = {
   ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
-  goerli: "0xF4Bb0B9b078B0210eBEA704be2CB3c66B83cdFEF" // Deployed on 23 Sep 2022
+  goerli: "0xF4Bb0B9b078B0210eBEA704be2CB3c66B83cdFEF", // Deployed on 23 Sep 2022
 };
 
 // Status mapping

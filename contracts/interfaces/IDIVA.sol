@@ -5,9 +5,10 @@ pragma solidity 0.8.9;
  * @title Shortened version of the interface including required functions only
  */
 interface IDIVA {
-    struct FeeClaimTransfer {
-        address collateralToken;
+    // Struct for `batchTransferFeeClaim` function input
+    struct ArgsBatchTransferFeeClaim {
         address recipient;
+        address collateralToken;
         uint256 amount;
     }
 
@@ -19,7 +20,7 @@ interface IDIVA {
         Confirmed
     }
 
-    // Collection of pool related parameters
+    // Collection of pool related parameters; order was optimized to reduce storage costs
     struct Pool {
         uint256 floor;
         uint256 inflection;
@@ -30,14 +31,12 @@ interface IDIVA {
         uint256 capacity;
         uint256 statusTimestamp;
         address shortToken;
-        uint96 payoutShort;
+        uint96 payoutShort; // max value: 1e18 <= 2^64
         address longToken;
-        uint96 payoutLong;
+        uint96 payoutLong; // max value: 1e18 <= 2^64
         address collateralToken;
         uint96 expiryTime;
         address dataProvider;
-        uint96 protocolFee;
-        uint96 settlementFee;
         Status statusFinalReferenceValue;
         string referenceAsset;
     }
@@ -56,21 +55,21 @@ interface IDIVA {
         uint256 capacity;
         address longRecipient;
         address shortRecipient;
+        address permissionedERC721Token;
     }
 
     /**
-     * @dev Throws if called by any account other than the `dataProvider`
-     * specified in the contract parameters. Current implementation allows
-     * for positive final values only. For negative metrices, choose the
-     * negated or shifted version as your reference asset (e.g., -LIBOR).
-     * @param _poolId The pool Id for which the settlement value is submitted
-     * @param _finalReferenceValue Proposed settlement value by the data
-     * feed provider
-     * @param _allowChallenge Toggle to enable/disable the challenge
-     * functionality. If 0, then the submitted reference value will
-     * immediately go into confirmed status, a challenge will not be possible.
-     * This parameter was introduced to allow automated oracles (e.g.,
-     * Tellor, Uniswap v3, Chainlink) to settle without dispute.
+     * @notice Function to submit the final reference value for a given pool Id.
+     * @param _poolId The pool Id for which the final value is submitted.
+     * @param _finalReferenceValue Proposed final value by the data provider
+     * expressed as an integer with 18 decimals.
+     * @param _allowChallenge Flag indicating whether the challenge functionality
+     * is enabled or disabled for the submitted value. If 0, then the submitted
+     * final value will be directly confirmed and position token holders can start
+     * redeeming their position tokens. If 1, then position token holders can
+     * challenge the submitted value. This flag was introduced to account for
+     * decentralized oracle solutions like Uniswap v3 or Chainlink where a
+     * dispute mechanism doesn't make sense.
      */
     function setFinalReferenceValue(
         uint256 _poolId,
@@ -79,15 +78,12 @@ interface IDIVA {
     ) external;
 
     /**
-     * @notice Function to transfer fee claims to another account. To be
-     * called by oracle contract after a user has triggered the reference
-     * value feed and settlement fees were assigned
-     * @dev `msg.sender` has to have a fee claim allocation in order to initiate
-     * the transfer
-     * @param _recipient Recipient address of the fee claim
+     * @notice Function to transfer fee claim from entitled address
+     * to another address
+     * @param _recipient Address of fee claim recipient
      * @param _collateralToken Collateral token address
-     * @param _amount Amount expressed in collateral token to transfer to
-     * recipient
+     * @param _amount Amount (expressed as an integer with collateral token
+     * decimals) to transfer to recipient
      */
     function transferFeeClaim(
         address _recipient,
@@ -96,14 +92,13 @@ interface IDIVA {
     ) external;
 
     /**
-     * @notice Function to transfer fee claim from entitled address
-     * to another address
-     * @param _feeClaimTransfers Struct array containing collateral tokens,
+     * @notice Batch version of `transferFeeClaim`
+     * @param _argsBatchTransferFeeClaim Struct array containing collateral tokens,
      * recipient addresses and amounts (expressed as an integer with collateral
-     * token decimals) to transfer to recipient
+     * token decimals)
      */
     function batchTransferFeeClaim(
-        FeeClaimTransfer[] calldata _feeClaimTransfers
+        ArgsBatchTransferFeeClaim[] calldata _argsBatchTransferFeeClaim
     ) external;
 
     /**
@@ -116,10 +111,10 @@ interface IDIVA {
     function claimFee(address _collateralToken, address _recipient) external;
 
     /**
-     * @notice Function to issue long and the short position tokens to
-     * `msg.sender` upon collateral deposit. Provided collateral is kept inside
-     * the contract until position tokens are redeemed by calling
-     * `redeemPositionToken` or `removeLiquidity`.
+     * @notice Function to issue long and short position tokens to
+     * `longRecipient` and `shortRecipient` upon collateral deposit by `msg.sender`. 
+     * Provided collateral is kept inside the contract until position tokens are 
+     * redeemed by calling `redeemPositionToken` or `removeLiquidity`.
      * @dev Position token supply equals `collateralAmount` (minimum 1e6).
      * Position tokens have the same amount of decimals as the collateral token.
      * Only ERC20 tokens with 6 <= decimals <= 18 are accepted as collateral.
@@ -135,31 +130,41 @@ interface IDIVA {
      * - expiryTime: Expiration time of the position tokens expressed as a unix
          timestamp in seconds.
      * - floor: Value of underlying at or below which the short token will pay
-         out the max amount and the long token zero.
+         out the max amount and the long token zero. Expressed as an integer with
+         18 decimals.
      * - inflection: Value of underlying at which the long token will payout
-         out `gradient` and the short token `1-gradient`.
+         out `gradient` and the short token `1-gradient`. Expressed as an
+         integer with 18 decimals.
      * - cap: Value of underlying at or above which the long token will pay
-         out the max amount and short token zero.
+         out the max amount and short token zero. Expressed as an integer with
+         18 decimals.
      * - gradient: Long token payout at inflection. The short token payout at
-         inflection is `1-gradient`.
+         inflection is `1-gradient`. Expressed as an integer with collateral token
+         decimals.
      * - collateralAmount: Collateral amount to be deposited into the pool to
-         back the position tokens.
+         back the position tokens. Expressed as an integer with collateral token
+         decimals.
      * - collateralToken: ERC20 collateral token address.
      * - dataProvider: Address that is supposed to report the final value of
          the reference asset.
-     * - capacity: The maximum collateral amount that the pool can accept.
-     * - longRecipient: Address that shall receive the long token.
-     * - shortRecipient: Address that shall receive the short token.
+     * - capacity: The maximum collateral amount that the pool can accept. Expressed
+         as an integer with collateral token decimals.
+     * - longRecipient: Address that shall receive the long position tokens. 
+     *   Zero address is a valid input to enable conditional burn use cases.
+     * - shortRecipient: Address that shall receive the short position tokens.
+     *   Zero address is a valid input to enable conditional burn use cases.
+     * - permissionedERC721Token: Address of ERC721 token that is allowed to transfer the
+     *   position token. Zero address if position token is supposed to be permissionless.
      * @return poolId
      */
-    function createContingentPool(PoolParams calldata _poolParams)
+    function createContingentPool(PoolParams memory _poolParams)
         external
         returns (uint256);
 
     /**
-     * @notice Returns the pool parameters for a given pool Id
-     * @param _poolId Id of the pool
-     * @return Pool struct
+     * @notice Returns the pool parameters for a given pool Id.
+     * @param _poolId Id of the pool.
+     * @return Pool struct.
      */
     function getPoolParameters(uint256 _poolId)
         external
@@ -167,10 +172,10 @@ interface IDIVA {
         returns (Pool memory);
 
     /**
-     * @dev Returns the claims by collateral tokens for a given account
-     * @param _recipient Account address
-     * @param _collateralToken Collateral token address
-     * @return Array of Claim structs
+     * @dev Returns the claims by collateral tokens for a given account.
+     * @param _recipient Recipient address.
+     * @param _collateralToken Collateral token address.
+     * @return Array of Claim structs.
      */
     function getClaim(address _collateralToken, address _recipient)
         external

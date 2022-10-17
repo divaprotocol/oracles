@@ -351,16 +351,18 @@ contract DIVAOracleTellor is
         feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
 
         // Transfer fee claim to reporter and excessFeeRecipient
-        IDIVA.FeeClaimTransfer[]
-            memory _feeClaimTransfers = new IDIVA.FeeClaimTransfer[](2);
-        _feeClaimTransfers[0] = IDIVA.FeeClaimTransfer(
-            _params.collateralToken,
+        IDIVA.ArgsBatchTransferFeeClaim[]
+            memory _feeClaimTransfers = new IDIVA.ArgsBatchTransferFeeClaim[](
+                2
+            );
+        _feeClaimTransfers[0] = IDIVA.ArgsBatchTransferFeeClaim(
             _reporter,
+            _params.collateralToken,
             feeToReporter
         );
-        _feeClaimTransfers[1] = IDIVA.FeeClaimTransfer(
-            _params.collateralToken,
+        _feeClaimTransfers[1] = IDIVA.ArgsBatchTransferFeeClaim(
             _excessFeeRecipient,
+            _params.collateralToken,
             feeToExcessRecipient
         );
         _diva.batchTransferFeeClaim(_feeClaimTransfers);
