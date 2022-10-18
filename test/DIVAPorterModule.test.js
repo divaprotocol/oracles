@@ -149,12 +149,13 @@ describe("DIVAPorterModule", () => {
     createContingentPoolParams = {
       referenceAsset: bondAddress, // Porter Bond address
       inflection: parseUnits("600", collateralTokenDecimals), // inflection
-      gradient: parseEther("0.5"), // gradient
+      gradient: parseUnits("0.5", collateralTokenDecimals), // gradient
       collateralAmount: parseUnits("100", collateralTokenDecimals), // collateral amount
       collateralToken: collateralToken.address, // collateral token
       capacity: parseUnits("300", collateralTokenDecimals), // capacity
       longRecipient: longRecipient.address, // address of long token recipient
       shortRecipient: shortRecipient.address, // address of short token recipient
+      permissionedERC721Token: ethers.constants.AddressZero, // Address of ERC721 token
     };
   });
 

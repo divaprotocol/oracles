@@ -79,7 +79,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     ) external override nonReentrant returns (uint256) {
         IBondFactory _bondFactory = IBondFactory(_bondFactoryAddress);
         address _porterBond = _porterPoolParams.referenceAsset;
-        
+
         // Check if Bond address is valid from Bond factory contract
         require(
             _bondFactory.isBond(_porterBond),
@@ -119,6 +119,8 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         _poolParams.capacity = _porterPoolParams.capacity;
         _poolParams.longRecipient = _porterPoolParams.longRecipient;
         _poolParams.shortRecipient = _porterPoolParams.shortRecipient;
+        _poolParams.permissionedERC721Token = _porterPoolParams
+            .permissionedERC721Token;
 
         IDIVA _diva = IDIVA(_divaDiamond);
         uint256 _poolId = _diva.createContingentPool(_poolParams);

@@ -16,6 +16,7 @@ interface IDIVAPorterModule {
         uint256 capacity;
         address longRecipient;
         address shortRecipient;
+        address permissionedERC721Token;
     }
 
     /**
@@ -56,6 +57,8 @@ interface IDIVAPorterModule {
      * - capacity: The maximum collateral amount that the pool can accept.
      * - longRecipient: Address that shall receive the long token.
      * - shortRecipient: Address that shall receive the short token.
+     * - permissionedERC721Token: Address of ERC721 token that is allowed to transfer the
+     *   position token. Zero address if position token is supposed to be permissionless.
      * @return poolId
      */
     function createContingentPool(
