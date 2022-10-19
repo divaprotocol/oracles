@@ -1,26 +1,24 @@
 /**
- * Run `divaTellor:getMinPeriodUndisputed`
+ * Run `yarn divaTellor:getMinPeriodUndisputed`
  */
 
-const hre = require("hardhat");
-const { divaTellorOracleAddresses } = require('../../utils/constants');
+const { ethers } = require("hardhat");
+const { divaTellorOracleAddresses } = require("../../utils/constants");
 
 async function main() {
-
-  const network = "goerli"
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  console.log('divaOracleTellorAddress: ', divaOracleTellorAddress)
-
-  // Get signers
-  const [acc1, acc2, acc3] = await ethers.getSigners();
-  const user = acc1;
+  const network = "goerli";
+  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+  console.log("divaOracleTellorAddress: ", divaOracleTellorAddress);
 
   // Connect to Tellor oracle contract
-  const divaOracleTellor = await hre.ethers.getContractAt("DIVAOracleTellor", divaOracleTellorAddress);
-  
+  const divaOracleTellor = await ethers.getContractAt(
+    "DIVAOracleTellor",
+    divaOracleTellorAddress
+  );
+
   // Get current minPeriodUndisputed
-  const minPeriodUndisputed = await divaOracleTellor.getMinPeriodUndisputed()
-  console.log('current minPeriodUndisputed: ', minPeriodUndisputed)
+  const minPeriodUndisputed = await divaOracleTellor.getMinPeriodUndisputed();
+  console.log("current minPeriodUndisputed: ", minPeriodUndisputed);
 }
 
 main()

@@ -1,21 +1,25 @@
+/**
+ * Run `yarn tellor:queryDataExample`
+ */
+
 const { ethers } = require("hardhat");
 
 const { addresses } = require("../../utils/constants");
 
 async function main() {
   // Get DIVA address
-  const network = "ropsten";
-  const chainId = 3;
+  const network = "goerli";
+  const chainId = 5;
   const divaAddress = addresses[network];
 
   // Load ABI code from ethers library
   const abiCoder = new ethers.utils.AbiCoder();
 
   // Generate queryId for Tellor submission
-  const latestPoolId = 1;
+  const poolId = 1;
   const queryDataArgs = abiCoder.encode(
     ["uint256", "address", "uint256"],
-    [latestPoolId, divaAddress, chainId]
+    [poolId, divaAddress, chainId]
   );
   const queryData = abiCoder.encode(
     ["string", "bytes"],
@@ -25,7 +29,7 @@ async function main() {
 
   // Print values
   console.log("divaAddress: ", divaAddress);
-  console.log("latestPoolId: ", latestPoolId);
+  console.log("poolId: ", poolId);
   console.log("queryDataArgs: ", queryDataArgs);
   console.log("queryData: ", queryData);
   console.log("queryId: ", queryId);

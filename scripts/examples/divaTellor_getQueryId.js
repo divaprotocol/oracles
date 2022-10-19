@@ -1,29 +1,30 @@
 /**
- * Run `divaTellor:getQueryId`
+ * Run `yarn divaTellor:getQueryId`
  */
-const hre = require("hardhat");
-const { addresses, divaTellorOracleAddresses } = require('../../utils/constants');
+const { ethers } = require("hardhat");
+const {
+  addresses,
+  divaTellorOracleAddresses,
+} = require("../../utils/constants");
 
 async function main() {
+  const network = "goerli";
+  const poolId = 1150;
+  const divaAddress = addresses[network];
+  console.log("divaAddress: ", divaAddress);
 
-  const network = "goerli"
-  const poolId = 1150
-  const divaAddress = addresses[network]
-  console.log('divaAddress: ', divaAddress)
-
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  console.log('divaOracleTellorAddress: ', divaOracleTellorAddress)
-
-  // Get signers
-  const [acc1, acc2, acc3] = await ethers.getSigners();
-  const user = acc1;
+  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+  console.log("divaOracleTellorAddress: ", divaOracleTellorAddress);
 
   // Connect to Tellor oracle contract
-  const divaOracleTellor = await hre.ethers.getContractAt("DIVAOracleTellor", divaOracleTellorAddress);
-  
+  const divaOracleTellor = await ethers.getContractAt(
+    "DIVAOracleTellor",
+    divaOracleTellorAddress
+  );
+
   // Get current queryId
-  const queryId = await divaOracleTellor.getQueryId(poolId, divaAddress)
-  console.log('queryId: ', queryId)
+  const queryId = await divaOracleTellor.getQueryId(poolId, divaAddress);
+  console.log("queryId: ", queryId);
 }
 
 main()
