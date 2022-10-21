@@ -39,6 +39,12 @@ const divaTellorOracleAddresses = {
   goerli: "0x536AEFf6a1dA12D54b826FcFd6aaBD598ebD2E3D", // Deployed on 19 Oct 2022
 };
 
+const collateralTokens = {
+  goerli: {
+    dUSD: "0xFA158C9B780A4213f3201Ae74Cca013712c8538d",
+  },
+};
+
 // Status mapping
 const status = {
   0: "Open",
@@ -52,3 +58,4 @@ exports.bondFactoryInfo = bondFactoryInfo;
 exports.status = status;
 exports.tellorPlaygroundAddresses = tellorPlaygroundAddresses;
 exports.divaTellorOracleAddresses = divaTellorOracleAddresses;
+exports.collateralTokens = collateralTokens;

@@ -22,6 +22,8 @@ async function main() {
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
+
+  // Set final reference value
   const tx = await divaOracleTellor.setFinalReferenceValue(divaAddress, poolId);
   await tx.wait();
 

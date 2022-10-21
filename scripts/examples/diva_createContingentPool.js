@@ -9,6 +9,7 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const { parseEther, parseUnits, formatUnits } = require("@ethersproject/units");
 const {
   addresses,
+  collateralTokens,
   divaTellorOracleAddresses,
 } = require("../../utils/constants");
 const { getExpiryInSeconds } = require("../../test/utils.js");
@@ -16,8 +17,9 @@ const { getExpiryInSeconds } = require("../../test/utils.js");
 async function main() {
   // Set network, collateral token and data provider address
   const network = "goerli";
+  const collateralTokenSymbol = "dUSD";
   const erc20CollateralTokenAddress =
-    "0xFA158C9B780A4213f3201Ae74Cca013712c8538d"; // dUSD
+    collateralTokens[network][collateralTokenSymbol];
   const dataProviderAddress = divaTellorOracleAddresses[network];
 
   // Get signers
