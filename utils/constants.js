@@ -36,7 +36,7 @@ const tellorPlaygroundAddresses = {
 
 const divaTellorOracleAddresses = {
   ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
-  goerli: "0x56bD2C9F17a2929B1de15b05F29A4D27b6272173", // Deployed on 20 Oct 2022
+  goerli: "0xF726D395531Ae7082D53c10fe95B254F5ccABfda", // Deployed on 24 Oct 2022
 };
 
 const collateralTokens = {

@@ -84,7 +84,7 @@ async function main() {
   const tellorPlaygroundAddress = tellorPlaygroundAddresses[network];
   const divaOracleTellorAddress = divaTellorOracleAddresses[network];
 
-  const poolId = 2;
+  const poolId = 4;
 
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -94,7 +94,7 @@ async function main() {
   console.log("Reporter address: " + reporter.address);
 
   // Connect to DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
   console.log("DIVA address: ", diva.address);
 
   // Connect to DIVA oracle tellor contract

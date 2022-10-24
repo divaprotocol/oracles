@@ -18,6 +18,7 @@ async function main() {
   // Set network, collateral token and data provider address
   const network = "goerli";
   const collateralTokenSymbol = "dUSD";
+
   const erc20CollateralTokenAddress =
     collateralTokens[network][collateralTokenSymbol];
   const dataProviderAddress = divaTellorOracleAddresses[network];

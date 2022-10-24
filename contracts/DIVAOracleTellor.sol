@@ -213,6 +213,15 @@ contract DIVAOracleTellor is
             );
     }
 
+    function getReporter(uint256 _poolId)
+        public
+        view
+        override
+        returns (address)
+    {
+        return _poolIdToReporter[_poolId];
+    }
+
     function _claimDIVAFee(uint256 _poolId, address _divaDiamond) private {
         IDIVA _diva = IDIVA(_divaDiamond);
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);

@@ -19,6 +19,7 @@
     "divaTellor:setFinalReferenceValue": "yarn hardhat run scripts/examples/divaTellor_setFinalReferenceValue.js --network goerli",
     "divaTellor:setMinPeriodUndisputed": "yarn hardhat run scripts/examples/divaTellor_setMinPeriodUndisputed.js --network goerli",
     "divaTellor:addTip": "yarn hardhat run scripts/examples/divaTellor_addTip.js --network goerli",
+    "divaTellor:claimTips": "yarn hardhat run scripts/examples/divaTellor_claimTips.js --network goerli",
     "tellor:submitValue": "yarn hardhat run scripts/examples/tellor_submitValue.js --network goerli",
     "tellor:queryDataExample": "yarn hardhat run scripts/examples/tellorQueryDataExample.js --network goerli"
   },

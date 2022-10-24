@@ -2,7 +2,6 @@
 pragma solidity 0.8.9;
 
 interface IDIVAOracleTellor {
-
     // Thrown if user tries to claim fees/tips for a pool that was not yet confirmed
     error NotConfirmedPool();
 
@@ -13,11 +12,11 @@ interface IDIVAOracleTellor {
     error ZeroExcessFeeRecipient();
 
     // Thrown if `_minPeriodUndisputed` passed into `setMinPeriodUndisputed` is
-    // not within the expected range (min 1h, max 18h) 
+    // not within the expected range (min 1h, max 18h)
     error OutOfRange();
 
     // Thrown when user calls `setFinalReferenceValue` (or a variant of it) but
-    // there is no data sitting in the Tellor contract 
+    // there is no data sitting in the Tellor contract
     error NoOracleSubmission();
 
     // Thrown if a value was reported to the Tellor contract but it was before
@@ -230,4 +229,10 @@ interface IDIVAOracleTellor {
         external
         view
         returns (bytes32);
+
+    /**
+     * @dev Returns the reporter address
+     * @param _poolId The unique identifier of the pool.
+     */
+    function getReporter(uint256 _poolId) external view returns (address);
 }

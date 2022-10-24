@@ -1,0 +1,147 @@
+/**
+ * Script to claim tips. Make sure you run this script after set finial reference value.
+ * Run `yarn divaTellor:claimTips`
+ */
+
+const { ethers } = require("hardhat");
+const { formatUnits } = require("@ethersproject/units");
+
+const ERC20_ABI = require("../../contracts/abi/ERC20.json");
+const DIVA_ABI = require("../../contracts/abi/DIVA.json");
+
+const {
+  addresses,
+  divaTellorOracleAddresses,
+} = require("../../utils/constants");
+
+const checkConditions = async (divaOracleTellor, poolId) => {
+  // Get reporter
+  const reporter = await divaOracleTellor.getReporter(poolId);
+  if (reporter === ethers.constants.AddressZero) {
+    throw new Error("Not confirmed pool");
+  }
+
+  // Get tipping tokens
+  const tippingTokens = await divaOracleTellor.getTippingTokens(poolId);
+  if (!tippingTokens.length) {
+    throw new Error("No tipping tokens to claim");
+  }
+
+  return [reporter, tippingTokens];
+};
+
+async function main() {
+  const network = "goerli";
+
+  const divaAddress = addresses[network];
+  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+
+  const poolId = 4;
+  console.log("Pool id: ", poolId);
+
+  // Connect to DIVA contract
+  const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
+  console.log("DIVA address: ", diva.address);
+
+  // Connect to DIVA oracle tellor contract
+  const divaOracleTellor = await ethers.getContractAt(
+    "DIVAOracleTellor",
+    divaOracleTellorAddress
+  );
+  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
+
+  // Check conditions and get reporter, tipping tokens
+  const [reporter, tippingTokens] = await checkConditions(
+    divaOracleTellor,
+    poolId
+  );
+
+  // Get contracts of tipping tokens
+  const tippingTokenContracts = await Promise.all(
+    tippingTokens.map(async (tippingToken) => {
+      return await ethers.getContractAt(ERC20_ABI, tippingToken);
+    })
+  );
+
+  // Get decimals of tipping tokens
+  const tippingTokenDecimals = await Promise.all(
+    tippingTokenContracts.map(async (tippingTokenContract) => {
+      return await tippingTokenContract.decimals();
+    })
+  );
+
+  // Check token tips on DIVAOracleTellor contract before claim tips
+  console.log("");
+  console.log("Tips on DIVAOracleTellor contract before claim tips");
+  await Promise.all(
+    tippingTokens.map(async (tippingToken, index) => {
+      const tips = await divaOracleTellor.getTips(poolId, tippingToken);
+      console.log(
+        `Token address: ${tippingToken} Balance: ${formatUnits(
+          tips,
+          tippingTokenDecimals[index]
+        )}`
+      );
+    })
+  );
+
+  // Check the balances of reporter before claim tips
+  console.log("");
+  console.log("Tipping token balances of reporter before claim tips");
+  await Promise.all(
+    tippingTokenContracts.map(async (tippingTokenContract, index) => {
+      const tippingTokenBalance = await tippingTokenContract.balanceOf(
+        reporter
+      );
+      console.log(
+        `Token address: ${tippingTokenContract.address} Balance: ${formatUnits(
+          tippingTokenBalance,
+          tippingTokenDecimals[index]
+        )}`
+      );
+    })
+  );
+
+  // Claim tips
+  const tx = await divaOracleTellor.claimTips(poolId, tippingTokens);
+  await tx.wait();
+
+  // Check token tips on DIVAOracleTellor contract after claim tips
+  console.log("");
+  console.log("Tips on DIVAOracleTellor contract after claim tips");
+  await Promise.all(
+    tippingTokens.map(async (tippingToken, index) => {
+      const tips = await divaOracleTellor.getTips(poolId, tippingToken);
+      console.log(
+        `Token address: ${tippingToken} Balance: ${formatUnits(
+          tips,
+          tippingTokenDecimals[index]
+        )}`
+      );
+    })
+  );
+
+  // Check the balance of reporter after claim tips
+  console.log("");
+  console.log("Tipping token balances of reporter after claim tips");
+  await Promise.all(
+    tippingTokenContracts.map(async (tippingTokenContract, index) => {
+      const tippingTokenBalance = await tippingTokenContract.balanceOf(
+        reporter
+      );
+      console.log(
+        `Token address: ${tippingTokenContract.address} Balance: ${formatUnits(
+          tippingTokenBalance,
+          tippingTokenDecimals[index]
+        )}`
+      );
+    })
+  );
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
