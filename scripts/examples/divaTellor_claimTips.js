@@ -14,28 +14,24 @@ const {
   divaTellorOracleAddresses,
 } = require("../../utils/constants");
 
-const checkConditions = async (divaOracleTellor, poolId) => {
-  // Get reporter
-  const reporter = await divaOracleTellor.getReporter(poolId);
+const checkConditions = (reporter, tippingTokens) => {
   if (reporter === ethers.constants.AddressZero) {
     throw new Error("Not confirmed pool");
   }
 
-  // Get tipping tokens
-  const tippingTokens = await divaOracleTellor.getTippingTokens(poolId);
   if (!tippingTokens.length) {
     throw new Error("No tipping tokens to claim");
   }
-
-  return [reporter, tippingTokens];
 };
 
 async function main() {
+  // INPUT: network
   const network = "goerli";
 
   const divaAddress = addresses[network];
   const divaOracleTellorAddress = divaTellorOracleAddresses[network];
 
+  // INPUT: id of existing pool
   const poolId = 4;
   console.log("Pool id: ", poolId);
 
@@ -43,18 +39,21 @@ async function main() {
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
   console.log("DIVA address: ", diva.address);
 
-  // Connect to DIVA oracle tellor contract
+  // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
   console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
 
-  // Check conditions and get reporter, tipping tokens
-  const [reporter, tippingTokens] = await checkConditions(
-    divaOracleTellor,
-    poolId
-  );
+  // Get reporter
+  const reporter = await divaOracleTellor.getReporter(poolId);
+
+  // Get tipping tokens
+  const tippingTokens = await divaOracleTellor.getTippingTokens(poolId);
+
+  // Check conditions
+  checkConditions(reporter, tippingTokens);
 
   // Get contracts of tipping tokens
   const tippingTokenContracts = await Promise.all(
@@ -70,7 +69,7 @@ async function main() {
     })
   );
 
-  // Check token tips on DIVAOracleTellor contract before claim tips
+  // Check tips on DIVAOracleTellor contract before claim tips
   console.log("");
   console.log("Tips on DIVAOracleTellor contract before claim tips");
   await Promise.all(
@@ -106,7 +105,7 @@ async function main() {
   const tx = await divaOracleTellor.claimTips(poolId, tippingTokens);
   await tx.wait();
 
-  // Check token tips on DIVAOracleTellor contract after claim tips
+  // Check tips on DIVAOracleTellor contract after claim tips
   console.log("");
   console.log("Tips on DIVAOracleTellor contract after claim tips");
   await Promise.all(

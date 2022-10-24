@@ -4,15 +4,18 @@
  */
 
 const { ethers } = require("hardhat");
+
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
+
 const { addresses } = require("../../utils/constants");
 
 async function main() {
-  // Set network (check constants.js for available values), id of an existing pool
+  // INPUT: network (check constants.js for available values)
   const network = "goerli";
 
   // INPUT: id of existing pool
   const poolId = 1;
+  console.log("Pool id: ", poolId);
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);

@@ -4,7 +4,9 @@
  */
 
 const { ethers } = require("hardhat");
+
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
+
 const {
   status,
   addresses,
@@ -12,17 +14,20 @@ const {
 } = require("../../utils/constants");
 
 async function main() {
+  // INPUT: network
   const network = "goerli";
 
   const divaOracleTellorAddress = divaTellorOracleAddresses[network];
   const divaAddress = addresses[network];
+
+  // INPUT: id of existing pool
   const poolId = 4;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
   console.log("DIVA address: ", diva.address);
 
-  // Connect to Tellor oracle contract
+  // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress

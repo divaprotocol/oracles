@@ -7,16 +7,21 @@ const { ethers } = require("hardhat");
 const { addresses } = require("../../utils/constants");
 
 async function main() {
-  // Get DIVA address
+  // INPUT: network
   const network = "goerli";
-  const chainId = 5;
+
+  // INPUT: id of pool
+  const poolId = 1;
+
+  // Get chain id
+  const chainId = (await ethers.provider.getNetwork()).chainId;
+
   const divaAddress = addresses[network];
 
   // Load ABI code from ethers library
   const abiCoder = new ethers.utils.AbiCoder();
 
   // Generate queryId for Tellor submission
-  const poolId = 1;
   const queryDataArgs = abiCoder.encode(
     ["uint256", "address", "uint256"],
     [poolId, divaAddress, chainId]

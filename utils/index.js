@@ -41,7 +41,12 @@ const calcFee = (
   return fee.mul(collateralBalance).mul(SCALING).div(UNIT).div(SCALING);
 };
 
+const getExpiryInSeconds = (offsetInSeconds) => {
+  return Math.floor(Date.now() / 1000 + offsetInSeconds).toString(); // 60*60 = 1h; 60*60*24 = 1d, 60*60*24*365 = 1y
+};
+
 exports.encodeToOracleValue = encodeToOracleValue;
 exports.decodeTellorValue = decodeTellorValue;
 exports.getQueryDataAndId = getQueryDataAndId;
 exports.calcFee = calcFee;
+exports.getExpiryInSeconds = getExpiryInSeconds;

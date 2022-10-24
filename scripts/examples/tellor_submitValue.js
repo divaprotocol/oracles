@@ -78,12 +78,14 @@ const estimateRewards = async (
 };
 
 async function main() {
+  // INPUT: network
   const network = "goerli";
 
   const divaAddress = addresses[network];
   const tellorPlaygroundAddress = tellorPlaygroundAddresses[network];
   const divaOracleTellorAddress = divaTellorOracleAddresses[network];
 
+  // INPUT: id of pool
   const poolId = 4;
 
   // Get chain id
@@ -97,7 +99,7 @@ async function main() {
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
   console.log("DIVA address: ", diva.address);
 
-  // Connect to DIVA oracle tellor contract
+  // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
@@ -121,6 +123,7 @@ async function main() {
     poolParams.expiryTime
   );
 
+  // Get fee params
   const feesParams = await diva.getFees(poolId);
   // Get tips and estimate fees from DIVA after set final reference value
   await estimateRewards(divaOracleTellor, poolId, poolParams, feesParams);

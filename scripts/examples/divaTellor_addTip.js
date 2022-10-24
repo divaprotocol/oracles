@@ -7,6 +7,7 @@ const { ethers } = require("hardhat");
 const { parseUnits, formatUnits } = require("@ethersproject/units");
 
 const ERC20_ABI = require("../../contracts/abi/ERC20.json");
+
 const {
   collateralTokens,
   divaTellorOracleAddresses,
@@ -20,21 +21,24 @@ const checkConditions = (reporter) => {
 };
 
 async function main() {
+  // INPUT: network
   const network = "goerli";
-  const collateralTokenSymbol = "dUSD";
 
-  const collateralTokenAddress =
-    collateralTokens[network][collateralTokenSymbol];
+  // INPUT: tipping token symbol
+  const tippingTokenSymbol = "dUSD";
+
+  const tippingTokenAddress = collateralTokens[network][tippingTokenSymbol];
   const divaOracleTellorAddress = divaTellorOracleAddresses[network];
 
-  const poolId = 4;
+  // INPUT: id of pool
+  const poolId = 5;
   console.log("PoolId: ", poolId);
 
   // Get signer of tipper
   const [tipper] = await ethers.getSigners();
   console.log("Tipper: " + tipper.address);
 
-  // Connect to Tellor oracle contract
+  // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
@@ -43,47 +47,50 @@ async function main() {
 
   // Get reporter
   const reporter = await divaOracleTellor.getReporter(poolId);
+  // Check conditions
   checkConditions(reporter);
 
-  // Connect to ERC20 token that will be used as collateral when creating a contingent pool
-  const collateralTokenContract = await ethers.getContractAt(
+  // Connect to tipping token contract
+  const tippingTokenContract = await ethers.getContractAt(
     ERC20_ABI,
-    collateralTokenAddress
+    tippingTokenAddress
   );
-  console.log("Collateral token address: " + collateralTokenContract.address);
+  console.log("Tipping token address: " + tippingTokenContract.address);
 
-  // Get decimals of collateral token
-  const decimals = await collateralTokenContract.decimals();
-  console.log("Collateral token decimals: " + decimals);
+  // Get decimals of tipping token
+  const decimals = await tippingTokenContract.decimals();
+  console.log("Tipping token decimals: " + decimals);
 
+  // INPUT: tipping amount
   const amount = parseUnits("10", decimals);
   console.log("Tipping amount: ", formatUnits(amount, decimals));
 
-  // Set allowance for DIVA contract
-  const approveTx = await collateralTokenContract
+  // Set allowance for DIVAOracleTellor contract
+  const approveTx = await tippingTokenContract
     .connect(tipper)
     .approve(divaOracleTellor.address, amount);
   await approveTx.wait();
 
-  // Get tip after add tip
+  // Get tips before add tip
   console.log(
     "Tips on DIVAOracleTellor contract before add tip: ",
     formatUnits(
-      await divaOracleTellor.getTips(poolId, collateralTokenAddress),
+      await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
       decimals
     )
   );
 
+  // Add tip
   const tx = await divaOracleTellor
     .connect(tipper)
-    .addTip(poolId, amount, collateralTokenAddress);
+    .addTip(poolId, amount, tippingTokenContract.address);
   await tx.wait();
 
-  // Get tip after add tip
+  // Get tips after add tip
   console.log(
     "Tips on DIVAOracleTellor contract after add tip: ",
     formatUnits(
-      await divaOracleTellor.getTips(poolId, collateralTokenAddress),
+      await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
       decimals
     )
   );

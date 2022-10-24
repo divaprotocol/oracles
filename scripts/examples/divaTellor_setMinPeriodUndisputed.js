@@ -6,19 +6,24 @@ const hre = require("hardhat");
 const { divaTellorOracleAddresses } = require("../../utils/constants");
 
 async function main() {
+  // INPUT: network
   const network = "goerli";
+
+  // INPUT: new minPeriodUndisputed value
+  const newMinPeriodUndisputed = 3600; // 3600 seconds
+
   const divaOracleTellorAddress = divaTellorOracleAddresses[network];
-  const newMinPeriodUndisputed = 3600; // 10 seconds
 
   // Get signers
   const [acc1] = await ethers.getSigners();
   const user = acc1;
 
-  // Connect to Tellor oracle contract
+  // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await hre.ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
+  console.log("DIVAOracleTellor address: " + divaOracleTellor.address);
 
   // Get current contract owner (only owner can change the minPeriodUndisputed)
   const owner = await divaOracleTellor.owner();

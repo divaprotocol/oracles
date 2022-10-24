@@ -4,37 +4,88 @@
  */
 
 const { ethers } = require("hardhat");
+const { parseEther, parseUnits, formatUnits } = require("@ethersproject/units");
+
 const ERC20_ABI = require("../../contracts/abi/ERC20.json");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
-const { parseEther, parseUnits, formatUnits } = require("@ethersproject/units");
+
 const {
   addresses,
   collateralTokens,
   divaTellorOracleAddresses,
 } = require("../../utils/constants");
-const { getExpiryInSeconds } = require("../../test/utils.js");
+const { getExpiryInSeconds } = require("../../utils");
+
+const checkConditions = (
+  referenceAsset,
+  floor,
+  inflection,
+  cap,
+  collateralAmount,
+  collateralToken,
+  dataProvider,
+  capacity,
+  decimals,
+  balance
+) => {
+  if (referenceAsset.length === 0) {
+    throw new Error("Reference asset cannot be an empty string");
+  }
+
+  if (!(floor.lte(inflection) && inflection.lte(cap))) {
+    throw new Error("Ensure that floor <= inflection <= cap");
+  }
+
+  if (
+    collateralToken === ethers.AddressZero ||
+    dataProvider === ethers.AddressZero
+  ) {
+    throw new Error("collateralToken/dataProvider cannot be zero address");
+  }
+
+  if (capacity.gt(0)) {
+    if (capacity.lt(collateralAmount)) {
+      throw new Error("Capacity cannot be smaller than collateral amount");
+    }
+  }
+
+  if (decimals > 18) {
+    throw new Error("Collateral token cannot have more than 18 decimals");
+  }
+
+  if (decimals < 3) {
+    throw new Error("Collateral token cannot have less than 3 decimals");
+  }
+
+  if (balance.lt(collateralAmount)) {
+    throw new Error("Insufficient collateral tokens in wallet");
+  }
+};
 
 async function main() {
-  // Set network, collateral token and data provider address
+  // INPUT: network
   const network = "goerli";
+
+  // INPUT: collateral token symbol
   const collateralTokenSymbol = "dUSD";
 
-  const erc20CollateralTokenAddress =
+  const collateralTokenAddress =
     collateralTokens[network][collateralTokenSymbol];
   const dataProviderAddress = divaTellorOracleAddresses[network];
 
-  // Get signers
-  const [acc1] = await ethers.getSigners();
-  const user = acc1;
-  console.log("Pool creator address: " + user.address);
+  // Get signer of pool creator
+  const [poolCreator] = await ethers.getSigners();
+  console.log("Pool creator address: " + poolCreator.address);
 
   // Connect to ERC20 token that will be used as collateral when creating a contingent pool
-  const erc20Contract = await ethers.getContractAt(
+  const collateralTokenContract = await ethers.getContractAt(
     ERC20_ABI,
-    erc20CollateralTokenAddress
+    collateralTokenAddress
   );
-  const decimals = await erc20Contract.decimals();
-  console.log("ERC20 collateral token address: " + erc20CollateralTokenAddress);
+  console.log("Collateral token address: " + collateralTokenContract.address);
+
+  // Get decimals of collateral token
+  const decimals = await collateralTokenContract.decimals();
   console.log("Collateral token decimals: " + decimals);
 
   // INPUTS for `createContingentPool` function
@@ -45,73 +96,54 @@ async function main() {
   const cap = parseEther("45000");
   const gradient = parseUnits("0.7");
   const collateralAmount = parseUnits("100", decimals);
-  const collateralToken = erc20CollateralTokenAddress;
+  const collateralToken = collateralTokenAddress;
   const dataProvider = dataProviderAddress;
   const capacity = parseUnits("200", decimals);
-  const longRecipient = user.address;
-  const shortRecipient = user.address;
+  const longRecipient = poolCreator.address;
+  const shortRecipient = poolCreator.address;
   const permissionedERC721Token = ethers.constants.AddressZero;
 
-  // Input checks
-  if (referenceAsset.length === 0) {
-    console.log("Reference asset cannot be an empty string");
-    return;
-  }
+  // Get collateral token balance of pool creator
+  const balance = await collateralTokenContract.balanceOf(poolCreator.address);
+  console.log(
+    "Collateral token balance of pool creator: " +
+      formatUnits(balance, decimals)
+  );
 
-  if (!(floor.lte(inflection) && inflection.lte(cap))) {
-    console.log("Ensure that floor <= inflection <= cap");
-    return;
-  }
-
-  if (
-    collateralToken === ethers.AddressZero ||
-    dataProvider === ethers.AddressZero
-  ) {
-    console.log("collateralToken/dataProvider cannot be zero address");
-    return;
-  }
-
-  if (capacity.gt(0)) {
-    if (capacity.lt(collateralAmount)) {
-      console.log("Capacity cannot be smaller than collateral amount");
-      return;
-    }
-  }
-
-  if (decimals > 18) {
-    console.log("Collateral token cannot have more than 18 decimals");
-    return;
-  }
-
-  if (decimals < 3) {
-    console.log("Collateral token cannot have less than 3 decimals");
-    return;
-  }
-
-  // Check user's ERC20 token balance
-  const balance = await erc20Contract.balanceOf(user.address);
-  console.log("ERC20 token balance: " + formatUnits(balance, decimals));
-  if (balance.lt(collateralAmount)) {
-    throw "Insufficient collateral tokens in wallet";
-  }
+  // Check conditions
+  checkConditions(
+    referenceAsset,
+    floor,
+    inflection,
+    cap,
+    collateralAmount,
+    collateralToken,
+    dataProvider,
+    capacity,
+    decimals,
+    balance
+  );
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);
   console.log("DIVA address: ", diva.address);
 
   // Set allowance for DIVA contract
-  const approveTx = await erc20Contract
-    .connect(user)
+  const approveTx = await collateralTokenContract
+    .connect(poolCreator)
     .approve(diva.address, collateralAmount);
   await approveTx.wait();
 
   // Check that allowance was set
-  const allowance = await erc20Contract.allowance(user.address, diva.address);
+  const allowance = await collateralTokenContract.allowance(
+    poolCreator.address,
+    diva.address
+  );
   console.log("Approved amount: " + formatUnits(await allowance, decimals));
 
   // Create contingent pool
   const tx = await diva
-    .connect(user)
+    .connect(poolCreator)
     .createContingentPool([
       referenceAsset,
       expiryTime,
@@ -131,7 +163,7 @@ async function main() {
 
   // Get pool Id
   const poolId = await diva.getLatestPoolId();
-  console.log("poolId of new pool created: " + poolId);
+  console.log("Pool id of new pool created: " + poolId);
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
