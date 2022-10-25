@@ -187,6 +187,7 @@ contract DIVAOracleTellor is
         return _poolIdToTippingTokens[_poolId];
     }
 
+    // QUESTION does it make sense to rename this function to getTip?
     function getTips(uint256 _poolId, address _tippingToken)
         external
         view

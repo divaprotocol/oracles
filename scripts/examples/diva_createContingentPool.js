@@ -4,7 +4,7 @@
  */
 
 const { ethers } = require("hardhat");
-const { parseEther, parseUnits, formatUnits } = require("@ethersproject/units");
+const { parseUnits, formatUnits } = require("@ethersproject/units");
 
 const ERC20_ABI = require("../../contracts/abi/ERC20.json");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
@@ -16,6 +16,8 @@ const {
 } = require("../../utils/constants");
 const { getExpiryInSeconds } = require("../../utils");
 
+// TODO Align with the script in diva-contracts repo
+
 const checkConditions = (
   referenceAsset,
   floor,
@@ -25,8 +27,7 @@ const checkConditions = (
   collateralToken,
   dataProvider,
   capacity,
-  decimals,
-  balance
+  decimals
 ) => {
   if (referenceAsset.length === 0) {
     throw new Error("Reference asset cannot be an empty string");
@@ -91,9 +92,9 @@ async function main() {
   // INPUTS for `createContingentPool` function
   const referenceAsset = "BTC/USD"; // "BTC/USD"
   const expiryTime = getExpiryInSeconds(100); // 100 means expiry in 100 seconds from now
-  const floor = parseEther("20000");
-  const inflection = parseEther("20000");
-  const cap = parseEther("45000");
+  const floor = parseUnits("20000");
+  const inflection = parseUnits("20000");
+  const cap = parseUnits("45000");
   const gradient = parseUnits("0.7");
   const collateralAmount = parseUnits("100", decimals);
   const collateralToken = collateralTokenAddress;

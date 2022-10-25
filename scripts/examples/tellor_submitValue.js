@@ -1,6 +1,7 @@
 /**
- * Script to submit a value to the tellor playground. Make sure you run this script after the pool expired.
- * Note that one address can only submit one value. It will fail if you try to submit a value with the same address again.
+ * Script to submit a value to the Tellor playground. Run this script AFTER the pool expired.
+ * Note that one address can only submit one value. It will fail if you try to submit a value
+ * with the same address multiple times.
  * Run: `yarn tellor:submitValue`
  */
 
@@ -29,7 +30,7 @@ const checkConditions = (
   divaOracleTellorAddress,
   poolExpiryTime
 ) => {
-  // Check that the DIVA Tellor oracle is the data provider
+  // Check that the DIVA Tellor oracle is the data provider for the selected pool
   if (poolDataProvider != divaOracleTellorAddress) {
     throw new Error("Data provider is not DIVAOracleTellor address");
   }
@@ -41,7 +42,7 @@ const checkConditions = (
   }
 };
 
-const estimateRewards = async (
+const getReward = async (
   divaOracleTellor,
   poolId,
   poolParams,
@@ -93,25 +94,21 @@ async function main() {
 
   // Get signer of reporter
   const [reporter] = await ethers.getSigners();
-  console.log("Reporter address: " + reporter.address);
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
-  console.log("DIVA address: ", diva.address);
 
   // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
-  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
 
   // Connect to tellor contract
   const tellorPlayground = await ethers.getContractAt(
     TELLOR_PLAYGROUND_ABI,
     tellorPlaygroundAddress
   );
-  console.log("Tellor address: ", tellorPlayground.address);
 
   // Get pool parameters for the specified poolId
   const poolParams = await diva.getPoolParameters(poolId);
@@ -125,12 +122,12 @@ async function main() {
 
   // Get fee params
   const feesParams = await diva.getFees(poolId);
-  // Get tips and estimate fees from DIVA after set final reference value
-  await estimateRewards(divaOracleTellor, poolId, poolParams, feesParams);
+
+  // Get current tips and fees from DIVA for reporting the value
+  await getReward(divaOracleTellor, poolId, poolParams, feesParams);
 
   // Prepare Tellor value submission
   const [queryData, queryId] = getQueryDataAndId(poolId, divaAddress, chainId);
-  console.log("queryId", queryId);
 
   // Prepare values and submit to tellorPlayground
   const finalReferenceValue = parseUnits("25000");
@@ -153,7 +150,15 @@ async function main() {
     tellorDataTimestamp
   );
   const formattedTellorValue = decodeTellorValue(tellorValue);
-  console.log("poolId: ", poolId);
+
+  // Log relevant information
+  console.log("DIVA address: ", diva.address);
+  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
+  console.log("Tellor playground address: ", tellorPlayground.address);
+  console.log("PoolId: ", poolId);
+  console.log("Reporter address: " + reporter.address);
+  console.log("queryId", queryId);
+  console.log("queryData", queryData);
   console.log(
     "tellorDataTimestamp: ",
     tellorDataTimestamp.toString() +
@@ -175,6 +180,7 @@ async function main() {
       formatUnits(formattedTellorValue[1].toString()) +
       ")"
   );
+
 }
 
 main()

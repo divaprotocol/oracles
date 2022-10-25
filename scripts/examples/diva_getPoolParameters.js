@@ -9,6 +9,8 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const { addresses } = require("../../utils/constants");
 
+// TODO Align with the script in diva-contracts repo
+
 async function main() {
   // INPUT: network (check constants.js for available values)
   const network = "goerli";

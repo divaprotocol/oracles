@@ -1,4 +1,5 @@
 /**
+ * Script to get the queryId and queryData which is needed for Tellor's submitValue function.
  * Run `yarn tellor:queryDataExample`
  */
 
@@ -33,7 +34,7 @@ async function main() {
   const queryId = ethers.utils.keccak256(queryData);
 
   // Print values
-  console.log("divaAddress: ", divaAddress);
+  console.log("DIVA address: ", divaAddress);
   console.log("poolId: ", poolId);
   console.log("queryDataArgs: ", queryDataArgs);
   console.log("queryData: ", queryData);
