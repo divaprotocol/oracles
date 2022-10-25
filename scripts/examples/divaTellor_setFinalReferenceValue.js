@@ -1,5 +1,6 @@
 /**
- * Script to set final reference value. Make sure you run this script after submit value on Tellor contract.
+ * Script to set the final reference value. Run this script after a value has been
+ * submitted to the Tellor contract and the minPeriodUndisputed has passed.
  * Run `yarn divaTellor:setFinalReferenceValue`
  */
 
@@ -37,6 +38,7 @@ async function main() {
   await tx.wait();
 
   // Get pool parameters
+  // TODO Extract values from tx receipt rather than calling `getPoolParameters` function. This reduces the number of RPC calls needed.
   const poolParams = await diva.getPoolParameters(poolId);
 
   // Log relevant information
