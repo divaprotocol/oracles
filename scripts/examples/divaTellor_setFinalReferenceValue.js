@@ -25,14 +25,12 @@ async function main() {
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
-  console.log("DIVA address: ", diva.address);
 
   // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
-  console.log("DIVAOracleTellor address: " + divaOracleTellor.address);
 
   // Set final reference value
   const tx = await divaOracleTellor.setFinalReferenceValue(divaAddress, poolId);
@@ -40,12 +38,18 @@ async function main() {
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
-  console.log("Pool id: ", poolId);
+
+  // Log relevant information
+  console.log("DIVA address: ", diva.address);
+  console.log("DIVAOracleTellor address: " + divaOracleTellor.address);
+  console.log("PoolId: ", poolId);
   console.log("Data provider: ", poolParams.dataProvider);
+  console.log("Final reference value: ", status[poolParams.finalReferenceValue]);
   console.log(
     "StatusFinalReferenceValue: ",
     status[poolParams.statusFinalReferenceValue]
   );
+
 }
 
 main()

@@ -8,6 +8,13 @@ const addresses = {
   goerli: "0x55e8bb182E2E808112EE65F5c6358f1a31f2e687", // 25.10.2022
 };
 
+const chainIds = {
+  rinkeby: 4,
+  goerli: 5,
+  polygon: 137,
+  polygon_mumbai: 80001,
+}
+
 const bondFactoryInfo = {
   address: {
     rinkeby: "0x0ae42cF40Fb46A926e2dcCE92b2Fe785d2D1E0A0",
@@ -59,3 +66,4 @@ exports.status = status;
 exports.tellorPlaygroundAddresses = tellorPlaygroundAddresses;
 exports.divaTellorOracleAddresses = divaTellorOracleAddresses;
 exports.collateralTokens = collateralTokens;
+exports.chainIds = chainIds;

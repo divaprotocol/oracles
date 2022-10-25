@@ -8,6 +8,7 @@ const { ethers } = require("hardhat");
 const {
   addresses,
   divaTellorOracleAddresses,
+  chainIds
 } = require("../../utils/constants");
 
 async function main() {
@@ -31,8 +32,10 @@ async function main() {
   const queryId = await divaOracleTellor.getQueryId(poolId, divaAddress);
 
   // Log relevant information
-  console.log("DIVA address: ", divaAddress);
   console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
+  console.log("PoolId: ", poolId);
+  console.log("DIVA address: ", divaAddress);
+  console.log("ChainId: ", chainIds[network]);
   console.log("queryId: ", queryId);
 
 }
