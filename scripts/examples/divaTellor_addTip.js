@@ -1,6 +1,6 @@
 /**
  * Script to add tip. No more tips can be added after the final value has been confirmed
- * (i.e. once `setFinalReferenceValue` is called).
+ * (i.e. once `setFinalReferenceValue` was called).
  * Run `yarn divaTellor:addTip`
  */
 

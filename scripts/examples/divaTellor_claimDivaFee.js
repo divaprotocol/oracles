@@ -1,5 +1,6 @@
 /**
- * Script to claim DIVA fee. Make sure you run this script after set finial reference value.
+ * Script to claim DIVA fee. Run this function after the final value has been confirmed
+ * (i.e. once `setFinalReferenceValue` was called).
  * Run `yarn divaTellor:claimDivaFee`
  */
 
@@ -14,6 +15,8 @@ const {
   divaTellorOracleAddresses,
 } = require("../../utils/constants");
 
+// Check the final value has been set and a fee has been assigned inside DIVA Protocol.
+// Not running the check may result in wasting gas for claiming a zero fee.
 const checkConditions = (reporter) => {
   if (reporter === ethers.constants.AddressZero) {
     throw new Error("Not confirmed pool");
@@ -29,22 +32,18 @@ async function main() {
 
   // INPUT: id of existing pool
   const poolId = 4;
-  console.log("Pool id: ", poolId);
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
-  console.log("DIVA address: ", diva.address);
 
   // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
-  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
 
   // Get reporter
   const reporter = await divaOracleTellor.getReporter(poolId);
-  console.log("Reporter address: ", reporter);
 
   // Check conditions
   checkConditions(reporter);
@@ -61,19 +60,24 @@ async function main() {
   // Get decimals of collateral token
   const decimals = await collateralToken.decimals();
 
-  console.log(
-    "Collateral token balance of reporter before claim DIVA fee: ",
-    formatUnits(await collateralToken.balanceOf(reporter), decimals)
-  );
+  // Get collateral token balance of reporter before claiming the fee
+  const collateralTokenBalanceReporterBefore = formatUnits(await collateralToken.balanceOf(reporter), decimals);
 
   // Claim DIVA fee
   const tx = await divaOracleTellor.claimDIVAFee(poolId, diva.address);
   await tx.wait();
 
-  console.log(
-    "Collateral token balance of reporter after claim DIVA fee: ",
-    formatUnits(await collateralToken.balanceOf(reporter), decimals)
-  );
+  // Get collateral token balance of reporter after claiming the fee
+  const collateralTokenBalanceReporterAfter = formatUnits(await collateralToken.balanceOf(reporter), decimals);
+
+  // Log relevant information
+  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
+  console.log("DIVA address: ", diva.address);
+  console.log("PoolId: ", poolId);
+  console.log("Reporter address: ", reporter);
+  console.log("Collateral token balance of reporter before claim DIVA fee: ", collateralTokenBalanceReporterBefore);
+  console.log("Collateral token balance of reporter after claim DIVA fee: ", collateralTokenBalanceReporterAfter);
+
 }
 
 main()

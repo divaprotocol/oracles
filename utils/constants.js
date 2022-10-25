@@ -5,7 +5,7 @@ const addresses = {
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
   kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101",
   polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B",
-  goerli: "0x41E26a0A0FB621cCF870f930010CCE87Fe95CDe3", // 17.10.2022
+  goerli: "0x55e8bb182E2E808112EE65F5c6358f1a31f2e687", // 25.10.2022
 };
 
 const bondFactoryInfo = {
