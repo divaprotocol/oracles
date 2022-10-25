@@ -3,13 +3,13 @@ const { ethers } = require("hardhat");
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture");
 const { parseUnits } = require("@ethersproject/units");
+const { getLastTimestamp, setNextTimestamp } = require("../utils/utils");
 const {
-  getLastTimestamp,
-  setNextTimestamp,
   ONE_HOUR,
   TEN_MINS,
-} = require("./utils.js");
-const { addresses, tellorPlaygroundAddresses } = require("../utils/constants"); //  DIVA Protocol v1.0.0
+  DIVA_ADDRESS,
+  TELLOR_PLAYGROUND_ADDRESS,
+} = require("../utils/constants"); //  DIVA Protocol v1.0.0
 
 const network = "goerli"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
@@ -71,8 +71,8 @@ describe("DIVAOracleTellor", () => {
 
   let divaOracleTellor;
   let tellorPlayground;
-  let tellorPlaygroundAddress = tellorPlaygroundAddresses[network]; // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
-  let divaAddress = addresses[network];
+  let tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network]; // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
+  let divaAddress = DIVA_ADDRESS[network];
   let referenceAsset = "BTC/USD";
 
   let maxFeeAmountUSD = parseUnits("10");
@@ -109,7 +109,7 @@ describe("DIVAOracleTellor", () => {
             // blockNumber: Choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
             // blockNumber: 10932590, // Rinkeby
             // blockNumber: 12750642, // Ropsten
-            blockNumber: 7786398, // Goerli
+            blockNumber: 7829981, // Goerli
           },
         },
       ],

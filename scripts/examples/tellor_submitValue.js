@@ -12,9 +12,9 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const TELLOR_PLAYGROUND_ABI = require("../../contracts/abi/TellorPlayground.json");
 
 const {
-  addresses,
-  tellorPlaygroundAddresses,
-  divaTellorOracleAddresses,
+  DIVA_ADDRESS,
+  TELLOR_PLAYGROUND_ADDRESS,
+  DIVA_TELLOR_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 const {
@@ -22,7 +22,7 @@ const {
   encodeToOracleValue,
   decodeTellorValue,
   getQueryDataAndId,
-} = require("../../utils");
+} = require("../../utils/utils");
 
 const checkConditions = (
   poolDataProvider,
@@ -76,9 +76,9 @@ async function main() {
   // INPUT: network
   const network = "goerli";
 
-  const divaAddress = addresses[network];
-  const tellorPlaygroundAddress = tellorPlaygroundAddresses[network];
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+  const divaAddress = DIVA_ADDRESS[network];
+  const tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
   const poolId = 4;

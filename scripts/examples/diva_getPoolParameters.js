@@ -8,14 +8,14 @@ const { formatUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
-const { addresses, status } = require("../../utils/constants");
+const { DIVA_ADDRESS, STATUS } = require("../../utils/constants");
 
 async function main() {
   // INPUT: network (should be the same as in diva::getPoolParameters command)
   const network = "goerli";
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
 
   // Get latest pool id
   const poolId = await diva.getLatestPoolId();
@@ -66,7 +66,7 @@ async function main() {
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(
     "Status final reference value: ",
-    status[Number(poolParams.statusFinalReferenceValue)]
+    STATUS[poolParams.statusFinalReferenceValue]
   );
   console.log("Reference asset: ", poolParams.referenceAsset);
 }

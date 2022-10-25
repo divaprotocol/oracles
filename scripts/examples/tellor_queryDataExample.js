@@ -5,7 +5,7 @@
 
 const { ethers } = require("hardhat");
 
-const { addresses } = require("../../utils/constants");
+const { DIVA_ADDRESS } = require("../../utils/constants");
 
 async function main() {
   // INPUT: network
@@ -17,7 +17,7 @@ async function main() {
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;
 
-  const divaAddress = addresses[network];
+  const divaAddress = DIVA_ADDRESS[network];
 
   // Load ABI code from ethers library
   const abiCoder = new ethers.utils.AbiCoder();

@@ -6,9 +6,8 @@
 const { ethers } = require("hardhat");
 
 const {
-  addresses,
-  divaTellorOracleAddresses,
-  chainIds
+  DIVA_ADDRESS,
+  DIVA_TELLOR_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 async function main() {
@@ -18,9 +17,12 @@ async function main() {
   // INPUT: id of pool
   const poolId = 1150;
 
-  const divaAddress = addresses[network];
+  // Get chain id
+  const chainId = (await ethers.provider.getNetwork()).chainId;
 
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+  const divaAddress = DIVA_ADDRESS[network];
+
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
   // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
@@ -35,9 +37,8 @@ async function main() {
   console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
   console.log("PoolId: ", poolId);
   console.log("DIVA address: ", divaAddress);
-  console.log("ChainId: ", chainIds[network]);
+  console.log("ChainId: ", chainId);
   console.log("queryId: ", queryId);
-
 }
 
 main()

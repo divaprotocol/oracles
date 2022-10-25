@@ -8,8 +8,8 @@ const { ethers } = require("hardhat");
 const { parseUnits, formatUnits } = require("@ethersproject/units");
 
 const {
-  collateralTokens,
-  divaTellorOracleAddresses,
+  COLLATERAL_TOKENS,
+  DIVA_TELLOR_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
@@ -29,8 +29,8 @@ async function main() {
   // INPUT: tipping token symbol
   const tippingTokenSymbol = "dUSD";
 
-  const tippingTokenAddress = collateralTokens[network][tippingTokenSymbol];
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+  const tippingTokenAddress = COLLATERAL_TOKENS[network][tippingTokenSymbol];
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
   const poolId = 5;

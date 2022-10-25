@@ -4,7 +4,7 @@
  */
 
 const { ethers } = require("hardhat");
-const { divaTellorOracleAddresses } = require("../../utils/constants");
+const { DIVA_TELLOR_ORACLE_ADDRESS } = require("../../utils/constants");
 
 const checkConditions = (newMinPeriodUndisputed, signerOfOwner, owner) => {
   if (newMinPeriodUndisputed < 3600 || newMinPeriodUndisputed > 64800) {
@@ -25,7 +25,7 @@ async function main() {
   // INPUT: new minPeriodUndisputed value
   const newMinPeriodUndisputed = 3600; // 3600 seconds
 
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
   // Get signer of owner
   const [signerOfOwner] = await ethers.getSigners();

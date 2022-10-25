@@ -9,11 +9,11 @@ const { parseUnits } = require("@ethersproject/units");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const {
-  addresses,
-  collateralTokens,
-  divaTellorOracleAddresses,
+  DIVA_ADDRESS,
+  COLLATERAL_TOKENS,
+  DIVA_TELLOR_ORACLE_ADDRESS,
 } = require("../../utils/constants");
-const { getExpiryInSeconds } = require("../../utils");
+const { getExpiryInSeconds } = require("../../utils/utils");
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
@@ -98,8 +98,8 @@ async function main() {
   const collateralTokenSymbol = "dUSD";
 
   const collateralTokenAddress =
-    collateralTokens[network][collateralTokenSymbol];
-  const dataProviderAddress = divaTellorOracleAddresses[network];
+    COLLATERAL_TOKENS[network][collateralTokenSymbol];
+  const dataProviderAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
   // Get signer of pool creator
   const [creator] = await ethers.getSigners();
@@ -148,7 +148,7 @@ async function main() {
   );
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
 
   // Get creator's current allowance
   let allowance = await erc20Contract.allowance(creator.address, diva.address);

@@ -10,8 +10,8 @@ const { formatUnits } = require("@ethersproject/units");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const {
-  addresses,
-  divaTellorOracleAddresses,
+  DIVA_ADDRESS,
+  DIVA_TELLOR_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 // Check the final value has been set and a fee has been assigned inside DIVA Protocol.
@@ -26,8 +26,8 @@ async function main() {
   // INPUT: network
   const network = "goerli";
 
-  const divaAddress = addresses[network];
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+  const divaAddress = DIVA_ADDRESS[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
   // INPUT: id of existing pool
   const poolId = 4;

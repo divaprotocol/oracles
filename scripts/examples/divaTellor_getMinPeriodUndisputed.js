@@ -7,13 +7,13 @@
 
 const { ethers } = require("hardhat");
 
-const { divaTellorOracleAddresses } = require("../../utils/constants");
+const { DIVA_TELLOR_ORACLE_ADDRESS } = require("../../utils/constants");
 
 async function main() {
   // INPUT: network
   const network = "goerli";
 
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
   // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
@@ -27,7 +27,6 @@ async function main() {
   // Log relevant information
   console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
   console.log("current minPeriodUndisputed: ", minPeriodUndisputed);
-
 }
 
 main()

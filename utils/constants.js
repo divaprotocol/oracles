@@ -1,5 +1,5 @@
 // DIVA contract addresses on different networks (v1.0.0)
-const addresses = {
+const DIVA_ADDRESS = {
   rinkeby: "0x4F7ad4674e67aFc2169984f194d7a5e77926327C",
   ropsten: "0x67965e27cC17aa8073Da4cB19236bDddAD285E91",
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
@@ -8,14 +8,7 @@ const addresses = {
   goerli: "0x55e8bb182E2E808112EE65F5c6358f1a31f2e687", // 25.10.2022
 };
 
-const chainIds = {
-  rinkeby: 4,
-  goerli: 5,
-  polygon: 137,
-  polygon_mumbai: 80001,
-}
-
-const bondFactoryInfo = {
+const BOND_FACTORY = {
   address: {
     rinkeby: "0x0ae42cF40Fb46A926e2dcCE92b2Fe785d2D1E0A0",
     ropsten: "0x74Ef0622280dfae28F9513e9173CaFF711C47eF4",
@@ -34,36 +27,40 @@ const bondFactoryInfo = {
   },
 };
 
-const tellorPlaygroundAddresses = {
+const TELLOR_PLAYGROUND_ADDRESS = {
   ropsten: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A", // new used for testnet
   kovan: "0x320f09D9f92Cfa0e9C272b179e530634D873aeFa",
   rinkeby: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A",
   goerli: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A",
 };
 
-const divaTellorOracleAddresses = {
+const DIVA_TELLOR_ORACLE_ADDRESS = {
   ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
   goerli: "0xF726D395531Ae7082D53c10fe95B254F5ccABfda", // Deployed on 24 Oct 2022
 };
 
-const collateralTokens = {
+const COLLATERAL_TOKENS = {
   goerli: {
     dUSD: "0xFA158C9B780A4213f3201Ae74Cca013712c8538d",
   },
 };
 
 // Status mapping
-const status = {
+const STATUS = {
   0: "Open",
   1: "Submitted",
   2: "Challenged",
   3: "Confirmed",
 };
 
-exports.addresses = addresses;
-exports.bondFactoryInfo = bondFactoryInfo;
-exports.status = status;
-exports.tellorPlaygroundAddresses = tellorPlaygroundAddresses;
-exports.divaTellorOracleAddresses = divaTellorOracleAddresses;
-exports.collateralTokens = collateralTokens;
-exports.chainIds = chainIds;
+const ONE_HOUR = 3600;
+const TEN_MINS = 600;
+
+exports.DIVA_ADDRESS = DIVA_ADDRESS;
+exports.BOND_FACTORY = BOND_FACTORY;
+exports.STATUS = STATUS;
+exports.TELLOR_PLAYGROUND_ADDRESS = TELLOR_PLAYGROUND_ADDRESS;
+exports.DIVA_TELLOR_ORACLE_ADDRESS = DIVA_TELLOR_ORACLE_ADDRESS;
+exports.COLLATERAL_TOKENS = COLLATERAL_TOKENS;
+exports.ONE_HOUR = ONE_HOUR;
+exports.TEN_MINS = TEN_MINS;

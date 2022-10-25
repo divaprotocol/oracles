@@ -9,17 +9,17 @@ const { ethers } = require("hardhat");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const {
-  status,
-  addresses,
-  divaTellorOracleAddresses,
+  STATUS,
+  DIVA_ADDRESS,
+  DIVA_TELLOR_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 async function main() {
   // INPUT: network
   const network = "goerli";
 
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network];
-  const divaAddress = addresses[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
+  const divaAddress = DIVA_ADDRESS[network];
 
   // INPUT: id of existing pool
   const poolId = 4;
@@ -51,12 +51,12 @@ async function main() {
   console.log("PoolId: ", poolId);
   console.log(
     "Final reference value: ",
-    status[finalReferenceValueSetEvent.finalValue]
+    STATUS[finalReferenceValueSetEvent.finalValue]
   );
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(
     "StatusFinalReferenceValue: ",
-    status[poolParams.statusFinalReferenceValue]
+    STATUS[poolParams.statusFinalReferenceValue]
   );
 }
 
