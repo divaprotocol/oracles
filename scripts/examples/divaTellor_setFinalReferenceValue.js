@@ -35,23 +35,29 @@ async function main() {
 
   // Set final reference value
   const tx = await divaOracleTellor.setFinalReferenceValue(divaAddress, poolId);
-  await tx.wait();
+  const receipt = await tx.wait();
+
+  // Get newly created pool Id from event
+  const finalReferenceValueSetEvent = receipt.events.find(
+    (item) => item.event === "FinalReferenceValueSet"
+  );
 
   // Get pool parameters
-  // TODO Extract values from tx receipt rather than calling `getPoolParameters` function. This reduces the number of RPC calls needed.
   const poolParams = await diva.getPoolParameters(poolId);
 
   // Log relevant information
   console.log("DIVA address: ", diva.address);
   console.log("DIVAOracleTellor address: " + divaOracleTellor.address);
   console.log("PoolId: ", poolId);
+  console.log(
+    "Final reference value: ",
+    status[finalReferenceValueSetEvent.finalValue]
+  );
   console.log("Data provider: ", poolParams.dataProvider);
-  console.log("Final reference value: ", status[poolParams.finalReferenceValue]);
   console.log(
     "StatusFinalReferenceValue: ",
     status[poolParams.statusFinalReferenceValue]
   );
-
 }
 
 main()

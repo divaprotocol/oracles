@@ -3,12 +3,20 @@
  * Run `yarn divaTellor:setMinPeriodUndisputed`
  */
 
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
 const { divaTellorOracleAddresses } = require("../../utils/constants");
 
-// TODO Add checkConditions function to ensure that the new period is within the pre-defined range
-// TODO Add check that user is contract owner. If not, revert
-// TODO Do we need hre here? Saw you replaced it in diva-contracts repo
+const checkConditions = (newMinPeriodUndisputed, signerOfOwner, owner) => {
+  if (newMinPeriodUndisputed < 3600 || newMinPeriodUndisputed > 64800) {
+    throw new Error("Out of range");
+  }
+
+  if (signerOfOwner.address !== owner) {
+    throw new Error(
+      "Only owner of contract can update minimum period undisputed parameter"
+    );
+  }
+};
 
 async function main() {
   // INPUT: network
@@ -19,12 +27,11 @@ async function main() {
 
   const divaOracleTellorAddress = divaTellorOracleAddresses[network];
 
-  // Get signers
-  const [acc1] = await ethers.getSigners();
-  const user = acc1;
+  // Get signer of owner
+  const [signerOfOwner] = await ethers.getSigners();
 
   // Connect to DIVAOracleTellor contract
-  const divaOracleTellor = await hre.ethers.getContractAt(
+  const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
@@ -32,13 +39,15 @@ async function main() {
   // Get current contract owner (only owner can change the minPeriodUndisputed)
   const owner = await divaOracleTellor.owner();
 
+  checkConditions(newMinPeriodUndisputed, signerOfOwner, owner);
+
   // Get current minPeriodUndisputed
   const _currentMinPeriodUndisputed =
     await divaOracleTellor.getMinPeriodUndisputed();
 
   // Set new minPeriodUndisputed
   const tx = await divaOracleTellor
-    .connect(user)
+    .connect(signerOfOwner)
     .setMinPeriodUndisputed(newMinPeriodUndisputed);
   await tx.wait();
 
@@ -51,7 +60,6 @@ async function main() {
   console.log("Contract owner: ", owner);
   console.log("Old minPeriodUndisputed: ", _currentMinPeriodUndisputed);
   console.log("New minPeriodUndisputed: ", _newMinPeriodUndisputed);
-
 }
 
 main()

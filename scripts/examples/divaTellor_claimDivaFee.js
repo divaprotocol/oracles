@@ -7,7 +7,6 @@
 const { ethers } = require("hardhat");
 const { formatUnits } = require("@ethersproject/units");
 
-const ERC20_ABI = require("../../contracts/abi/ERC20.json");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const {
@@ -53,7 +52,7 @@ async function main() {
 
   // Connect to collateral token contract
   const collateralToken = await ethers.getContractAt(
-    ERC20_ABI,
+    "MockERC20",
     poolParams.collateralToken
   );
 
@@ -61,20 +60,30 @@ async function main() {
   const decimals = await collateralToken.decimals();
 
   // Get collateral token balance of reporter before claiming the fee
-  const collateralTokenBalanceReporterBefore = formatUnits(await collateralToken.balanceOf(reporter), decimals);
+  const collateralTokenBalanceReporterBefore = formatUnits(
+    await collateralToken.balanceOf(reporter),
+    decimals
+  );
 
   // Get fee claim before claiming the fee
-  const DIVAFeeBefore = formatUnits(await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress));
+  const DIVAFeeBefore = formatUnits(
+    await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
+  );
 
   // Claim DIVA fee
   const tx = await divaOracleTellor.claimDIVAFee(poolId, diva.address);
   await tx.wait();
 
   // Get collateral token balance of reporter after claiming the fee
-  const collateralTokenBalanceReporterAfter = formatUnits(await collateralToken.balanceOf(reporter), decimals);
+  const collateralTokenBalanceReporterAfter = formatUnits(
+    await collateralToken.balanceOf(reporter),
+    decimals
+  );
 
   // Get fee claim after claiming the fee
-  const DIVAFeeAfter = formatUnits(await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress));
+  const DIVAFeeAfter = formatUnits(
+    await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
+  );
 
   // Log relevant information
   console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
@@ -83,9 +92,14 @@ async function main() {
   console.log("Reporter address: ", reporter);
   console.log("Get fee claim BEFORE claiming DIVA fee: ", DIVAFeeBefore);
   console.log("Get fee claim AFTER claiming DIVA fee: ", DIVAFeeAfter);
-  console.log("Collateral token balance of reporter BEFORE claim DIVA fee: ", collateralTokenBalanceReporterBefore);
-  console.log("Collateral token balance of reporter AFTER claim DIVA fee: ", collateralTokenBalanceReporterAfter);
-
+  console.log(
+    "Collateral token balance of reporter BEFORE claim DIVA fee: ",
+    collateralTokenBalanceReporterBefore
+  );
+  console.log(
+    "Collateral token balance of reporter AFTER claim DIVA fee: ",
+    collateralTokenBalanceReporterAfter
+  );
 }
 
 main()

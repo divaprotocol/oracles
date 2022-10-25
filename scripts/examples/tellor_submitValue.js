@@ -8,7 +8,6 @@
 const { ethers } = require("hardhat");
 const { parseUnits, formatUnits } = require("@ethersproject/units");
 
-const ERC20_ABI = require("../../contracts/abi/ERC20.json");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const TELLOR_PLAYGROUND_ABI = require("../../contracts/abi/TellorPlayground.json");
 
@@ -42,12 +41,7 @@ const checkConditions = (
   }
 };
 
-const getReward = async (
-  divaOracleTellor,
-  poolId,
-  poolParams,
-  feesParams
-) => {
+const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
   // Get tips
   const tippingTokens = await divaOracleTellor.getTippingTokens(poolId);
   if (tippingTokens.length) {
@@ -64,7 +58,7 @@ const getReward = async (
   }
 
   const collateralTokenContract = await ethers.getContractAt(
-    ERC20_ABI,
+    "MockERC20",
     poolParams.collateralToken
   );
   const decimals = await collateralTokenContract.decimals();
@@ -180,7 +174,6 @@ async function main() {
       formatUnits(formattedTellorValue[1].toString()) +
       ")"
   );
-
 }
 
 main()

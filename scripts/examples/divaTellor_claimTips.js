@@ -6,7 +6,6 @@
 const { ethers } = require("hardhat");
 const { formatUnits } = require("@ethersproject/units");
 
-const ERC20_ABI = require("../../contracts/abi/ERC20.json");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const {
@@ -56,7 +55,7 @@ async function main() {
   // Get contracts of tipping tokens
   const tippingTokenContracts = await Promise.all(
     tippingTokens.map(async (tippingToken) => {
-      return await ethers.getContractAt(ERC20_ABI, tippingToken);
+      return await ethers.getContractAt("MockERC20", tippingToken);
     })
   );
 
@@ -138,7 +137,6 @@ async function main() {
   // Log relevant information
   console.log("DIVA address: ", diva.address);
   console.log("PoolId: ", poolId);
-
 }
 
 main()

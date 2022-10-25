@@ -4,28 +4,71 @@
  */
 
 const { ethers } = require("hardhat");
+const { formatUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
-const { addresses } = require("../../utils/constants");
-
-// TODO Align with the script in diva-contracts repo
+const { addresses, status } = require("../../utils/constants");
 
 async function main() {
-  // INPUT: network (check constants.js for available values)
+  // INPUT: network (should be the same as in diva::getPoolParameters command)
   const network = "goerli";
 
-  // INPUT: id of existing pool
-  const poolId = 1;
-  console.log("Pool id: ", poolId);
-
-  // Connect to DIVA contract
+  // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);
-  console.log("DIVA address: ", diva.address);
+
+  // Get latest pool id
+  const poolId = await diva.getLatestPoolId();
+
+  if (poolId.eq(0)) {
+    throw new Error("No pool created on DIVA contract");
+  }
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
-  console.log(poolParams);
+
+  // Get collateral token decimals to perform conversions from integer to decimal. Note that position tokens have the same number of decimals.
+  const erc20Contract = await ethers.getContractAt(
+    "MockERC20",
+    poolParams.collateralToken
+  );
+  const decimals = await erc20Contract.decimals();
+
+  // Log relevant info
+  console.log("DIVA address: ", diva.address);
+  console.log("Pool id: ", poolId.toNumber());
+  console.log("Floor: ", formatUnits(poolParams.floor));
+  console.log("Inflection: ", formatUnits(poolParams.inflection));
+  console.log("Cap: ", formatUnits(poolParams.cap));
+  console.log("Gradient: ", formatUnits(poolParams.gradient, decimals));
+  console.log(
+    "Pool collateral balance: ",
+    formatUnits(poolParams.collateralBalance, decimals)
+  );
+  console.log(
+    "Final referencen value: ",
+    formatUnits(poolParams.finalReferenceValue)
+  );
+  console.log("Capacity: ", formatUnits(poolParams.capacity, decimals));
+  console.log("Status timestamp: ", poolParams.statusTimestamp.toString());
+  console.log("Short token: ", poolParams.shortToken);
+  console.log(
+    "Payout short token: ",
+    formatUnits(poolParams.payoutShort, decimals)
+  );
+  console.log("Long token: ", poolParams.longToken);
+  console.log(
+    "Payout long token: ",
+    formatUnits(poolParams.payoutLong, decimals)
+  );
+  console.log("Collateral token: ", poolParams.collateralToken);
+  console.log("Expiry time: ", poolParams.expiryTime.toString());
+  console.log("Data provider: ", poolParams.dataProvider);
+  console.log(
+    "Status final reference value: ",
+    status[Number(poolParams.statusFinalReferenceValue)]
+  );
+  console.log("Reference asset: ", poolParams.referenceAsset);
 }
 
 main()

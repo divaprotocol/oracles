@@ -4,9 +4,8 @@
  */
 
 const { ethers } = require("hardhat");
-const { parseUnits, formatUnits } = require("@ethersproject/units");
+const { parseUnits } = require("@ethersproject/units");
 
-const ERC20_ABI = require("../../contracts/abi/ERC20.json");
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const {
@@ -16,19 +15,32 @@ const {
 } = require("../../utils/constants");
 const { getExpiryInSeconds } = require("../../utils");
 
-// TODO Align with the script in diva-contracts repo
-
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts.
 const checkConditions = (
   referenceAsset,
+  expiryTime,
   floor,
   inflection,
   cap,
+  gradient,
   collateralAmount,
   collateralToken,
   dataProvider,
   capacity,
-  decimals
+  longRecipient,
+  shortRecipient,
+  decimals,
+  userBalance
 ) => {
+  // Get current time (proxy for block timestamp)
+  const now = Math.floor(Date.now() / 1000);
+
+  if (Number(expiryTime) <= now) {
+    throw new Error("Expiry time has to be in the future");
+  }
+
   if (referenceAsset.length === 0) {
     throw new Error("Reference asset cannot be an empty string");
   }
@@ -38,16 +50,22 @@ const checkConditions = (
   }
 
   if (
-    collateralToken === ethers.AddressZero ||
-    dataProvider === ethers.AddressZero
+    collateralToken === ethers.constants.AddressZero ||
+    dataProvider === ethers.constants.AddressZero
   ) {
     throw new Error("collateralToken/dataProvider cannot be zero address");
   }
 
-  if (capacity.gt(0)) {
-    if (capacity.lt(collateralAmount)) {
-      throw new Error("Capacity cannot be smaller than collateral amount");
-    }
+  if (gradient.gt(parseUnits("1", decimals))) {
+    throw new Error("Gradient cannot be greater than 1e18");
+  }
+
+  if (collateralAmount.lt(parseUnits("1", 6))) {
+    throw new Error("collateralAmount cannot be smaller than 1e6");
+  }
+
+  if (capacity.lt(collateralAmount)) {
+    throw new Error("Capacity cannot be smaller than collateral amount");
   }
 
   if (decimals > 18) {
@@ -58,13 +76,22 @@ const checkConditions = (
     throw new Error("Collateral token cannot have less than 3 decimals");
   }
 
-  if (balance.lt(collateralAmount)) {
+  if (
+    longRecipient === ethers.constants.AddressZero &&
+    shortRecipient === ethers.constants.AddressZero
+  ) {
+    throw new Error(
+      "Long and short token recipient cannot be both zero address"
+    );
+  }
+
+  if (userBalance.lt(collateralAmount)) {
     throw new Error("Insufficient collateral tokens in wallet");
   }
 };
 
 async function main() {
-  // INPUT: network
+  // INPUT: network should be the same as in diva::getPoolParameters command)
   const network = "goerli";
 
   // INPUT: collateral token symbol
@@ -75,76 +102,71 @@ async function main() {
   const dataProviderAddress = divaTellorOracleAddresses[network];
 
   // Get signer of pool creator
-  const [poolCreator] = await ethers.getSigners();
-  console.log("Pool creator address: " + poolCreator.address);
+  const [creator] = await ethers.getSigners();
 
   // Connect to ERC20 token that will be used as collateral when creating a contingent pool
-  const collateralTokenContract = await ethers.getContractAt(
-    ERC20_ABI,
+  const erc20Contract = await ethers.getContractAt(
+    "MockERC20",
     collateralTokenAddress
   );
-  console.log("Collateral token address: " + collateralTokenContract.address);
+  const decimals = await erc20Contract.decimals();
 
-  // Get decimals of collateral token
-  const decimals = await collateralTokenContract.decimals();
-  console.log("Collateral token decimals: " + decimals);
+  // Get creator's ERC20 token balance
+  const balance = await erc20Contract.balanceOf(creator.address);
 
-  // INPUTS for `createContingentPool` function
-  const referenceAsset = "BTC/USD"; // "BTC/USD"
+  // Input arguments for `createContingentPool` function
+  const referenceAsset = "ETH/USD";
   const expiryTime = getExpiryInSeconds(100); // 100 means expiry in 100 seconds from now
-  const floor = parseUnits("20000");
-  const inflection = parseUnits("20000");
-  const cap = parseUnits("45000");
-  const gradient = parseUnits("0.7");
+  const floor = parseUnits("2000");
+  const inflection = parseUnits("2500");
+  const cap = parseUnits("3000");
+  const gradient = parseUnits("0.5", decimals);
   const collateralAmount = parseUnits("100", decimals);
   const collateralToken = collateralTokenAddress;
   const dataProvider = dataProviderAddress;
   const capacity = parseUnits("200", decimals);
-  const longRecipient = poolCreator.address;
-  const shortRecipient = poolCreator.address;
+  const longRecipient = creator.address;
+  const shortRecipient = creator.address;
   const permissionedERC721Token = ethers.constants.AddressZero;
 
-  // Get collateral token balance of pool creator
-  const balance = await collateralTokenContract.balanceOf(poolCreator.address);
-  console.log(
-    "Collateral token balance of pool creator: " +
-      formatUnits(balance, decimals)
-  );
-
-  // Check conditions
+  // Check validity of input parameters
   checkConditions(
     referenceAsset,
+    expiryTime,
     floor,
     inflection,
     cap,
+    gradient,
     collateralAmount,
     collateralToken,
     dataProvider,
     capacity,
+    longRecipient,
+    shortRecipient,
     decimals,
     balance
   );
 
-  // Connect to DIVA contract
+  // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);
-  console.log("DIVA address: ", diva.address);
 
-  // Set allowance for DIVA contract
-  const approveTx = await collateralTokenContract
-    .connect(poolCreator)
-    .approve(diva.address, collateralAmount);
-  await approveTx.wait();
+  // Get creator's current allowance
+  let allowance = await erc20Contract.allowance(creator.address, diva.address);
 
-  // Check that allowance was set
-  const allowance = await collateralTokenContract.allowance(
-    poolCreator.address,
-    diva.address
-  );
-  console.log("Approved amount: " + formatUnits(await allowance, decimals));
+  if (allowance.lt(collateralAmount)) {
+    // Increase allowance for DIVA contract
+    const approveTx = await erc20Contract
+      .connect(creator)
+      .approve(diva.address, collateralAmount);
+    await approveTx.wait();
+
+    // Get creator's new allowance
+    allowance = await erc20Contract.allowance(creator.address, diva.address);
+  }
 
   // Create contingent pool
   const tx = await diva
-    .connect(poolCreator)
+    .connect(creator)
     .createContingentPool([
       referenceAsset,
       expiryTime,
@@ -160,19 +182,32 @@ async function main() {
       shortRecipient,
       permissionedERC721Token,
     ]);
-  await tx.wait();
+  const receipt = await tx.wait();
 
-  // Get pool Id
-  const poolId = await diva.getLatestPoolId();
-  console.log("Pool id of new pool created: " + poolId);
+  // Get newly created pool Id from event
+  const poolIssuedEvent = receipt.events.find(
+    (item) => item.event === "PoolIssued"
+  );
+  const poolId = poolIssuedEvent.poolId;
 
-  // Get pool parameters
+  // Get pool parameters for newly created pool Id
   const poolParams = await diva.getPoolParameters(poolId);
 
   // Log relevant info
-  console.log("Data provider: " + poolParams.dataProvider);
+  console.log("DIVA address: ", diva.address);
+  console.log("Creator address: ", creator.address);
+  console.log("PoolId of newly created pool: ", poolId.toString());
+  console.log("Pool creator address: ", creator.address);
+  console.log("Long token recipient: ", longRecipient);
+  console.log("Short token recipient: ", shortRecipient);
+  console.log("Long token address: ", poolParams.longToken);
+  console.log("Short token address: ", poolParams.shortToken);
+  console.log("ERC20 collateral token address: ", erc20Contract.address);
+  console.log("Collateral/Position token decimals: ", decimals.toString());
+  console.log("Data provider: ", poolParams.dataProvider);
   console.log(
-    "Expiry time: " + new Date(poolParams.expiryTime * 1000).toLocaleString()
+    "Expiry time: ",
+    new Date(poolParams.expiryTime * 1000).toLocaleString()
   );
 }
 

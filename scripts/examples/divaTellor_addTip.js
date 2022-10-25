@@ -7,8 +7,6 @@
 const { ethers } = require("hardhat");
 const { parseUnits, formatUnits } = require("@ethersproject/units");
 
-const ERC20_ABI = require("../../contracts/abi/ERC20.json");
-
 const {
   collateralTokens,
   divaTellorOracleAddresses,
@@ -48,13 +46,13 @@ async function main() {
 
   // Get reporter
   const reporter = await divaOracleTellor.getReporter(poolId);
-  
+
   // Check conditions
   checkConditions(reporter);
 
   // Connect to tipping token contract
   const tippingTokenContract = await ethers.getContractAt(
-    ERC20_ABI,
+    "MockERC20",
     tippingTokenAddress
   );
 
@@ -74,7 +72,7 @@ async function main() {
   const tipsBefore = formatUnits(
     await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
     decimals
-  )
+  );
 
   // Add tip
   const tx = await divaOracleTellor
@@ -86,7 +84,7 @@ async function main() {
   const tipsAfter = formatUnits(
     await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
     decimals
-  )
+  );
 
   // Log relevant info
   console.log("DivaOracleTellorAddress: " + divaOracleTellor.address);
@@ -94,10 +92,12 @@ async function main() {
   console.log("Tipper: " + tipper.address);
   console.log("Tipping token address: " + tippingTokenContract.address);
   console.log("Tipping token decimals: " + decimals);
-  console.log("Tipping amount (in decimal terms): ", formatUnits(amount, decimals));
+  console.log(
+    "Tipping amount (in decimal terms): ",
+    formatUnits(amount, decimals)
+  );
   console.log("Tips on DIVAOracleTellor contract BEFORE add tip: ", tipsBefore);
   console.log("Tips on DIVAOracleTellor contract AFTER add tip: ", tipsAfter);
-
 }
 
 main()
