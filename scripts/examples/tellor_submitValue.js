@@ -49,7 +49,7 @@ const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
       tippingTokens.map(async (tippingToken) =>
         console.log(
           `Tips for ${tippingToken} is: `,
-          await divaOracleTellor.getTips(poolId, tippingToken)
+          await divaOracleTellor.getTip(poolId, tippingToken)
         )
       )
     );

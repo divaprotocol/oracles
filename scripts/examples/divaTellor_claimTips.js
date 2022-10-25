@@ -71,7 +71,7 @@ async function main() {
   console.log("Tips on DIVAOracleTellor contract before claim tips");
   await Promise.all(
     tippingTokens.map(async (tippingToken, index) => {
-      const tips = await divaOracleTellor.getTips(poolId, tippingToken);
+      const tips = await divaOracleTellor.getTip(poolId, tippingToken);
       console.log(
         `Token address: ${tippingToken} Balance: ${formatUnits(
           tips,
@@ -107,7 +107,7 @@ async function main() {
   console.log("Tips on DIVAOracleTellor contract after claim tips");
   await Promise.all(
     tippingTokens.map(async (tippingToken, index) => {
-      const tips = await divaOracleTellor.getTips(poolId, tippingToken);
+      const tips = await divaOracleTellor.getTip(poolId, tippingToken);
       console.log(
         `Token address: ${tippingToken} Balance: ${formatUnits(
           tips,

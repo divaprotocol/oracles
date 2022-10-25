@@ -70,7 +70,7 @@ async function main() {
 
   // Get tips before add tip
   const tipsBefore = formatUnits(
-    await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
+    await divaOracleTellor.getTip(poolId, tippingTokenContract.address),
     decimals
   );
 
@@ -82,7 +82,7 @@ async function main() {
 
   // Get tips after add tip
   const tipsAfter = formatUnits(
-    await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
+    await divaOracleTellor.getTip(poolId, tippingTokenContract.address),
     decimals
   );
 

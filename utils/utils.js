@@ -1,5 +1,3 @@
-// QUESTION Is index.js the right file name here?
-
 const { ethers } = require("hardhat");
 const { parseEther, parseUnits } = require("@ethersproject/units");
 

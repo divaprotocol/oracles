@@ -215,7 +215,7 @@ interface IDIVAOracleTellor {
      * @param _poolId The unique identifier of the pool.
      * @param _tippingToken Address of tipping token.
      */
-    function getTips(uint256 _poolId, address _tippingToken)
+    function getTip(uint256 _poolId, address _tippingToken)
         external
         view
         returns (uint256);
@@ -232,9 +232,9 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Returns the reporter address. Note that it returns
-     * the zero address if a value has been reported to the Tellor contract 
+     * the zero address if a value has been reported to the Tellor contract
      * but it hasn't been pulled into DIVA Protocol by calling
-     * `setFinalReferenceValue` yet. 
+     * `setFinalReferenceValue` yet.
      * @param _poolId The unique identifier of the pool.
      */
     function getReporter(uint256 _poolId) external view returns (address);
