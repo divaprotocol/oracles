@@ -33,11 +33,9 @@ async function main() {
 
   // INPUT: id of existing pool
   const poolId = 4;
-  console.log("Pool id: ", poolId);
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
-  console.log("DIVA address: ", diva.address);
 
   // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
@@ -136,6 +134,11 @@ async function main() {
       );
     })
   );
+
+  // Log relevant information
+  console.log("DIVA address: ", diva.address);
+  console.log("PoolId: ", poolId);
+
 }
 
 main()

@@ -1,4 +1,7 @@
 /**
+ * Script to get the minimum period a reported value needs to remain undisputed
+ * before considered valid. This is a parameter inside DIVAOracleTellor that is set
+ * at contract deployment.
  * Run `yarn divaTellor:getMinPeriodUndisputed`
  */
 
@@ -17,11 +20,14 @@ async function main() {
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
-  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
 
   // Get current minPeriodUndisputed
   const minPeriodUndisputed = await divaOracleTellor.getMinPeriodUndisputed();
+
+  // Log relevant information
+  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
   console.log("current minPeriodUndisputed: ", minPeriodUndisputed);
+
 }
 
 main()
