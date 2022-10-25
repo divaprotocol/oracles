@@ -1,5 +1,6 @@
 /**
- * Script to add tip. Make sure you run this script before set finial reference value.
+ * Script to add tip. No more tips can be added after the final value has been confirmed
+ * (i.e. once `setFinalReferenceValue` is called).
  * Run `yarn divaTellor:addTip`
  */
 
@@ -13,6 +14,9 @@ const {
   divaTellorOracleAddresses,
 } = require("../../utils/constants");
 
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts.
 const checkConditions = (reporter) => {
   // Check reporter address
   if (reporter !== ethers.constants.AddressZero) {
@@ -32,21 +36,19 @@ async function main() {
 
   // INPUT: id of pool
   const poolId = 5;
-  console.log("PoolId: ", poolId);
 
   // Get signer of tipper
   const [tipper] = await ethers.getSigners();
-  console.log("Tipper: " + tipper.address);
 
   // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
-  console.log("DivaOracleTellorAddress: " + divaOracleTellor.address);
 
   // Get reporter
   const reporter = await divaOracleTellor.getReporter(poolId);
+  
   // Check conditions
   checkConditions(reporter);
 
@@ -55,15 +57,12 @@ async function main() {
     ERC20_ABI,
     tippingTokenAddress
   );
-  console.log("Tipping token address: " + tippingTokenContract.address);
 
   // Get decimals of tipping token
   const decimals = await tippingTokenContract.decimals();
-  console.log("Tipping token decimals: " + decimals);
 
   // INPUT: tipping amount
   const amount = parseUnits("10", decimals);
-  console.log("Tipping amount: ", formatUnits(amount, decimals));
 
   // Set allowance for DIVAOracleTellor contract
   const approveTx = await tippingTokenContract
@@ -72,13 +71,10 @@ async function main() {
   await approveTx.wait();
 
   // Get tips before add tip
-  console.log(
-    "Tips on DIVAOracleTellor contract before add tip: ",
-    formatUnits(
-      await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
-      decimals
-    )
-  );
+  const tipsBefore = formatUnits(
+    await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
+    decimals
+  )
 
   // Add tip
   const tx = await divaOracleTellor
@@ -87,13 +83,21 @@ async function main() {
   await tx.wait();
 
   // Get tips after add tip
-  console.log(
-    "Tips on DIVAOracleTellor contract after add tip: ",
-    formatUnits(
-      await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
-      decimals
-    )
-  );
+  const tipsAfter = formatUnits(
+    await divaOracleTellor.getTips(poolId, tippingTokenContract.address),
+    decimals
+  )
+
+  // Log relevant info
+  console.log("DivaOracleTellorAddress: " + divaOracleTellor.address);
+  console.log("PoolId: ", poolId);
+  console.log("Tipper: " + tipper.address);
+  console.log("Tipping token address: " + tippingTokenContract.address);
+  console.log("Tipping token decimals: " + decimals);
+  console.log("Tipping amount (in decimal terms): ", formatUnits(amount, decimals));
+  console.log("Tips on DIVAOracleTellor contract BEFORE add tip: ", tipsBefore);
+  console.log("Tips on DIVAOracleTellor contract AFTER add tip: ", tipsAfter);
+
 }
 
 main()

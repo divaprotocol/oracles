@@ -706,6 +706,51 @@
           { "internalType": "address", "name": "taker", "type": "address" },
           {
             "internalType": "uint256",
+            "name": "positionTokenAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "makerReceiveCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerReceiveCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "poolId", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferRemoveLiquidity[]",
+        "name": "_offersRemoveLiquidity",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "batchCancelOfferRemoveLiquidity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
             "name": "makerCollateralAmount",
             "type": "uint256"
           },
@@ -803,6 +848,51 @@
       }
     ],
     "name": "cancelOfferCreateContingentPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "positionTokenAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "makerReceiveCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerReceiveCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "poolId", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferRemoveLiquidity",
+        "name": "_offerRemoveLiquidity",
+        "type": "tuple"
+      }
+    ],
+    "name": "cancelOfferRemoveLiquidity",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -999,6 +1089,156 @@
       }
     ],
     "name": "fillOfferCreateContingentPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "AmountExceedsPoolCollateralBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FeeAmountExceedsPoolCollateralBalance",
+    "type": "error"
+  },
+  { "inputs": [], "name": "FinalValueAlreadyConfirmed", "type": "error" },
+  { "inputs": [], "name": "InsufficientShortOrLongBalance", "type": "error" },
+  { "inputs": [], "name": "ReturnCollateralPaused", "type": "error" },
+  { "inputs": [], "name": "ZeroProtocolFee", "type": "error" },
+  { "inputs": [], "name": "ZeroSettlementFee", "type": "error" },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "components": [
+              { "internalType": "address", "name": "maker", "type": "address" },
+              { "internalType": "address", "name": "taker", "type": "address" },
+              {
+                "internalType": "uint256",
+                "name": "positionTokenAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bool",
+                "name": "makerDirection",
+                "type": "bool"
+              },
+              {
+                "internalType": "uint256",
+                "name": "makerReceiveCollateralAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "takerReceiveCollateralAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "offerExpiry",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "minimumTakerFillAmount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "poolId",
+                "type": "uint256"
+              },
+              { "internalType": "uint256", "name": "salt", "type": "uint256" }
+            ],
+            "internalType": "struct LibEIP712.OfferRemoveLiquidity",
+            "name": "offerRemoveLiquidity",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              { "internalType": "uint8", "name": "v", "type": "uint8" },
+              { "internalType": "bytes32", "name": "r", "type": "bytes32" },
+              { "internalType": "bytes32", "name": "s", "type": "bytes32" }
+            ],
+            "internalType": "struct LibEIP712.Signature",
+            "name": "signature",
+            "type": "tuple"
+          },
+          {
+            "internalType": "uint256",
+            "name": "positionTokenFillAmount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct IEIP712Remove.ArgsBatchFillOfferRemoveLiquidity[]",
+        "name": "_argsBatchOfferRemoveLiquidity",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "batchFillOfferRemoveLiquidity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "positionTokenAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "makerReceiveCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerReceiveCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "poolId", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferRemoveLiquidity",
+        "name": "_offerRemoveLiquidity",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          { "internalType": "uint8", "name": "v", "type": "uint8" },
+          { "internalType": "bytes32", "name": "r", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "s", "type": "bytes32" }
+        ],
+        "internalType": "struct LibEIP712.Signature",
+        "name": "_signature",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_positionTokenFillAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "fillOfferRemoveLiquidity",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1395,6 +1635,91 @@
         "name": "isValidInputParamsCreateContingentPool",
         "type": "bool"
       }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "address", "name": "maker", "type": "address" },
+          { "internalType": "address", "name": "taker", "type": "address" },
+          {
+            "internalType": "uint256",
+            "name": "positionTokenAmount",
+            "type": "uint256"
+          },
+          { "internalType": "bool", "name": "makerDirection", "type": "bool" },
+          {
+            "internalType": "uint256",
+            "name": "makerReceiveCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerReceiveCollateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offerExpiry",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minimumTakerFillAmount",
+            "type": "uint256"
+          },
+          { "internalType": "uint256", "name": "poolId", "type": "uint256" },
+          { "internalType": "uint256", "name": "salt", "type": "uint256" }
+        ],
+        "internalType": "struct LibEIP712.OfferRemoveLiquidity",
+        "name": "_offerRemoveLiquidity",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          { "internalType": "uint8", "name": "v", "type": "uint8" },
+          { "internalType": "bytes32", "name": "r", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "s", "type": "bytes32" }
+        ],
+        "internalType": "struct LibEIP712.Signature",
+        "name": "_signature",
+        "type": "tuple"
+      }
+    ],
+    "name": "getOfferRelevantStateRemoveLiquidity",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "typedOfferHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "enum LibEIP712.OfferStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "takerFilledAmount",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct LibEIP712.OfferInfo",
+        "name": "offerInfo",
+        "type": "tuple"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualTakerFillableAmount",
+        "type": "uint256"
+      },
+      { "internalType": "bool", "name": "isSignatureValid", "type": "bool" },
+      { "internalType": "bool", "name": "poolExists", "type": "bool" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -1807,21 +2132,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "AmountExceedsPoolCollateralBalance",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "FeeAmountExceedsPoolCollateralBalance",
-    "type": "error"
-  },
-  { "inputs": [], "name": "FinalValueAlreadyConfirmed", "type": "error" },
-  { "inputs": [], "name": "InsufficientShortOrLongBalance", "type": "error" },
-  { "inputs": [], "name": "ReturnCollateralPaused", "type": "error" },
-  { "inputs": [], "name": "ZeroProtocolFee", "type": "error" },
-  { "inputs": [], "name": "ZeroSettlementFee", "type": "error" },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -1889,7 +2199,13 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "from",
+        "name": "longTokenHolder",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "shortTokenHolder",
         "type": "address"
       },
       {

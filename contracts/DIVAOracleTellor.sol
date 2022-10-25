@@ -214,7 +214,7 @@ contract DIVAOracleTellor is
     }
 
     function getReporter(uint256 _poolId)
-        public
+        external
         view
         override
         returns (address)
