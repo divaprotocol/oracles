@@ -180,7 +180,7 @@ async function main() {
       capacity,
       longRecipient,
       shortRecipient,
-      permissionedERC721Token,
+      permissionedERC721Token
     ]);
   const receipt = await tx.wait();
 
