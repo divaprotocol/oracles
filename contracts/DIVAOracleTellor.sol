@@ -9,7 +9,6 @@ import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
 import "./libraries/SafeDecimalMath.sol";
-import "hardhat/console.sol";
 
 contract DIVAOracleTellor is
     UsingTellor,

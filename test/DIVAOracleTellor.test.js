@@ -109,7 +109,7 @@ describe("DIVAOracleTellor", () => {
             // blockNumber: Choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
             // blockNumber: 10932590, // Rinkeby
             // blockNumber: 12750642, // Ropsten
-            blockNumber: 7829981, // Goerli
+            blockNumber: 7833318, // Goerli
           },
         },
       ],
