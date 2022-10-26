@@ -123,7 +123,8 @@ describe("DIVAOracleTellor", () => {
       tellorPlaygroundAddress,
       excessFeeRecipient.address,
       minPeriodUndisputed,
-      maxFeeAmountUSD
+      maxFeeAmountUSD,
+      divaAddress
     );
     // Check challengeable
     expect(await divaOracleTellor.challengeable()).to.eq(false);
@@ -319,7 +320,7 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await divaOracleTellor
           .connect(user2)
-          .setFinalReferenceValue(divaAddress, latestPoolId);
+          .setFinalReferenceValue(latestPoolId);
 
         // ---------
         // Assert: Confirm that finalReferenceValue, statusFinalReferenceValue and feeClaim in DIVA Protocol are updated
@@ -421,7 +422,7 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await divaOracleTellor
           .connect(user2)
-          .setFinalReferenceValue(divaAddress, latestPoolId);
+          .setFinalReferenceValue(latestPoolId);
 
         // ---------
         // Assert: Confirm that the second value was set as the final
@@ -471,7 +472,7 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await divaOracleTellor
           .connect(user2)
-          .setFinalReferenceValue(divaAddress, latestPoolId);
+          .setFinalReferenceValue(latestPoolId);
 
         // ---------
         // Assert: Confirm that the reporter receives the full settlement fee payment (in collateral asset) and 0 goes to excess fee recipient
@@ -581,7 +582,7 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await divaOracleTellor
           .connect(randomUser)
-          .setFinalReferenceValue(divaAddress, latestPoolId); // triggered by a random user
+          .setFinalReferenceValue(latestPoolId); // triggered by a random user
 
         // ---------
         // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and
@@ -698,7 +699,7 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await divaOracleTellor
           .connect(randomUser)
-          .setFinalReferenceValue(divaAddress, latestPoolId); // triggered by a random user
+          .setFinalReferenceValue(latestPoolId); // triggered by a random user
 
         // ---------
         // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and
@@ -757,9 +758,7 @@ describe("DIVAOracleTellor", () => {
           (await getLastTimestamp()) + minPeriodUndisputed - 1;
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await expect(
-          divaOracleTellor
-            .connect(user2)
-            .setFinalReferenceValue(divaAddress, latestPoolId)
+          divaOracleTellor.connect(user2).setFinalReferenceValue(latestPoolId)
         ).to.be.revertedWith("MinPeriodUndisputedNotPassed()");
       });
 
@@ -775,9 +774,7 @@ describe("DIVAOracleTellor", () => {
         // Act & Assert: Confirm that `setFinalReferenceValue` function will revert if called when no value has been reported yet
         // ---------
         await expect(
-          divaOracleTellor
-            .connect(user2)
-            .setFinalReferenceValue(divaAddress, latestPoolId)
+          divaOracleTellor.connect(user2).setFinalReferenceValue(latestPoolId)
         ).to.be.revertedWith("NoOracleSubmission()");
       });
 
@@ -836,9 +833,7 @@ describe("DIVAOracleTellor", () => {
         // before `expiryTime`
         // ---------
         await expect(
-          divaOracleTellor
-            .connect(user2)
-            .setFinalReferenceValue(divaAddress, latestPoolId)
+          divaOracleTellor.connect(user2).setFinalReferenceValue(latestPoolId)
         ).to.be.revertedWith("NoOracleSubmissionAfterExpiryTime()");
       });
     });
@@ -904,11 +899,10 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await divaOracleTellor
           .connect(user2)
-          .setFinalReferenceValueAndClaimTipsAndDIVAFee(
-            divaAddress,
-            latestPoolId,
-            [tippingToken1.address, tippingToken2.address]
-          );
+          .setFinalReferenceValueAndClaimTipsAndDIVAFee(latestPoolId, [
+            tippingToken1.address,
+            tippingToken2.address,
+          ]);
 
         // ---------
         // Assert: Confirm that finalReferenceValue and statusFinalReferenceValue in DIVA Protocol as well as
@@ -982,11 +976,10 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         const tx = await divaOracleTellor
           .connect(user2)
-          .setFinalReferenceValueAndClaimTipsAndDIVAFee(
-            divaAddress,
-            latestPoolId,
-            [tippingToken1.address, tippingToken2.address]
-          );
+          .setFinalReferenceValueAndClaimTipsAndDIVAFee(latestPoolId, [
+            tippingToken1.address,
+            tippingToken2.address,
+          ]);
         const response = await tx.wait();
 
         // ---------
@@ -1090,7 +1083,7 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await divaOracleTellor
           .connect(user2)
-          .setFinalReferenceValueAndClaimDIVAFee(divaAddress, latestPoolId);
+          .setFinalReferenceValueAndClaimDIVAFee(latestPoolId);
 
         // ---------
         // Assert: Confirm that finalReferenceValue and statusFinalReferenceValue are updated accordingly in DIVA Protocol
@@ -1192,7 +1185,7 @@ describe("DIVAOracleTellor", () => {
         await setNextTimestamp(ethers.provider, nextBlockTimestamp);
         await divaOracleTellor
           .connect(user2)
-          .setFinalReferenceValueAndClaimTips(divaAddress, latestPoolId, [
+          .setFinalReferenceValueAndClaimTips(latestPoolId, [
             tippingToken1.address,
             tippingToken2.address,
           ]);
@@ -1334,7 +1327,7 @@ describe("DIVAOracleTellor", () => {
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
         .connect(user2)
-        .setFinalReferenceValue(divaAddress, latestPoolId);
+        .setFinalReferenceValue(latestPoolId);
 
       // ---------
       // Act & Assert: Confirm that tip function will fail if called after `setFinalReferenceValue` function is called
@@ -1412,7 +1405,7 @@ describe("DIVAOracleTellor", () => {
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
         .connect(user2)
-        .setFinalReferenceValue(divaAddress, latestPoolId);
+        .setFinalReferenceValue(latestPoolId);
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
@@ -1487,7 +1480,7 @@ describe("DIVAOracleTellor", () => {
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
         .connect(user2)
-        .setFinalReferenceValue(divaAddress, latestPoolId);
+        .setFinalReferenceValue(latestPoolId);
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
@@ -1523,7 +1516,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Act: Call `claimDIVAFee` function
       // ---------
-      await divaOracleTellor.claimDIVAFee(latestPoolId, divaAddress);
+      await divaOracleTellor.claimDIVAFee(latestPoolId);
 
       // ---------
       // Assert: Check that DIVA fee was claimed but tips remain untouched
@@ -1564,7 +1557,7 @@ describe("DIVAOracleTellor", () => {
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
         .connect(user2)
-        .setFinalReferenceValue(divaAddress, latestPoolId);
+        .setFinalReferenceValue(latestPoolId);
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
@@ -1600,11 +1593,10 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Act: Call claimTipsAndDIVAFee function
       // ---------
-      await divaOracleTellor.claimTipsAndDIVAFee(
-        latestPoolId,
-        [tippingToken1.address, tippingToken2.address],
-        divaAddress
-      );
+      await divaOracleTellor.claimTipsAndDIVAFee(latestPoolId, [
+        tippingToken1.address,
+        tippingToken2.address,
+      ]);
 
       // ---------
       // Assert: Check that tips and DIVA fees were paid out to the reporter
@@ -1643,11 +1635,10 @@ describe("DIVAOracleTellor", () => {
       // Act & Assert: Confirm that `claimTipsAndDIVAFee` function will fail if called before `setFinalReferenceValue` function is called
       // ---------
       await expect(
-        divaOracleTellor.claimTipsAndDIVAFee(
-          latestPoolId,
-          [tippingToken1.address, tippingToken2.address],
-          divaAddress
-        )
+        divaOracleTellor.claimTipsAndDIVAFee(latestPoolId, [
+          tippingToken1.address,
+          tippingToken2.address,
+        ])
       ).to.be.revertedWith("NotConfirmedPool()");
     });
 
@@ -1663,16 +1654,15 @@ describe("DIVAOracleTellor", () => {
       await setNextTimestamp(ethers.provider, nextBlockTimestamp);
       await divaOracleTellor
         .connect(user2)
-        .setFinalReferenceValue(divaAddress, latestPoolId);
+        .setFinalReferenceValue(latestPoolId);
 
       // ---------
       // Act: Call claimTipsAndDIVAFee function
       // ---------
-      const tx = await divaOracleTellor.claimTipsAndDIVAFee(
-        latestPoolId,
-        [tippingToken1.address, tippingToken2.address],
-        divaAddress
-      );
+      const tx = await divaOracleTellor.claimTipsAndDIVAFee(latestPoolId, [
+        tippingToken1.address,
+        tippingToken2.address,
+      ]);
       const response = await tx.wait();
 
       // ---------

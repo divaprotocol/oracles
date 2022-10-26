@@ -92,42 +92,33 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to claim fee from DIVA
      * @param _poolId The unique identifier of the pool.
-     * @param _divaDiamond Array of tipping tokens to claim tip.
      */
-    function claimDIVAFee(uint256 _poolId, address _divaDiamond) external;
+    function claimDIVAFee(uint256 _poolId) external;
 
     /**
      * @dev Function to claim tips from DIVAOracleTellor and claim fee
      * from DIVA
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
-     * @param _divaDiamond Address of the diva smart contract.
      */
     function claimTipsAndDIVAFee(
         uint256 _poolId,
-        address[] memory _tippingTokens,
-        address _divaDiamond
+        address[] memory _tippingTokens
     ) external;
 
     /**
      * @dev Function to set the final reference value for a given `_poolId`.
-     * @param _divaDiamond Address of the diva smart contract. Used as argument
-     * rather than a hard-coded constant to avoid redeploying the oracle
-     * contracts when a new version of DIVA Protocol is released.
      * @param _poolId The unique identifier of the pool.
      */
-    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
-        external;
+    function setFinalReferenceValue(uint256 _poolId) external;
 
     /**
      * @dev Function to set the final reference value and claim tips for a
      * given `_poolId` with given tipping tokens.
-     * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      */
     function setFinalReferenceValueAndClaimTips(
-        address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens
     ) external;
@@ -135,23 +126,17 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to set the final reference value and claim DIVA fee
      * for a given `_poolId` with given tipping tokens.
-     * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      */
-    function setFinalReferenceValueAndClaimDIVAFee(
-        address _divaDiamond,
-        uint256 _poolId
-    ) external;
+    function setFinalReferenceValueAndClaimDIVAFee(uint256 _poolId) external;
 
     /**
      * @dev Function to set the final reference value and claim tips and DIVA
      * fee for a given `_poolId` with given tipping tokens.
-     * @param _divaDiamond Address of the diva smart contract.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      */
     function setFinalReferenceValueAndClaimTipsAndDIVAFee(
-        address _divaDiamond,
         uint256 _poolId,
         address[] memory _tippingTokens
     ) external;
@@ -223,12 +208,8 @@ interface IDIVAOracleTellor {
     /**
      * @dev Returns query id
      * @param _poolId The unique identifier of the pool.
-     * @param _divaDiamond Address of the diva smart contract.
      */
-    function getQueryId(uint256 _poolId, address _divaDiamond)
-        external
-        view
-        returns (bytes32);
+    function getQueryId(uint256 _poolId) external view returns (bytes32);
 
     /**
      * @dev Returns the reporter address. Note that it returns
@@ -238,4 +219,9 @@ interface IDIVAOracleTellor {
      * @param _poolId The unique identifier of the pool.
      */
     function getReporter(uint256 _poolId) external view returns (address);
+
+    /**
+     * @dev Returns the DIVA address
+     */
+    function getDIVADiamondAddress() external view returns (address);
 }

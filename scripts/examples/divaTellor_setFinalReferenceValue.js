@@ -34,7 +34,7 @@ async function main() {
   );
 
   // Set final reference value
-  const tx = await divaOracleTellor.setFinalReferenceValue(divaAddress, poolId);
+  const tx = await divaOracleTellor.setFinalReferenceValue(poolId);
   const receipt = await tx.wait();
 
   // Get newly created pool Id from event

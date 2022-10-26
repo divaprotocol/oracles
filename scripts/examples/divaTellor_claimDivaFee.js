@@ -71,7 +71,7 @@ async function main() {
   );
 
   // Claim DIVA fee
-  const tx = await divaOracleTellor.claimDIVAFee(poolId, diva.address);
+  const tx = await divaOracleTellor.claimDIVAFee(poolId);
   await tx.wait();
 
   // Get collateral token balance of reporter after claiming the fee

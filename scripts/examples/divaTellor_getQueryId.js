@@ -20,8 +20,6 @@ async function main() {
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;
 
-  const divaAddress = DIVA_ADDRESS[network];
-
   const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
   // Connect to DIVAOracleTellor contract
@@ -31,12 +29,11 @@ async function main() {
   );
 
   // Get current queryId
-  const queryId = await divaOracleTellor.getQueryId(poolId, divaAddress);
+  const queryId = await divaOracleTellor.getQueryId(poolId);
 
   // Log relevant information
   console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
   console.log("PoolId: ", poolId);
-  console.log("DIVA address: ", divaAddress);
   console.log("ChainId: ", chainId);
   console.log("queryId: ", queryId);
 }
