@@ -51,7 +51,7 @@ async function main() {
   console.log("PoolId: ", poolId);
   console.log(
     "Final reference value: ",
-    STATUS[finalReferenceValueSetEvent.finalValue]
+    STATUS[finalReferenceValueSetEvent.args.finalValue]
   );
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(

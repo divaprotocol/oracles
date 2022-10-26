@@ -180,7 +180,7 @@ async function main() {
       capacity,
       longRecipient,
       shortRecipient,
-      permissionedERC721Token
+      permissionedERC721Token,
     ]);
   const receipt = await tx.wait();
 
@@ -188,7 +188,7 @@ async function main() {
   const poolIssuedEvent = receipt.events.find(
     (item) => item.event === "PoolIssued"
   );
-  const poolId = poolIssuedEvent.poolId;
+  const poolId = poolIssuedEvent.args.poolId;
 
   // Get pool parameters for newly created pool Id
   const poolParams = await diva.getPoolParameters(poolId);

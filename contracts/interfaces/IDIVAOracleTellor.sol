@@ -219,9 +219,4 @@ interface IDIVAOracleTellor {
      * @param _poolId The unique identifier of the pool.
      */
     function getReporter(uint256 _poolId) external view returns (address);
-
-    /**
-     * @dev Returns the DIVA address
-     */
-    function getDIVADiamondAddress() external view returns (address);
 }
