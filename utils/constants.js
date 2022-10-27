@@ -27,10 +27,12 @@ const BOND_FACTORY = {
   },
 };
 
+// Tellor contract INCLUDING the requirement to stake prior to reporting
 const TELLOR_ADDRESS = {
   goerli: "0xB3B662644F8d3138df63D2F43068ea621e2981f9",
 };
 
+// Tellor playground contract EXCLUDING the requirement to stake prior to reporting
 const TELLOR_PLAYGROUND_ADDRESS = {
   ropsten: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A", // new used for testnet
   kovan: "0x320f09D9f92Cfa0e9C272b179e530634D873aeFa",

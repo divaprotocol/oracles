@@ -221,7 +221,7 @@ interface IDIVAOracleTellor {
     function getReporter(uint256 _poolId) external view returns (address);
 
     /**
-     * @dev Returns the DIVA address
+     * @dev Returns the DIVA address that the oracle is linked to
      */
     function getDIVAAddress() external view returns (address);
 }

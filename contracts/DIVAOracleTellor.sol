@@ -213,7 +213,7 @@ contract DIVAOracleTellor is
             );
     }
 
-    function getDIVAAddress() public view override returns (address) {
+    function getDIVAAddress() external view override returns (address) {
         return address(_diva);
     }
 
