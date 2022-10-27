@@ -213,6 +213,10 @@ contract DIVAOracleTellor is
             );
     }
 
+    function getDIVAAddress() public view override returns (address) {
+        return address(_diva);
+    }
+
     function getReporter(uint256 _poolId)
         external
         view
