@@ -42,7 +42,7 @@ const TELLOR_PLAYGROUND_ADDRESS = {
 
 const DIVA_TELLOR_ORACLE_ADDRESS = {
   ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
-  goerli: "0x09Db8E5056cDde7d094b44354dB4e5e9a1fdEbE8", // Deployed on 26 Oct 2022
+  goerli: "0x9F6Cd21bF0f18cf7bcd1bd9AF75476537d8295fB", // Deployed on 30 Oct 2022
 };
 
 const COLLATERAL_TOKENS = {

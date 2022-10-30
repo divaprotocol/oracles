@@ -37,6 +37,7 @@ async function main() {
   // Log relevant info
   console.log("DIVA address: ", diva.address);
   console.log("Pool id: ", poolId.toNumber());
+  console.log("Reference asset: ", poolParams.referenceAsset);
   console.log("Floor: ", formatUnits(poolParams.floor));
   console.log("Inflection: ", formatUnits(poolParams.inflection));
   console.log("Cap: ", formatUnits(poolParams.cap));
@@ -45,30 +46,33 @@ async function main() {
     "Pool collateral balance: ",
     formatUnits(poolParams.collateralBalance, decimals)
   );
-  console.log(
-    "Final referencen value: ",
-    formatUnits(poolParams.finalReferenceValue)
-  );
   console.log("Capacity: ", formatUnits(poolParams.capacity, decimals));
-  console.log("Status timestamp: ", poolParams.statusTimestamp.toString());
   console.log("Short token: ", poolParams.shortToken);
-  console.log(
-    "Payout short token: ",
-    formatUnits(poolParams.payoutShort, decimals)
-  );
   console.log("Long token: ", poolParams.longToken);
-  console.log(
-    "Payout long token: ",
-    formatUnits(poolParams.payoutLong, decimals)
-  );
   console.log("Collateral token: ", poolParams.collateralToken);
-  console.log("Expiry time: ", poolParams.expiryTime.toString());
+  console.log(
+    "Expiry time: ",
+    new Date(poolParams.expiryTime * 1000).toLocaleString()
+  );
   console.log("Data provider: ", poolParams.dataProvider);
+
   console.log(
     "Status final reference value: ",
     STATUS[poolParams.statusFinalReferenceValue]
   );
-  console.log("Reference asset: ", poolParams.referenceAsset);
+  console.log("Status timestamp: ", poolParams.statusTimestamp.toString());
+  console.log(
+    "Final referencen value: ",
+    formatUnits(poolParams.finalReferenceValue)
+  );
+  console.log(
+    "Payout short token: ",
+    formatUnits(poolParams.payoutShort, decimals)
+  );
+  console.log(
+    "Payout long token: ",
+    formatUnits(poolParams.payoutLong, decimals)
+  );
 }
 
 main()
