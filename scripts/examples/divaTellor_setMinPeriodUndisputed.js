@@ -1,38 +1,65 @@
 /**
- * Run `divaTellor:setMinPeriodUndisputed`
+ * Script to update the minimum period undisputed parameter. Only executable by contract owner.
+ * Run `yarn divaTellor:setMinPeriodUndisputed`
  */
 
-const hre = require("hardhat");
-const { divaTellorOracleAddresses } = require('../../utils/constants');
+const { ethers } = require("hardhat");
+const { DIVA_TELLOR_ORACLE_ADDRESS } = require("../../utils/constants");
+
+const checkConditions = (newMinPeriodUndisputed, signerOfOwner, owner) => {
+  if (newMinPeriodUndisputed < 3600 || newMinPeriodUndisputed > 64800) {
+    throw new Error("Out of range");
+  }
+
+  if (signerOfOwner.address !== owner) {
+    throw new Error(
+      "Only owner of contract can update minimum period undisputed parameter"
+    );
+  }
+};
 
 async function main() {
+  // INPUT: network
+  const network = "goerli";
 
-  const network = "ropsten"
-  let divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  const newMinPeriodUndisputed = 3600 // 10 seconds
+  // INPUT: new minPeriodUndisputed value
+  const newMinPeriodUndisputed = 3600; // 3600 seconds
 
-  // Get signers
-  const [acc1, acc2, acc3] = await ethers.getSigners();
-  const user = acc1;
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
-  // Connect to Tellor oracle contract
-  const divaOracleTellor = await hre.ethers.getContractAt("DIVAOracleTellor", divaOracleTellorAddress);
-  
+  // Get signer of owner
+  const [signerOfOwner] = await ethers.getSigners();
+
+  // Connect to DIVAOracleTellor contract
+  const divaOracleTellor = await ethers.getContractAt(
+    "DIVAOracleTellor",
+    divaOracleTellorAddress
+  );
+
   // Get current contract owner (only owner can change the minPeriodUndisputed)
-  const owner = await divaOracleTellor.owner()
-  console.log('contract owner: ', owner)
+  const owner = await divaOracleTellor.owner();
+
+  checkConditions(newMinPeriodUndisputed, signerOfOwner, owner);
 
   // Get current minPeriodUndisputed
-  const _currentMinPeriodUndisputed = await divaOracleTellor.getMinPeriodUndisputed()
-  console.log('current minPeriodUndisputed: ', _currentMinPeriodUndisputed)
+  const _currentMinPeriodUndisputed =
+    await divaOracleTellor.getMinPeriodUndisputed();
 
   // Set new minPeriodUndisputed
-  const tx = await divaOracleTellor.connect(user).setMinPeriodUndisputed(newMinPeriodUndisputed);
-  await tx.wait()
+  const tx = await divaOracleTellor
+    .connect(signerOfOwner)
+    .setMinPeriodUndisputed(newMinPeriodUndisputed);
+  await tx.wait();
 
   // Get new minPeriodUndisputed
-  const _newMinPeriodUndisputed = await divaOracleTellor.getMinPeriodUndisputed()
-  console.log('new minPeriodUndisputed: ', _newMinPeriodUndisputed)
+  const _newMinPeriodUndisputed =
+    await divaOracleTellor.getMinPeriodUndisputed();
+
+  // Log relevant information
+  console.log("DIVAOracleTellor address: " + divaOracleTellor.address);
+  console.log("Contract owner: ", owner);
+  console.log("Old minPeriodUndisputed: ", _currentMinPeriodUndisputed);
+  console.log("New minPeriodUndisputed: ", _newMinPeriodUndisputed);
 }
 
 main()

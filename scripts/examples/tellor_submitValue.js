@@ -1,98 +1,181 @@
-
 /**
- * Script to submit a value to the tellor playground. Make sure you run this script after the pool expired.
- * Note that one address can only submit one value. It will fail if you try to submit a value with the same address again.
- * Run: `tellor:submitValue`
+ * Script to submit a value to the Tellor playground. Run this script AFTER the pool expired.
+ * Note that one address can only submit one value. It will fail if you try to submit a value
+ * with the same address multiple times.
+ * Run: `yarn tellor:submitValue`
  */
 
-const { ethers } = require('hardhat');
-const TellorPlayground_ABI = require('../../contracts/abi/TellorPlayground.json');
-const DIVA_ABI = require('../../contracts/abi/DIVA.json');
-const { parseUnits, formatUnits } = require('@ethersproject/units')
-const { addresses, tellorPlaygroundAddresses, divaTellorOracleAddresses } = require('../../utils/constants')
+const { ethers } = require("hardhat");
+const { parseUnits, formatUnits } = require("@ethersproject/units");
+
+const DIVA_ABI = require("../../contracts/abi/DIVA.json");
+const TELLOR_PLAYGROUND_ABI = require("../../contracts/abi/TellorPlayground.json");
+
+const {
+  DIVA_ADDRESS,
+  TELLOR_PLAYGROUND_ADDRESS,
+  DIVA_TELLOR_ORACLE_ADDRESS,
+} = require("../../utils/constants");
+
+const {
+  calcFee,
+  encodeToOracleValue,
+  decodeTellorValue,
+  getQueryDataAndId,
+} = require("../../utils/utils");
+
+const checkConditions = (
+  poolDataProvider,
+  divaOracleTellorAddress,
+  poolExpiryTime
+) => {
+  // Check that the DIVA Tellor oracle is the data provider for the selected pool
+  if (poolDataProvider != divaOracleTellorAddress) {
+    throw new Error("Data provider is not DIVAOracleTellor address");
+  }
+
+  // Confirm that the pool expired
+  const currentTime = new Date();
+  if (Number(poolExpiryTime) * 1000 > currentTime) {
+    throw new Error("Pool is not expired yet");
+  }
+};
+
+const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
+  // Get tips
+  const tippingTokens = await divaOracleTellor.getTippingTokens(poolId);
+  if (tippingTokens.length) {
+    await Promise.all(
+      tippingTokens.map(async (tippingToken) =>
+        console.log(
+          `Tips for ${tippingToken} is: `,
+          await divaOracleTellor.getTip(poolId, tippingToken)
+        )
+      )
+    );
+  } else {
+    console.log("No tips for this pool on DivaOracleTellor contract yet");
+  }
+
+  const collateralTokenContract = await ethers.getContractAt(
+    "MockERC20",
+    poolParams.collateralToken
+  );
+  const decimals = await collateralTokenContract.decimals();
+
+  // Estimate fee claim on DIVA contract after set final reference value
+  const settlementFee = calcFee(
+    feesParams.settlementFee,
+    poolParams.collateralBalance,
+    decimals
+  );
+  console.log("Settlement fee: ", settlementFee);
+};
 
 async function main() {
+  // INPUT: network
+  const network = "goerli";
 
-    network = "goerli"
-    const poolId = 2
-    const divaAddress = addresses[network]
+  const divaAddress = DIVA_ADDRESS[network];
+  const tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
-    // Connect to DIVA contract
-    const diva = await ethers.getContractAt(DIVA_ABI, addresses[network]);
-    console.log("DIVA address: ", diva.address);
+  // INPUT: id of pool
+  const poolId = 10;
 
-    // Connect to tellor contract
-    const tellorPlayground = await ethers.getContractAt(TellorPlayground_ABI, tellorPlaygroundAddresses[network]);
-    console.log("DIVA address: ", diva.address);
+  // Get chain id
+  const chainId = (await ethers.provider.getNetwork()).chainId;
 
-    // Get pool parameters for the specified poolId
-    poolParams = await diva.getPoolParameters(poolId);
+  // Get signer of reporter
+  const [reporter] = await ethers.getSigners();
 
-    // Check that the DIVA Tellor oracle is the data provider
-    if (poolParams.dataProvider != divaTellorOracleAddresses[network]) {
-        console.log('Data provider is not DIVAOracleTellor address')
-        return
-    }
+  // Connect to DIVA contract
+  const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
 
-    // Confirm that the pool expired
-    const currentTime = new Date()
-    if (Number(poolParams.expiryTime) * 1000 > currentTime) {
-        console.log('Pool is not expired yet')
-        return
-    }
+  // Connect to DIVAOracleTellor contract
+  const divaOracleTellor = await ethers.getContractAt(
+    "DIVAOracleTellor",
+    divaOracleTellorAddress
+  );
 
-    // Get chain id
-    chainId = (await ethers.provider.getNetwork()).chainId;
+  // Connect to tellor contract
+  const tellorPlayground = await ethers.getContractAt(
+    TELLOR_PLAYGROUND_ABI,
+    tellorPlaygroundAddress
+  );
 
-    // Prepare Tellor value submission
-    abiCoder = new ethers.utils.AbiCoder();
-    queryDataArgs = abiCoder.encode(
-        ["uint256", "address", "uint256"],
-        [poolId, divaAddress, chainId]
-    );
-    queryData = abiCoder.encode(
-        ["string", "bytes"],
-        ["DIVAProtocol", queryDataArgs]
-    );
-    queryId = ethers.utils.keccak256(queryData);
-    console.log('queryId', queryId)
+  // Get pool parameters for the specified poolId
+  const poolParams = await diva.getPoolParameters(poolId);
 
-    // Prepare values and submit to tellorPlayground
-    finalReferenceValue = parseUnits("25000");
-    collateralToUSDRate = parseUnits("1.00");
-    oracleValue = abiCoder.encode(
-        ["uint256", "uint256"],
-        [finalReferenceValue, collateralToUSDRate]
-    );
+  // Check conditions
+  checkConditions(
+    poolParams.dataProvider,
+    divaOracleTellor.address,
+    poolParams.expiryTime
+  );
 
-    // Get signers
-    const [acc1, acc2, acc3] = await ethers.getSigners();
-    const reporter = acc1;
-    console.log("Reporter address: " + reporter.address)
+  // Get fee params
+  const feesParams = await diva.getFees(poolId);
 
-    // Submit value to tellorPlayground
-    const tx = await tellorPlayground
-        .connect(reporter)
-        .submitValue(queryId, oracleValue, 0, queryData);
-    await tx.wait()
+  // Get current tips and fees from DIVA for reporting the value
+  await getReward(divaOracleTellor, poolId, poolParams, feesParams);
 
-    // Check that timestamp and values have been set in tellorPlayground contract
-    const tellorDataTimestamp = await tellorPlayground.timestamps(queryId, 0);
-    const tellorValue = await tellorPlayground.values(
-        queryId,
-        tellorDataTimestamp
-    );
-    const formattedTellorValue = abiCoder.decode(
-        ["uint256", "uint256"],
-        tellorValue
-    );
-    console.log('poolId: ', poolId)
-    console.log('tellorDataTimestamp: ', tellorDataTimestamp.toString() + " (" + new Date(poolParams.expiryTime * 1000).toLocaleString() + ")");
-    console.log('finalReferenceValue: ', formattedTellorValue[0].toString() + " (" + formatUnits(formattedTellorValue[0].toString()) + ")");
-    console.log('collateralToUSDRate: ', formattedTellorValue[1].toString() + " (" + formatUnits(formattedTellorValue[1].toString()) + ")");
+  // Prepare Tellor value submission
+  const [queryData, queryId] = getQueryDataAndId(poolId, divaAddress, chainId);
 
+  // Prepare values and submit to tellorPlayground
+  const finalReferenceValue = parseUnits("25000");
+  const collateralToUSDRate = parseUnits("1.00");
+  const oracleValue = encodeToOracleValue(
+    finalReferenceValue,
+    collateralToUSDRate
+  );
+
+  // Submit value to tellorPlayground
+  const tx = await tellorPlayground
+    .connect(reporter)
+    .submitValue(queryId, oracleValue, 0, queryData);
+  await tx.wait();
+
+  // Check that timestamp and values have been set in tellorPlayground contract
+  const tellorDataTimestamp = await tellorPlayground.timestamps(queryId, 0);
+  const tellorValue = await tellorPlayground.values(
+    queryId,
+    tellorDataTimestamp
+  );
+  const formattedTellorValue = decodeTellorValue(tellorValue);
+
+  // Log relevant information
+  console.log("DIVA address: ", diva.address);
+  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
+  console.log("Tellor playground address: ", tellorPlayground.address);
+  console.log("PoolId: ", poolId);
+  console.log("Reporter address: " + reporter.address);
+  console.log("queryId", queryId);
+  console.log("queryData", queryData);
+  console.log(
+    "tellorDataTimestamp: ",
+    tellorDataTimestamp.toString() +
+      " (" +
+      new Date(poolParams.expiryTime * 1000).toLocaleString() +
+      ")"
+  );
+  console.log(
+    "finalReferenceValue: ",
+    formattedTellorValue[0].toString() +
+      " (" +
+      formatUnits(formattedTellorValue[0].toString()) +
+      ")"
+  );
+  console.log(
+    "collateralToUSDRate: ",
+    formattedTellorValue[1].toString() +
+      " (" +
+      formatUnits(formattedTellorValue[1].toString()) +
+      ")"
+  );
 }
- 
+
 main()
   .then(() => process.exit(0))
   .catch((error) => {

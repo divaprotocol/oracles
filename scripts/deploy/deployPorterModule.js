@@ -1,9 +1,9 @@
 const hre = require("hardhat");
-const { bondFactoryInfo } = require("../../utils/constants");
+const { BOND_FACTORY } = require("../../utils/constants");
 
 async function main() {
   const network = "goerli";
-  const bondFactoryAddr = bondFactoryInfo.address[network];
+  const bondFactoryAddr = BOND_FACTORY.address[network];
 
   const divaPorterModuleFactory = await hre.ethers.getContractFactory(
     "DIVAPorterModule"

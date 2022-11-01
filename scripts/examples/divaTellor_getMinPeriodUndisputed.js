@@ -1,26 +1,32 @@
 /**
- * Run `divaTellor:getMinPeriodUndisputed`
+ * Script to get the minimum period a reported value needs to remain undisputed
+ * before considered valid. This is a parameter inside DIVAOracleTellor that is set
+ * at contract deployment.
+ * Run `yarn divaTellor:getMinPeriodUndisputed`
  */
 
-const hre = require("hardhat");
-const { divaTellorOracleAddresses } = require('../../utils/constants');
+const { ethers } = require("hardhat");
+
+const { DIVA_TELLOR_ORACLE_ADDRESS } = require("../../utils/constants");
 
 async function main() {
+  // INPUT: network
+  const network = "goerli";
 
-  const network = "goerli"
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  console.log('divaOracleTellorAddress: ', divaOracleTellorAddress)
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
-  // Get signers
-  const [acc1, acc2, acc3] = await ethers.getSigners();
-  const user = acc1;
+  // Connect to DIVAOracleTellor contract
+  const divaOracleTellor = await ethers.getContractAt(
+    "DIVAOracleTellor",
+    divaOracleTellorAddress
+  );
 
-  // Connect to Tellor oracle contract
-  const divaOracleTellor = await hre.ethers.getContractAt("DIVAOracleTellor", divaOracleTellorAddress);
-  
   // Get current minPeriodUndisputed
-  const minPeriodUndisputed = await divaOracleTellor.getMinPeriodUndisputed()
-  console.log('current minPeriodUndisputed: ', minPeriodUndisputed)
+  const minPeriodUndisputed = await divaOracleTellor.getMinPeriodUndisputed();
+
+  // Log relevant information
+  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
+  console.log("current minPeriodUndisputed: ", minPeriodUndisputed);
 }
 
 main()

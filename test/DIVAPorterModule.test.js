@@ -9,8 +9,8 @@ const { parseEther, parseUnits } = require("@ethersproject/units");
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const BOND_ABI = require("../contracts/abi/Bond.json");
 const BOND_FACTORY_ABI = require("../contracts/abi/BondFactory.json");
-const { addresses, bondFactoryInfo } = require("../utils/constants");
-const { setNextTimestamp, getLastTimestamp } = require("./utils.js");
+const { DIVA_ADDRESS, BOND_FACTORY } = require("../utils/constants");
+const { setNextTimestamp, getLastTimestamp } = require("../utils/utils");
 
 const network = "goerli"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
@@ -20,9 +20,9 @@ const tokenAmount = "1000000000";
 describe("DIVAPorterModule", () => {
   let user1, issuer, longRecipient, shortRecipient;
   let divaPorterModule;
-  let divaAddress = addresses[network];
-  let bondFactoryAddr = bondFactoryInfo.address[network];
-  let bondFactoryAdmin = bondFactoryInfo.admin[network];
+  let divaAddress = DIVA_ADDRESS[network];
+  let bondFactoryAddr = BOND_FACTORY.address[network];
+  let bondFactoryAdmin = BOND_FACTORY.admin[network];
   let bondAddress;
   let bond;
   let latestPoolId;
@@ -101,18 +101,15 @@ describe("DIVAPorterModule", () => {
     // Check out the contract: https://github.com/porter-finance/v1-core/blob/main/contracts/BondFactory.sol#L150
     await bondFactory
       .connect(bondFactoryAdminSigner)
-      .grantRole(bondFactoryInfo.roles.allowedToken, paymentToken.address);
+      .grantRole(BOND_FACTORY.roles.allowedToken, paymentToken.address);
     await bondFactory
       .connect(bondFactoryAdminSigner)
-      .grantRole(
-        bondFactoryInfo.roles.allowedToken,
-        bondCollateralToken.address
-      );
+      .grantRole(BOND_FACTORY.roles.allowedToken, bondCollateralToken.address);
 
     // Grant issuerRole to issuer
     await bondFactory
       .connect(bondFactoryAdminSigner)
-      .grantRole(bondFactoryInfo.roles.issuerRole, issuer.address);
+      .grantRole(BOND_FACTORY.roles.issuerRole, issuer.address);
     // Approve CollateralToken to BondFactory contract with issuer
     await bondCollateralToken
       .connect(issuer)
@@ -149,12 +146,13 @@ describe("DIVAPorterModule", () => {
     createContingentPoolParams = {
       referenceAsset: bondAddress, // Porter Bond address
       inflection: parseUnits("600", collateralTokenDecimals), // inflection
-      gradient: parseEther("0.5"), // gradient
+      gradient: parseUnits("0.5", collateralTokenDecimals), // gradient
       collateralAmount: parseUnits("100", collateralTokenDecimals), // collateral amount
       collateralToken: collateralToken.address, // collateral token
       capacity: parseUnits("300", collateralTokenDecimals), // capacity
       longRecipient: longRecipient.address, // address of long token recipient
       shortRecipient: shortRecipient.address, // address of short token recipient
+      permissionedERC721Token: ethers.constants.AddressZero, // Address of ERC721 token
     };
   });
 

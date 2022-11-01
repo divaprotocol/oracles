@@ -1,23 +1,36 @@
-const { parseEther } = require("ethers/lib/utils");
-const hre = require("hardhat");
-const { tellorPlaygroundAddresses } = require('../../utils/constants') //  DIVA Protocol v0.9.0
+/**
+ * Script to deploy DIVAOracleTellor contract.
+ * Run `yarn deploy:divaTellor`
+ */
 
+const { ethers } = require("hardhat");
+const { parseEther } = require("ethers/lib/utils");
+
+const {
+  TELLOR_PLAYGROUND_ADDRESS,
+  DIVA_ADDRESS,
+} = require("../../utils/constants"); //  DIVA Protocol v0.9.0
 
 async function main() {
+  const network = "goerli";
 
-  const tellorPlaygroundAddress = tellorPlaygroundAddresses["goerli"] 
-  const excessFeeRecipient = '0x1EE5730C710cF06dFA7952D61A321eC8e16b9d3A' // temporary address
+  const divaAddress = DIVA_ADDRESS[network];
+  const tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
+  const excessFeeRecipient = "0x1EE5730C710cF06dFA7952D61A321eC8e16b9d3A"; // temporary address
   const periodMinPeriodUndisputed = 10; // IMPORTANT to set correctly!; input in seconds
-  const maxFeeAmountUSD = parseEther('10') // $10
+  const maxFeeAmountUSD = parseEther("10"); // $10
 
-  const divaOracleTellorFactory = await hre.ethers.getContractFactory("DIVAOracleTellor");
-  divaOracleTellor = await divaOracleTellorFactory.deploy(
+  const divaOracleTellorFactory = await ethers.getContractFactory(
+    "DIVAOracleTellor"
+  );
+  const divaOracleTellor = await divaOracleTellorFactory.deploy(
     tellorPlaygroundAddress,
     excessFeeRecipient,
     periodMinPeriodUndisputed,
-    maxFeeAmountUSD
+    maxFeeAmountUSD,
+    divaAddress
   );
-  
+
   await divaOracleTellor.deployed();
 
   console.log("DIVAOracleTellor deployed to:", divaOracleTellor.address);

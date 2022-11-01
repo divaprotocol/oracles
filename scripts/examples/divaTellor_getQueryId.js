@@ -1,29 +1,41 @@
 /**
- * Run `divaTellor:getQueryId`
+ * Script to get queryId for a given poolId, DIVA address and chain number. The
+ * latter is inferred by the specified network.
+ * Run `yarn divaTellor:getQueryId`
  */
-const hre = require("hardhat");
-const { addresses, divaTellorOracleAddresses } = require('../../utils/constants');
+const { ethers } = require("hardhat");
+
+const {
+  DIVA_ADDRESS,
+  DIVA_TELLOR_ORACLE_ADDRESS,
+} = require("../../utils/constants");
 
 async function main() {
+  // INPUT: network
+  const network = "goerli";
 
-  const network = "goerli"
-  const poolId = 1150
-  const divaAddress = addresses[network]
-  console.log('divaAddress: ', divaAddress)
+  // INPUT: id of pool
+  const poolId = 1150;
 
-  const divaOracleTellorAddress = divaTellorOracleAddresses[network]
-  console.log('divaOracleTellorAddress: ', divaOracleTellorAddress)
+  // Get chain id
+  const chainId = (await ethers.provider.getNetwork()).chainId;
 
-  // Get signers
-  const [acc1, acc2, acc3] = await ethers.getSigners();
-  const user = acc1;
+  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
 
-  // Connect to Tellor oracle contract
-  const divaOracleTellor = await hre.ethers.getContractAt("DIVAOracleTellor", divaOracleTellorAddress);
-  
+  // Connect to DIVAOracleTellor contract
+  const divaOracleTellor = await ethers.getContractAt(
+    "DIVAOracleTellor",
+    divaOracleTellorAddress
+  );
+
   // Get current queryId
-  const queryId = await divaOracleTellor.getQueryId(poolId, divaAddress)
-  console.log('queryId: ', queryId)
+  const queryId = await divaOracleTellor.getQueryId(poolId);
+
+  // Log relevant information
+  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
+  console.log("PoolId: ", poolId);
+  console.log("ChainId: ", chainId);
+  console.log("queryId: ", queryId);
 }
 
 main()
