@@ -50,9 +50,9 @@ If you don't have `nvm` installed yet, check out their [repo](https://github.com
 
 ## Intro
 
-Contingent pools created on DIVA expect one value input following pool expiration. This document describes how data providers can access the relevant data and interact with the protocol.
+Contingent pools created on DIVA expect one value input following pool expiration. This document describes how data providers can access the relevant data and interact with the DIVA Protocol. This document is relevant to all types of oracles. Oracle specific details are included in the `/docs` folder.
 
-Refer to our [gitbook](https://app.gitbook.com/s/HZJ0AbZj1fc1i5a58eEE/oracles/oracles-in-diva) (still in DRAFT) for more details about oracles and the settlement process in DIVA.
+Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process) for more details about oracles and the settlement process in DIVA.
 
 ## DIVA queries
 
@@ -65,8 +65,8 @@ Pool parameters are stored within the DIVA smart contract at the time of pool cr
 
 Pool parameters can be queried from the DIVA smart contract by calling the following function:
 
-```s
-`getPoolParameters(uint256 poolId)`
+```js
+getPoolParameters(uint256 poolId)
 ```
 
 where `poolId` is a unique identifier (more precisely, an integer that starts at 1 and increments by 1) that is assigned to a pool at the time of creation.
@@ -82,41 +82,21 @@ ABI:
   "outputs": [
     {
       "components": [
-        {
-          "internalType": "string",
-          "name": "referenceAsset",
-          "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "expiryTime",
+        { "internalType": "uint256",
+          "name": "floor",
           "type": "uint256"
         },
-        { "internalType": "uint256", "name": "floor", "type": "uint256" },
         {
           "internalType": "uint256",
           "name": "inflection",
           "type": "uint256"
         },
-        { "internalType": "uint256", "name": "cap", "type": "uint256" },
-        {
-          "internalType": "uint256",
-          "name": "supplyInitial",
+        { "internalType": "uint256",
+          "name": "cap",
           "type": "uint256"
         },
-        {
-          "internalType": "address",
-          "name": "collateralToken",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "collateralBalanceShortInitial",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "collateralBalanceLongInitial",
+        { "internalType": "uint256",
+          "name": "gradient",
           "type": "uint256"
         },
         {
@@ -125,29 +105,12 @@ ABI:
           "type": "uint256"
         },
         {
-          "internalType": "address",
-          "name": "shortToken",
-          "type": "address"
-        },
-        { "internalType": "address", "name": "longToken", "type": "address" },
-        {
           "internalType": "uint256",
           "name": "finalReferenceValue",
           "type": "uint256"
         },
-        {
-          "internalType": "enum LibDiamond.Status",
-          "name": "statusFinalReferenceValue",
-          "type": "uint8"
-        },
-        {
-          "internalType": "uint256",
-          "name": "redemptionAmountLongToken",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "redemptionAmountShortToken",
+        { "internalType": "uint256",
+          "name": "capacity",
           "type": "uint256"
         },
         {
@@ -157,22 +120,47 @@ ABI:
         },
         {
           "internalType": "address",
+          "name": "shortToken",
+          "type": "address"
+        },
+        { "internalType": "uint96",
+          "name": "payoutShort",
+          "type": "uint96"
+        },
+        { "internalType": "address",
+          "name": "longToken",
+          "type": "address"
+        },
+        { "internalType": "uint96",
+          "name": "payoutLong",
+          "type": "uint96"
+        },
+        {
+          "internalType": "address",
+          "name": "collateralToken",
+          "type": "address"
+        },
+        { "internalType": "uint96",
+          "name": "expiryTime",
+          "type": "uint96"
+        },
+        {
+          "internalType": "address",
           "name": "dataProvider",
           "type": "address"
         },
         {
-          "internalType": "uint256",
-          "name": "redemptionFee",
-          "type": "uint256"
+          "internalType": "enum LibDIVAStorage.Status",
+          "name": "statusFinalReferenceValue",
+          "type": "uint8"
         },
         {
-          "internalType": "uint256",
-          "name": "settlementFee",
-          "type": "uint256"
-        },
-        { "internalType": "uint256", "name": "capacity", "type": "uint256" }
+          "internalType": "string",
+          "name": "referenceAsset",
+          "type": "string"
+        }
       ],
-      "internalType": "struct LibDiamond.Pool",
+      "internalType": "struct LibDIVAStorage.Pool",
       "name": "",
       "type": "tuple"
     }
@@ -184,88 +172,86 @@ ABI:
 
 The following Pool struct is returned when `getPoolParameters` is called:
 
-```
+```js
 struct Pool {
-    string referenceAsset;                      // Reference asset string (e.g., "BTC/USD", "ETH Gas Price (Wei)", "TVL Locked in DeFi", etc.)
-    uint256 expiryTime;                         // Expiration time of the pool and as of time of final value expressed as a unix timestamp in seconds
-    uint256 floor;                              // Reference asset value at or below which all collateral will end up in the short pool
-    uint256 inflection;                         // Threshold for rebalancing between the long and the short side of the pool
-    uint256 cap;                                // Reference asset value at or above which all collateral will end up in the long pool
-    uint256 supplyInitial;                      // Initial short and long token supply
-    address collateralToken;                    // Address of ERC20 collateral token
-    uint256 collateralBalanceShortInitial;      // Collateral balance of short side at pool creation
-    uint256 collateralBalanceLongInitial;       // Collateral balance of long side at pool creation
-    uint256 collateralBalance;                  // Current total pool collateral balance
-    address shortToken;                         // Short position token address
-    address longToken;                          // Long position token address
-    uint256 finalReferenceValue;                // Reference asset value at the time of expiration
-    Status statusFinalReferenceValue;           // Status of final reference price (0 = Open, 1 = Submitted, 2 = Challenged, 3 = Confirmed)
-    uint256 redemptionAmountLongToken;          // Payout amount per long position token
-    uint256 redemptionAmountShortToken;         // Payout amount per short position token
-    uint256 statusTimestamp;                    // Timestamp of status change
-    address dataProvider;                       // Address of data provider
-    uint256 redemptionFee;                      // Redemption fee prevailing at the time of pool creation
-    uint256 settlementFee;                      // Settlement fee prevailing at the time of pool creation
-    uint256 capacity;                           // Maximum collateral that the pool can accept; 0 for unlimited
+    uint256 floor;                       // Reference asset value at or below which the long token pays out 0 and the short token 1 (max payout) (18 decimals)
+    uint256 inflection;                  // Reference asset value at which the long token pays out `gradient` and the short token `1-gradient` (18 decimals)
+    uint256 cap;                         // Reference asset value at or above which the long token pays out 1 (max payout) and the short token 0 (18 decimals)
+    uint256 gradient;                    // Long token payout at inflection (value between 0 and 1) (collateral token decimals)
+    uint256 collateralBalance;           // Current collateral balance of pool (collateral token decimals)
+    uint256 finalReferenceValue;         // Reference asset value at the time of expiration (18 decimals) - set to 0 at pool creation
+    uint256 capacity;                    // Maximum collateral that the pool can accept (collateral token decimals)
+    uint256 statusTimestamp;             // Timestamp of status change - set to block.timestamp at pool creation
+    address shortToken;                  // Short position token address
+    uint96 payoutShort;                  // Payout amount per short position token net of fees (collateral token decimals) - set to 0 at pool creation
+    address longToken;                   // Long position token address
+    uint256 payoutLong;                  // Payout amount per long position token net of fees (collateral token decimals) - set to 0 at pool creation
+    address collateralToken;             // Address of the ERC20 collateral token
+    uint96 expiryTime;                   // Expiration time of the pool (expressed as a unix timestamp in seconds)
+    address dataProvider;                // Address of data provider
+    Status statusFinalReferenceValue;    // Status of final reference price (0 = Open, 1 = Submitted, 2 = Challenged, 3 = Confirmed) - set to 0 at pool creation
+    string referenceAsset;               // Reference asset string
 }
 ```
 
 Example response with values:
 
-```
-    referenceAsset: 'ETH/USDT',
-    expiryTime: BigNumber { value: "1642021490" },
-    floor: BigNumber { value: "17000000000000000000" },
-    inflection: BigNumber { value: "22000000000000000000" },
-    cap: BigNumber { value: "27000000000000000000" },
-    supplyInitial: BigNumber { value: "210000000000000000000" },
-    collateralToken: '0xaD6D458402F60fD3Bd25163575031ACDce07538D',
-    collateralBalanceShortInitial: BigNumber { value: "20000000000000000" },
-    collateralBalanceLongInitial: BigNumber { value: "10000000000000000" },
-    collateralBalance: BigNumber { value: "40000000000000000" },
-    shortToken: '0x43a9f0adaa48F4D42BdFd0A4761611a468733A3d',
-    longToken: '0x0881c26507867d5020531b744D285778432c7DAc',
-    finalReferenceValue: BigNumber { value: "85000000000000000000" },
-    statusFinalReferenceValue: 3,
-    redemptionAmountLongToken: BigNumber { value: "284857142857142" },
-    redemptionAmountShortToken: BigNumber { value: "0" },
-    statusTimestamp: BigNumber { value: "1642075118" },
-    dataProvider: '0x47566C6c8f70E4F16Aa3E7D8eED4a2bDb3f4925b',
-    redemptionFee: BigNumber { value: "2500000000000000" },
-    settlementFee: BigNumber { value: "500000000000000" },
-    capacity: BigNumber { value: "0" }
+```js
+[
+  floor: BigNumber { value: "20000000000000000000" },
+  inflection: BigNumber { value: "25000000000000000000" },
+  cap: BigNumber { value: "30000000000000000000" },
+  gradient: BigNumber { value: "500000" },
+  collateralBalance: BigNumber { value: "200000000" },
+  finalReferenceValue: BigNumber { value: "0" },
+  capacity: BigNumber { value: "115792089237316195423570985008687907853269984665640564039457584007913129639935" },
+  statusTimestamp: BigNumber { value: "1667762364" },
+  shortToken: '0xEa5551DA89a835cF3B6a87280Bf3AA5d3f48E6C7',
+  payoutShort: BigNumber { value: "0" },
+  longToken: '0xCadb189f850F6b7Ea2fA8fedf837d8e0BD038774',
+  payoutLong: BigNumber { value: "0" },
+  collateralToken: '0x9A07D3F69411155f2790E5ed138b750C3Ecd28aD',
+  expiryTime: BigNumber { value: "1669841160" },
+  dataProvider: '0x9AdEFeb576dcF52F5220709c1B267d89d5208D78',
+  statusFinalReferenceValue: 0,
+  referenceAsset: 'FTT/USD'
+]
 ```
 
 ### DIVA subgraph
 
 Pool information can also be obtained by querying the DIVA subgraph:
 
-- Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-ropsten
-- Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-rinkeby
-- Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-kovan
-- Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-mumbai
+- Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new
 - Polygon: n/a
 - Mainnet: n/a
+- Arbitrum: n/a
 
 The DIVA subgraph has additional information that is not included in [`getPoolParameters`](##diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful when a data provider has enabled the challenge functionality.
 
 The following fields include relevant information for data providers:
 
-- `referenceAsset`
-- `expiryTime`
-- `dataProvider`
-- `finalReferenceValue`
-- `statusFinalReferenceValue`
-- `collateralToken`
-- `settlementFee`
-- `collateralTokenName` (in subgraph only)
-- `collateralSymbol` (in subgraph only)
-- `collateralDecimals` (in subgraph only)
-- `challengedBy` (in subgraph only)
-- `proposedFinalReferenceValue` (in subgraph only)
-- `createdAt` (in subgraph only)
+| Parameter          |  Description|
+| :----------------- | :------ | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `referenceAsset`   | The metric or event whose outcome will determine the payout for long and short position tokens.     
+| `expiryTime`       |  Expiration time of position tokens expressed as a unix timestamp in seconds. The value of the reference asset observed at that point in time determines the payoffs for long and short position tokens. |
+| `dataProvider`     |  Ethereum account (EOA or smart contract) that will report the final reference asset value.                                                                            | `finalReferenceValue`     |  Final reference value expressed as an integer with 18 decimals.                                       |
+| `statusFinalReferenceValue`     | Status of final reference price (Open, Submitted, Challenged, Confirmed) - set to "Open" at pool creation.                                       |
+| `collateralToken`     | Address of the ERC20 collateral token.                                       |
+| `collateralTokenName`     |  Name of `collateralToken`.                                       |
+| `collateralSymbol`     |  Symbol of `collateralToken`.                                       |
+| `collateralDecimals`     |  Number of decimals of `collateralToken`.                                       |
+| `settlementFee`     |  Fee in % of gross collateral that goes to the data provider at remove/redeem; expressed as an integer with 18 decimals.                                       |
+| `challengedBy`     |  Address that submitted a challenge for the submitted value.                                       |
+| `proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals.                                       |
+| `createdAt`     |  Timestamp of pool creation in seconds since epoch.                                       |
 
 Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets linked to the pool are tracking.
+
+## Querying for relevant pools
+The filters to apply:
+* `dataProvider = 0x123...cde`
+* `expiryTime < time.now() <= expiryTime + 7d`
 
 ## Submit final reference value
 
@@ -717,182 +703,4 @@ Whitelisted data providers, data feeds and collateral tokens can also be accesse
 - Polygon: n/a
 - Mainnet: n/a
 
-# DIVA Porter module
 
-## How to deploy and verify the contract
-
-### Deploy
-
-Run `npx hardhat run --network <network> scripts/deployPorterModule.js` to deploy contract. You can see the contract address after deployment is completed.
-
-### Verify
-
-Run `npx hardhat verify <contract address from above> --network <network> <Porter Finance BondFactory address>` to verify the contract.
-
-Porter Finance BondFactory addresses:
-
-- Mainnet: 0x9f20521ef789fd2020e708390b1e6c701d8218ba
-- Rinkeby: 0x0ae42cF40Fb46A926e2dcCE92b2Fe785d2D1E0A0
-- Ropsten: 0x74Ef0622280dfae28F9513e9173CaFF711C47eF4
-- Goerli: 0x74Ef0622280dfae28F9513e9173CaFF711C47eF4
-
-## How to run test
-
-Run `yarn t test/DIVAPorterModule.test.js` to run the tests in `test/DIVAPorterModule.test.test.js`
-
-## Purpose of this DIVA Porter module
-
-To have a trustless on-chain oracle for credit default protection products issued on DIVA Protocol.
-
-![DIVA oracle module](https://user-images.githubusercontent.com/37043174/174320777-8b0acaab-06e1-4b35-85ef-de7a3a6dfddf.png)
-
-DIVA Porter module includes the following features:
-
-- Create contingent pool: Create contingent pool on DIVA protocol. `createContingentPool` function will automatically encode the reference asset, expiry time, floor, cap and data provider based on a pre-defined structure.
-- Set final reference: Get the unpaid amount from Porter Finance bond contract and pass it into DIVA Protocol by calling the `setFinalReferenceValue` function.
-
-## How to create a pool using the `createContingentPool` function inside the DIVA Porter Module
-
-Users can create a contingent pool on DIVA protocol by calling the `createContingentPool` function inside the DIVA Porter Module
-
-```
-createContingentPool(
-    address _divaDiamond,
-    PorterPoolParams calldata _porterPoolParams
-)
-```
-
-where:
-
-- `_divaDiamond` is the address of the DIVA protocol
-- `_porterPoolParams` is the structure of the pool parameters. `PorterPoolParams` struct is like this:
-
-```
-struct PorterPoolParams {
-    address referenceAsset;
-    uint256 inflection;
-    uint256 gradient;
-    uint256 collateralAmount;
-    address collateralToken;
-    uint256 capacity;
-}
-```
-
-where:
-
-- `referenceAsset` is the address of bond contract.
-- `inflection` is the value of underlying at which the long token will payout out `gradient` and the short token `1-gradient`.
-- `gradient` is the long token payout at inflection. The short token payout at inflection is `1-gradient`.
-- `collateralAmount` is the collateral amount to be deposited into the pool to back the position tokens.
-- `collateralToken` is the ERC20 collateral token address.
-- `capacity` is the maximum collateral amount that the pool can accept.
-
-ABI:
-
-```json
-{
-  "inputs": [
-    {
-      "internalType": "address",
-      "name": "_divaDiamond",
-      "type": "address"
-    },
-    {
-      "components": [
-        {
-          "internalType": "address",
-          "name": "referenceAsset",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "inflection",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "gradient",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "collateralAmount",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "collateralToken",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "capacity",
-          "type": "uint256"
-        }
-      ],
-      "internalType": "struct IDIVAPorterModule.PorterPoolParams",
-      "name": "_porterPoolParams",
-      "type": "tuple"
-    }
-  ],
-  "name": "createContingentPool",
-  "outputs": [
-    {
-      "internalType": "uint256",
-      "name": "",
-      "type": "uint256"
-    }
-  ],
-  "stateMutability": "nonpayable",
-  "type": "function"
-}
-```
-
-## How to trigger the `setFinalReferenceValue` function in DIVA Porter Module
-
-Users can trigger the `setFinalReferenceValue` function in DIVA Porter Module by calling it after `expiryTime` has passed:
-
-```
-setFinalReferenceValue(
-    address _divaDiamond,
-    uint256 _poolId
-)
-```
-
-where:
-
-- `_divaDiamond` is the address of the DIVA protocol
-- `_poolId` is the id of the pool that is to be settled
-
-ABI:
-
-```json
-{
-  "inputs": [
-    {
-      "internalType": "address",
-      "name": "_divaDiamond",
-      "type": "address"
-    },
-    {
-      "internalType": "uint256",
-      "name": "_poolId",
-      "type": "uint256"
-    }
-  ],
-  "name": "setFinalReferenceValue",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
-}
-```
-
-## Caveats
-
-`amountUnpaid` from Porter Finance bond contract may change even after grace period end if the borrower sends more funds. So ideally, the `setFinalReferenceValue` function should be triggered shortly following expiration to get the relevant value. A request to store the `amountUnpaid` prevailing as of grace period end has been submitted [here](https://github.com/porter-finance/v1-core/issues/324).
-
-## Porter module addresses
-
-- Ropsten: 0xf68F1Ec9dB1C60cf6E934eDa79D94f014Df47d53
-- Goerli: 0x8059860B02DA39Cb7418352262a9F6f81b3Aaf2a
-- Mainnet: n/a
