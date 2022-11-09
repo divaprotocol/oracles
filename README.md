@@ -50,20 +50,23 @@ If you don't have `nvm` installed yet, check out their [repo](https://github.com
 
 ## Intro
 
-Contingent pools created on DIVA expect one value input following pool expiration. This document describes how data providers can access the relevant data and interact with the DIVA Protocol. This document is relevant to all types of oracles. Oracle specific details are included in the `/docs` folder.
+Contingent pools created using [DIVA Protocol](https://github.com/divaprotocol/diva-contracts) require a one-off reporting of the outcome of the underlying event following pool expiration. This document describes how data providers can access the relevant data and interact with the DIVA Protocol to submit values. This document provides general information that is applicable to all types of oracles. Oracle specific information is available in the `/docs` directory.
 
-Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process) for more details about oracles and the settlement process in DIVA.
+Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process) for more details about oracles and the settlement process in DIVA Protocol.
 
-## DIVA queries
+## Data request
+The pool creation event constitutes a request to a data provider to provide a certain data point at some future point in time. That is, a data provider already knows the reporting requirements at the time of pool creation and therefore needs to make sure to have listeners and notification services in place to not miss the reporting window.
 
-Pool parameters are stored within the DIVA smart contract at the time of pool creation and can be queried in two ways:
+Pool data can be queried in two ways:
 
 1. DIVA smart contract via the `getPoolParameters` function
-1. DIVA subgraph
+1. DIVA subgraph: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new
+
+It is recommended to use the DIVA subgraph to build listeners and notification services as it's more efficient to use and contains more data than returned by `getPoolParameters` function.
 
 ### DIVA smart contract
 
-Pool parameters can be queried from the DIVA smart contract by calling the following function:
+Reporters can call the following smart contract function to receive the pool information for a given poolId:
 
 ```js
 getPoolParameters(uint256 poolId)
@@ -76,7 +79,10 @@ ABI:
 ```json
 {
   "inputs": [
-    { "internalType": "uint256", "name": "_poolId", "type": "uint256" }
+    { "internalType": "uint256",
+      "name": "_poolId",
+      "type": "uint256"
+    }
   ],
   "name": "getPoolParameters",
   "outputs": [
@@ -242,16 +248,82 @@ The following fields include relevant information for data providers:
 | `collateralSymbol`     |  Symbol of `collateralToken`.                                       |
 | `collateralDecimals`     |  Number of decimals of `collateralToken`.                                       |
 | `settlementFee`     |  Fee in % of gross collateral that goes to the data provider at remove/redeem; expressed as an integer with 18 decimals.                                       |
+| `collateralBalanceGross`     |  Total collateral added to the pool during its lifetime. Used                                        |
 | `challengedBy`     |  Address that submitted a challenge for the submitted value.                                       |
 | `proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals.                                       |
 | `createdAt`     |  Timestamp of pool creation in seconds since epoch.                                       |
 
 Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets linked to the pool are tracking.
 
+## Example query
+```js
+{
+  pool(id: 54) {
+    id
+    referenceAsset
+    floor
+    inflection
+    cap
+    supplyShort
+    supplyLong
+    expiryTime
+    collateralToken {
+      id
+      name
+      decimals
+      symbol
+    }
+    collateralBalanceGross
+    gradient
+    collateralBalance
+    shortToken {
+      id
+      name
+      symbol
+      decimals
+      owner
+    }
+    longToken {
+      id
+      name
+      symbol
+      decimals
+      owner
+    }
+    finalReferenceValue
+    statusFinalReferenceValue
+    payoutLong
+    payoutShort
+    statusTimestamp
+    dataProvider
+    protocolFee
+    settlementFee
+    createdBy
+    createdAt
+    submissionPeriod
+    challengePeriod
+    reviewPeriod
+    fallbackSubmissionPeriod
+    permissionedERC721Token
+    capacity
+    expiryTime
+    challenges {
+      challengedBy
+      proposedFinalReferenceValue
+    }
+  }
+}
+```
+
 ## Querying for relevant pools
-The filters to apply:
+Example filters for subgraph listener:
 * `dataProvider = 0x123...cde`
 * `expiryTime < time.now() <= expiryTime + 7d`
+* `referenceAsset = BTC/USD` 
+* `statusFinalReferenceValue = 'Open' OR 'Challenged'`
+
+Note that "Challenged" is only relevant if the possibility to challenge is enabled.
+
 
 ## Submit final reference value
 
