@@ -50,21 +50,32 @@ If you don't have `nvm` installed yet, check out their [repo](https://github.com
 
 ## Intro
 
-Contingent pools created using [DIVA Protocol](https://github.com/divaprotocol/diva-contracts) require a one-off reporting of the outcome of the underlying event following pool expiration. This document describes how data providers can access the relevant data and interact with the DIVA Protocol to submit values. This document provides general information that is applicable to all types of oracles. Oracle specific information is available in the `/docs` directory.
+[DIVA Protocol](https://github.com/divaprotocol/diva-contracts) is a smart contract that allows its users to create derivative contracts with a pre-defined expiration time on virtually any metric. To determine the payoffs of the long and short side of the contract, one oracle input is required following contract expiration. In DIVA Protocol, the data provider is represented by an Ethereum address and set at the time of product creation. 
 
-Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process) for more details about oracles and the settlement process in DIVA Protocol.
+This document describes how data providers can access the relevant data and interact with the DIVA Protocol to submit values. This document provides general information that is applicable to all types of oracles. Oracle specific information is available in the `/docs` directory.
+
+Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process) to learn more about the settlement process.
 
 ## Data request
-The pool creation event constitutes a request to a data provider to provide a certain data point at some future point in time. That is, a data provider already knows the reporting requirements at the time of pool creation and therefore needs to make sure to have listeners and notification services in place to not miss the reporting window.
+The creation event of a derivative contract constitutes a request to a data provider to provide a data at a pre-defined future point in time. It's the data provider's responsibility to set up the required listeners and notification services to not miss the reporting window.
+
+The recommended way to monitor derivative contracts is using the DIVA subgraph:
+* Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new
+* Polygon: n/a
+* Mainnet: n/a
+* Arbitrum: n/a
+<!-- ## Example subgraph query
+
+
 
 Pool data can be queried in two ways:
 
 1. DIVA smart contract via the `getPoolParameters` function
 1. DIVA subgraph: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new
 
-It is recommended to use the DIVA subgraph to build listeners and notification services as it's more efficient to use and contains more data than returned by `getPoolParameters` function.
+It is recommended to use the DIVA subgraph to build listeners and notification services as it's more efficient to use and contains more data than returned by `getPoolParameters` function. -->
 
-### DIVA smart contract
+<!-- ### DIVA smart contract
 
 Reporters can call the following smart contract function to receive the pool information for a given poolId:
 
@@ -222,25 +233,33 @@ Example response with values:
   statusFinalReferenceValue: 0,
   referenceAsset: 'FTT/USD'
 ]
-```
+``` -->
 
 ### DIVA subgraph
 
-Pool information can also be obtained by querying the DIVA subgraph:
 
-- Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new
-- Polygon: n/a
-- Mainnet: n/a
-- Arbitrum: n/a
+```js
+{ 
+    pools (first: 1000, where: {id_gt: 70, expiryTime_gt: "1667147292", expiryTime_lte: "1667752092", statusFinalReferenceValue: "Open", dataProvider: "0x9f6cd21bf0f18cf7bcd1bd9af75476537d8295fb"}) {
+        id
+        dataProvider
+        referenceAsset
+        floor
+        inflection
+        cap
+        statusFinalReferenceValue
+        expiryTime
+    }
+}
+```
 
-The DIVA subgraph has additional information that is not included in [`getPoolParameters`](##diva-smart-contract). In particular, it includes challenge specific information such as the challenger address and the value proposed by the challenger which can be useful when a data provider has enabled the challenge functionality.
-
-The following fields include relevant information for data providers:
+where:
 
 | Parameter          |  Description|
 | :----------------- | :------ | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `referenceAsset`   | The metric or event whose outcome will determine the payout for long and short position tokens.     
-| `expiryTime`       |  Expiration time of position tokens expressed as a unix timestamp in seconds. The value of the reference asset observed at that point in time determines the payoffs for long and short position tokens. |
+| `id`   | Id of the contingent pool / derivative contract.     
+| `referenceAsset`   | The metric or event whose outcome will determine the payout for the long and short side of the derivative contract.     
+| `expiryTime`       |  Expiration time of the derivative contract expressed as a unix timestamp in seconds. The value of the reference asset observed prevailing at the time of expiration determines the payoffs for long and short position tokens. |
 | `dataProvider`     |  Ethereum account (EOA or smart contract) that will report the final reference asset value.                                                                            | `finalReferenceValue`     |  Final reference value expressed as an integer with 18 decimals.                                       |
 | `statusFinalReferenceValue`     | Status of final reference price (Open, Submitted, Challenged, Confirmed) - set to "Open" at pool creation.                                       |
 | `collateralToken`     | Address of the ERC20 collateral token.                                       |
@@ -255,10 +274,15 @@ The following fields include relevant information for data providers:
 
 Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets linked to the pool are tracking.
 
-## Example query
+> **Recommendation:** if the possibility to challenge is enabled by the data provider, the data provider needs to monitor all challenges by using `statusFinalReferenceValue: "Challenged"` as the condition. As challenges may be valid, data providers should not automatically report but rather handle challenges manually. 
+
+**Comments:**
+* `statusFinalReferenceValue = Challenged` is only possible if the data provider enabled the possibility to challenge. In that case, a 
+
+### Example query
 ```js
 {
-  pool(id: 54) {
+  pool(id: 54, where: {dataProvider="dataProvider"}) {
     id
     referenceAsset
     floor
@@ -315,14 +339,9 @@ Additional parameters that may be useful when implementing sanity checks on the 
 }
 ```
 
-## Querying for relevant pools
-Example filters for subgraph listener:
-* `dataProvider = 0x123...cde`
-* `expiryTime < time.now() <= expiryTime + 7d`
-* `referenceAsset = BTC/USD` 
-* `statusFinalReferenceValue = 'Open' OR 'Challenged'`
 
-Note that "Challenged" is only relevant if the possibility to challenge is enabled.
+
+
 
 
 ## Submit final reference value
