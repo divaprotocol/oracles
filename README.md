@@ -200,7 +200,9 @@ Each position token holder of a pool can submit a challenge including a value th
 
 ## Settlement fees
 
-Data providers are rewarded with a settlement fee of 0.05% of the total (gross) collateral that was deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool (via remove liquidity or redeem) and can be claimed by the corresponding data provider at any point in time. The data provider can also transfer the fee claim to another recipient using the `transferFeeClaim` function. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract.
+Data providers are rewarded with a settlement fee of 0.05% of the total (gross) collateral that was deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool (via remove liquidity or redeem) and can be claimed by the corresponding data provider at any point in time. The entitled data provider can also transfer the fee claim to another recipient using the `transferFeeClaim` function. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract.
+
+The relevant fee related functions inside DIVA protocol are presented below. Note that some oracle integrations such as Tellor module implement an additional tipping functionality to offer reporters additional incentives, especially for smaller size pools, to report values. Refer to the oracle specific documentation in the `docs` directory for details.
 
 ### Get fee claim
 
@@ -271,6 +273,22 @@ ABI:
 }
 ```
 
+Batch version of `claimFee` function:
+
+```js
+function batchClaimFee(
+    ArgsBatchClaimFee[] calldata _argsBatchClaimFee
+) external;
+```
+
+where
+
+```js
+struct ArgsBatchClaimFee {
+    address collateralToken;    // Collateral token address
+    address recipient;          // Recipient address
+}
+```
 
 
 
