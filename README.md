@@ -237,7 +237,8 @@ Example response with values:
 
 ### DIVA subgraph
 
-Example query including fields that should cover most of a data provider's needs. All available fields can be found in the [DIVA subgraph](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new) for all available fields.
+Example query including a subset of fields that should cover most of a data provider's needs to build a listener. The full list of fields available can be found in the [DIVA subgraph](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new).
+
 ```js
 { 
     pools (first: 1000, where: {expiryTime_gt: "1667147292", expiryTime_lte: "1667752092", statusFinalReferenceValue: "Open", dataProvider: "0x9f6cd21bf0f18cf7bcd1bd9af75476537d8295fb"}) {
@@ -270,31 +271,27 @@ where:
 
 | Parameter          |  Description|
 | :----------------- | :------ | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`   | Id of the contingent pool / derivative contract.     
-| `referenceAsset`   | The metric or event which outcome will determine the payout for the long and short side of the derivative contract.     
-| `expiryTime`       |  Expiration time of the derivative contract expressed as a unix timestamp in seconds. The value of the reference asset observed prevailing at the time of expiration determines the payoffs for long and short position tokens. |
-| `dataProvider`     |  Ethereum account (EOA or smart contract) that will report the final reference asset value.                                                                            
-| `finalReferenceValue`     | Submitted reference asset value. 0 at pool creation. Final reference value expressed as an integer with 18 decimals.                                       |
-| `statusFinalReferenceValue`     | Status of final reference price (Open, Submitted, Challenged, Confirmed). "Open" at pool creation.                                       |
+| `id`   | Id of the contingent pool / derivative contract; incrementally increasing integer starting at 1.    
+| `referenceAsset`   | The metric or event for which reporting is required (e.g., BTC/USD, ETH/USD, etc).     
+| `expiryTime`       | The contract expiration time and the "as of time" the reference asset value has to be reported; expressed as a unix timestamp in seconds since epoch (UTC). |
+| `dataProvider`     |  Ethereum account (EOA or smart contract) that will report the final reference value.                                                                            
+| `finalReferenceValue`     | Current reference asset value stored in the DIVA smart contract for the corresponding pool, expressed as an integer with 18 decimals. Set to 0 at pool creation.                                        |
+| `statusFinalReferenceValue`     | Status of final reference value (Open, Submitted, Challenged, Confirmed). "Open" at pool creation.                                       |
 | `collateralToken.id`     | Address of the ERC20 collateral token.                                       |
 | `collateralToken.name`     |  Name of `collateralToken`.                                       |
 | `collateralToken.symbol`     |  Symbol of `collateralToken`.                                       |
 | `collateralToken.decimals`     |  Number of decimals of `collateralToken`.                                       |
-| `settlementFee`     |  Fee in % of gross collateral that goes to the data provider when users remove liquidity/redeem; expressed as an integer with 18 decimals (e.g., 500000000000000 = 0.05%).                                       |
+| `settlementFee`     | Fee that goes to the data provider when users remove liquidity / redeem, in % of the collateral amount being removed/redeemed; expressed as an integer with 18 decimals (e.g., 500000000000000 = 0.05%).                                       |
 | `collateralBalanceGross`     |  Total collateral added to the pool during its lifetime. Used as the basis to estimate fee rewards.                                       |
-| `challenges.challengedBy`     |  Address that submitted a challenge for the submitted value.                                       |
-| `challenges.proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals. IMPORTANT: Those values DO NOT overwrite `finalReferenceValue`.                                       |
-| `createdAt`     |  Timestamp of pool creation in seconds since epoch.                                       |
+| `challenges.challengedBy`     |  Address that submitted a challenge for the submitted value. Only relevant if the possibility to challenge was enabled by the data provider in the first place.                                       |
+| `challenges.proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals. IMPORTANT: Those values DO NOT overwrite `finalReferenceValue`. Only relevant if the possibility to challenge was enabled by the data provider in the first place.                                       |
+| `createdAt`     |  Timestamp of pool creation in seconds since epoch (UTC).                                       |
 | `createdBy`     |  Address that created the pool.                                       |
 
-Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets linked to the pool are tracking.
-
-As 1000 entries is the maximum that The Graph can return, we recommend implementing a loop to ensure that all pools are captured. More info [here](https://thegraph.com/docs/en/querying/graphql-api/#example-using-and-2).
-
-> **Recommendation:** if the possibility to challenge is enabled by the data provider, the data provider needs to monitor all challenges by using `statusFinalReferenceValue: "Challenged"` as the condition. As challenges may be valid, data providers should not automatically report but rather handle challenges manually. 
-
 **Comments:**
-* `statusFinalReferenceValue = Challenged` is only possible if the data provider enabled the possibility to challenge. In that case, a 
+* If the possibility to challenge is enabled by the data provider, the data provider needs to monitor all challenges using `statusFinalReferenceValue: "Challenged"` as the query condition. As challenges may be valid, data providers SHOULD NOT automatically report when a challenge occurs but rather handle them manually. Challenges are typically enabled when a centralized party acts as the oracle. Challenges are disabled for decentralized oracles like Tellor which have their own dispute resolution mechanism.
+* By default, The Graph will return a maximum of 1000 entries. To ensure that all pools are captured, we recommend implementing a loop using `id_gt` as is described [here](https://thegraph.com/docs/en/querying/graphql-api/#example-using-and-2).
+* Make sure that the timezone of the `expiryTime` and your off-chain data source are in sync.
 
 ### Example query
 ```js
