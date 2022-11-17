@@ -382,6 +382,8 @@ All fee claims are stored in the subgraph inside the `FeeRecipient` entity. Exam
 
 ## Whitelist queries
 
+**TODO Remove?**
+
 To protect users from malicious pools, DIVA token holders maintain a whitelist of trusted data providers along with the data feeds that they can provide. Users will be able to reference those at pool creation. Data providers and data feeds are added to the whitelist through a DIVA governance vote following a thorough due diligence process.
 
 In addition to data providers and data feeds, the whitelist contract also stores collateral tokens. Whitelisted data providers are expected to report values for pools where whitelisted collateral tokens are used. For pools with non-whitelisted collateral tokens, data providers are not expected to submit any values. This is to prevent that data providers are abused and paid in worthless tokens.
@@ -400,7 +402,22 @@ The following getter functions can be called to retrieve whitelist information f
 Function to get the data provider name and whitelist status:
 
 ```js
-getDataProvider(address _address)
+function getDataProvider(
+   address _dataProvider
+)
+   external
+   view
+   returns (DataProvider memory);
+```
+
+where
+
+```js
+struct DataProvider {
+    string name;                  // Data provider name
+    bool publicTrigger;           // True if anyone can trigger the oracle (in case of a smart contract, for instance), false otherwise
+    uint32 maxDurationInSeconds; // Max pool duration that the reporter will report to  
+}
 ```
 
 ABI:
@@ -439,19 +456,15 @@ ABI:
 }
 ```
 
-This function returns the following `DataProvider` struct:
-
-```
-struct DataProvider {
-    string name;            // Name of data provider
-    bool publicTrigger;     // 1 if anyone can trigger the oracle to submit the final value, 0 if only the owner of the address can do it
-}
-```
-
 Function to return the data feeds for a given data provider:
 
-```
-getDataFeeds(address _address)
+```js
+function getDataFeeds(
+     address _dataProvider
+)
+     external
+     view
+     returns (DataFeed[] memory);
 ```
 
 ABI:
@@ -507,7 +520,7 @@ ABI:
 
 This function returns an array of `DataFeed` structs:
 
-```
+```js
 struct DataFeed {
     string referenceAsset;              // Name of the data feed provided by the data provider
     string referenceAssetUnified;       // Unified name for referenceAsset to account for different labels used for the same asset (e.g., XBT/USD, BTC-USD, BTCUSD)
@@ -519,8 +532,14 @@ struct DataFeed {
 
 Function to return the data feed at a given index for a given data provider:
 
-```
-getDataFeed(address _address, uint256 _index)
+```js
+function getDataFeed(
+       address _dataProvider, 
+       uint256 _index
+)
+       external
+       view
+       returns (DataFeed memory);
 ```
 
 ABI:
@@ -581,8 +600,13 @@ ABI:
 
 Function to return whether a given `_collateralToken` address is whitelisted or not:
 
-```
-getCollateralToken(address _collateralToken)
+```js
+function getCollateralToken(
+      address _collateralToken
+)
+      external
+      view
+      returns (bool);
 ```
 
 ```json
@@ -611,20 +635,16 @@ getCollateralToken(address _collateralToken)
 
 Whitelisted data providers, data feeds and collateral tokens can also be accessed via the whitelist subgraph.
 
-- Ropsten: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-ropsten
-- Rinkeby: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-rinkeby
-- Kovan: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-kovan
-- Mumbai: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-mumbai
-- Polygon: n/a
-- Mainnet: n/a
+* Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-goerli
+* Polygon: n/a
+* Mainnet: n/a
+* Arbitrum: n/a
 
 ## DIVA protocol addresses
 
-- Ropsten: 0x07F0293a07703c583F4Fb4ce3aC64043732eF3bf
-- Rinkeby: 0xa1fa77354D7810A6355583b566E5adB29C3f7733
-- Kovan: 0x607228ebB95aa097648Fa8b24dF8807684BBF101
-- Mumbai: 0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B
-- Polygon: n/a
-- Mainnet: n/a
+* Goerli: 0x2d941518E0876Fb6042bfCdB403427DC5620b2EC
+* Polygon: n/a
+* Mainnet: n/a
+* Arbitrum: n/a
 
 
