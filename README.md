@@ -57,7 +57,7 @@ This document describes how data providers can access the relevant data and inte
 Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process) to learn more about the settlement process.
 
 ## Data request
-The creation event of a derivative contract constitutes a request to a data provider to provide a data at a pre-defined future point in time. It's the data provider's responsibility to set up the required listeners and notification services to not miss the reporting window.
+The creation event of a derivative contract constitutes a request to a data provider to provide a data point at a pre-defined future point in time. It's the data provider's responsibility to set up the required listeners and notification services to not miss the reporting window.
 
 The recommended way to monitor derivative contracts is using the DIVA subgraph:
 * Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new
@@ -237,18 +237,31 @@ Example response with values:
 
 ### DIVA subgraph
 
-
+Example query including fields that should cover most of a data provider's needs. All available fields can be found in the [DIVA subgraph](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new) for all available fields.
 ```js
 { 
-    pools (first: 1000, where: {id_gt: 70, expiryTime_gt: "1667147292", expiryTime_lte: "1667752092", statusFinalReferenceValue: "Open", dataProvider: "0x9f6cd21bf0f18cf7bcd1bd9af75476537d8295fb"}) {
+    pools (first: 1000, where: {expiryTime_gt: "1667147292", expiryTime_lte: "1667752092", statusFinalReferenceValue: "Open", dataProvider: "0x9f6cd21bf0f18cf7bcd1bd9af75476537d8295fb"}) {
         id
-        dataProvider
         referenceAsset
-        floor
-        inflection
-        cap
-        statusFinalReferenceValue
         expiryTime
+        dataProvider
+        finalReferenceValue
+        statusFinalReferenceValue
+        collateralToken {
+          id
+          name
+          symbol
+          decimals
+        }
+        collateralBalanceGross
+        settlementFee
+        challengedBy
+        challenges {
+          challengedBy
+          proposedFinalReferenceValue
+        }
+        createdAt
+        createdBy
     }
 }
 ```
@@ -258,21 +271,25 @@ where:
 | Parameter          |  Description|
 | :----------------- | :------ | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `id`   | Id of the contingent pool / derivative contract.     
-| `referenceAsset`   | The metric or event whose outcome will determine the payout for the long and short side of the derivative contract.     
+| `referenceAsset`   | The metric or event which outcome will determine the payout for the long and short side of the derivative contract.     
 | `expiryTime`       |  Expiration time of the derivative contract expressed as a unix timestamp in seconds. The value of the reference asset observed prevailing at the time of expiration determines the payoffs for long and short position tokens. |
-| `dataProvider`     |  Ethereum account (EOA or smart contract) that will report the final reference asset value.                                                                            | `finalReferenceValue`     |  Final reference value expressed as an integer with 18 decimals.                                       |
-| `statusFinalReferenceValue`     | Status of final reference price (Open, Submitted, Challenged, Confirmed) - set to "Open" at pool creation.                                       |
-| `collateralToken`     | Address of the ERC20 collateral token.                                       |
-| `collateralTokenName`     |  Name of `collateralToken`.                                       |
-| `collateralSymbol`     |  Symbol of `collateralToken`.                                       |
-| `collateralDecimals`     |  Number of decimals of `collateralToken`.                                       |
-| `settlementFee`     |  Fee in % of gross collateral that goes to the data provider at remove/redeem; expressed as an integer with 18 decimals.                                       |
-| `collateralBalanceGross`     |  Total collateral added to the pool during its lifetime. Used                                        |
-| `challengedBy`     |  Address that submitted a challenge for the submitted value.                                       |
-| `proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals.                                       |
+| `dataProvider`     |  Ethereum account (EOA or smart contract) that will report the final reference asset value.                                                                            
+| `finalReferenceValue`     | Submitted reference asset value. 0 at pool creation. Final reference value expressed as an integer with 18 decimals.                                       |
+| `statusFinalReferenceValue`     | Status of final reference price (Open, Submitted, Challenged, Confirmed). "Open" at pool creation.                                       |
+| `collateralToken.id`     | Address of the ERC20 collateral token.                                       |
+| `collateralToken.name`     |  Name of `collateralToken`.                                       |
+| `collateralToken.symbol`     |  Symbol of `collateralToken`.                                       |
+| `collateralToken.decimals`     |  Number of decimals of `collateralToken`.                                       |
+| `settlementFee`     |  Fee in % of gross collateral that goes to the data provider when users remove liquidity/redeem; expressed as an integer with 18 decimals (e.g., 500000000000000 = 0.05%).                                       |
+| `collateralBalanceGross`     |  Total collateral added to the pool during its lifetime. Used as the basis to estimate fee rewards.                                       |
+| `challenges.challengedBy`     |  Address that submitted a challenge for the submitted value.                                       |
+| `challenges.proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals. IMPORTANT: Those values DO NOT overwrite `finalReferenceValue`.                                       |
 | `createdAt`     |  Timestamp of pool creation in seconds since epoch.                                       |
+| `createdBy`     |  Address that created the pool.                                       |
 
 Additional parameters that may be useful when implementing sanity checks on the oracle side include `floor` and `cap` which define the range that the derivative assets linked to the pool are tracking.
+
+As 1000 entries is the maximum that The Graph can return, we recommend implementing a loop to ensure that all pools are captured. More info [here](https://thegraph.com/docs/en/querying/graphql-api/#example-using-and-2).
 
 > **Recommendation:** if the possibility to challenge is enabled by the data provider, the data provider needs to monitor all challenges by using `statusFinalReferenceValue: "Challenged"` as the condition. As challenges may be valid, data providers should not automatically report but rather handle challenges manually. 
 
