@@ -273,7 +273,7 @@ where:
 | :----------------- | :------ | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `id`   | Id of the contingent pool / derivative contract; incrementally increasing integer starting at 1.    
 | `referenceAsset`   | The metric or event for which reporting is required (e.g., BTC/USD, ETH/USD, etc).     
-| `expiryTime`       | The contract expiration time and the "as of time" the reference asset value has to be reported; expressed as a unix timestamp in seconds since epoch (UTC). |
+| `expiryTime`       | The contract expiration time and the "as of time" the reference asset value has to be reported of; expressed as a unix timestamp in seconds since epoch (UTC). |
 | `dataProvider`     |  Ethereum account (EOA or smart contract) that will report the final reference value.                                                                            
 | `finalReferenceValue`     | Current reference asset value stored in the DIVA smart contract for the corresponding pool, expressed as an integer with 18 decimals. Set to 0 at pool creation.                                        |
 | `statusFinalReferenceValue`     | Status of final reference value (Open, Submitted, Challenged, Confirmed). "Open" at pool creation.                                       |
@@ -292,70 +292,6 @@ where:
 * If the possibility to challenge is enabled by the data provider, the data provider needs to monitor all challenges using `statusFinalReferenceValue: "Challenged"` as the query condition. As challenges may be valid, data providers SHOULD NOT automatically report when a challenge occurs but rather handle them manually. Challenges are typically enabled when a centralized party acts as the oracle. Challenges are disabled for decentralized oracles like Tellor which have their own dispute resolution mechanism.
 * By default, The Graph will return a maximum of 1000 entries. To ensure that all pools are captured, we recommend implementing a loop using `id_gt` as is described [here](https://thegraph.com/docs/en/querying/graphql-api/#example-using-and-2).
 * Make sure that the timezone of the `expiryTime` and your off-chain data source are in sync.
-
-### Example query
-```js
-{
-  pool(id: 54, where: {dataProvider="dataProvider"}) {
-    id
-    referenceAsset
-    floor
-    inflection
-    cap
-    supplyShort
-    supplyLong
-    expiryTime
-    collateralToken {
-      id
-      name
-      decimals
-      symbol
-    }
-    collateralBalanceGross
-    gradient
-    collateralBalance
-    shortToken {
-      id
-      name
-      symbol
-      decimals
-      owner
-    }
-    longToken {
-      id
-      name
-      symbol
-      decimals
-      owner
-    }
-    finalReferenceValue
-    statusFinalReferenceValue
-    payoutLong
-    payoutShort
-    statusTimestamp
-    dataProvider
-    protocolFee
-    settlementFee
-    createdBy
-    createdAt
-    submissionPeriod
-    challengePeriod
-    reviewPeriod
-    fallbackSubmissionPeriod
-    permissionedERC721Token
-    capacity
-    expiryTime
-    challenges {
-      challengedBy
-      proposedFinalReferenceValue
-    }
-  }
-}
-```
-
-
-
-
 
 
 ## Submit final reference value
