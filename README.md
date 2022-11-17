@@ -56,6 +56,10 @@ This document describes how data providers can access the relevant data and inte
 
 Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process) to learn more about the settlement process.
 
+## Function overview
+This overview covers the DIVA smart contract functions that are most relevant for data providers. All other functions can be found in the official [DIVA documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md). 
+
+
 ## Data request
 The creation event of a derivative contract (also referred to as a "contingent pool" or simply "pool") constitutes a request to a data provider to provide a data point at a pre-defined future point in time. It's the data provider's responsibility to set up the required listeners and notification services to not miss the reporting window.
 
@@ -266,17 +270,16 @@ ABI:
   }
 ```
 
-The `_collateralToken` address can be obtained via [`getPoolParameters`](##diva-smart-contract) function or the [DIVA subgraph](##diva-subgraph).
-
 ### Claim fees
 
 The settlement fee is paid in collateral token and can be claimed by the entitled data provider by calling the following function:
 
+```js
+function claimFee(
+    address _collateralToken,   // Collateral token address
+    address _recipient          // Recipient address
+) external;
 ```
-claimFees(address _collateralToken)
-```
-
-where `_collateralToken` is the address of the collateral token in which the fee is denominated. The collateral token address can be obtained via the [`getPoolParameters`](##diva-smart-contract) function or the [DIVA subgraph](##diva-subgraph). Note that partial claims are not possible.
 
 ABI:
 
