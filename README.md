@@ -98,6 +98,9 @@ The following DIVA subgraph query provides an example including a subset of fiel
           challengedBy
           proposedFinalReferenceValue
         }
+        submissionPeriod
+        challengePeriod
+        reviewPeriod
         createdAt
         createdBy
     }
@@ -122,6 +125,9 @@ where:
 | `settlementFee`     | Fee that goes to the data provider when users remove liquidity / redeem, in % of the collateral amount being removed/redeemed; expressed as an integer with 18 decimals (e.g., 500000000000000 = 0.05%).                                       |
 | `challenges.challengedBy`     |  Address that submitted a challenge for the submitted value. Only relevant if the possibility to challenge was enabled by the data provider in the first place.                                       |
 | `challenges.proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals. IMPORTANT: Those values DO NOT overwrite `finalReferenceValue`. Only relevant if the possibility to challenge was enabled by the data provider in the first place.                                       |
+| `submissionPeriod`     | Submission period in seconds applicable to the corresponding pool.                                       |
+| `challengePeriod`     | Challenge period in seconds applicable to the corresponding pool.                                       |
+| `reviewPeriod`     | Review period in seconds applicable to the corresponding pool.                                       |
 | `createdAt`     |  Timestamp of pool creation in seconds since epoch (UTC).                                       |
 | `createdBy`     |  Address that created the pool.                                       |
 
@@ -129,6 +135,7 @@ where:
 * If the possibility to challenge is enabled by the data provider, the data provider needs to monitor all challenges using `statusFinalReferenceValue: "Challenged"` as the query condition. As challenges may be valid, data providers SHOULD NOT automatically report when a challenge occurs but rather handle them manually. Challenges are typically enabled when a centralized party acts as the oracle. Challenges are disabled for decentralized oracles like Tellor which have their own dispute resolution mechanisms.
 * By default, the subgraph query will return a maximum of 1000 entries. To ensure that all pools are captured, we recommend implementing a loop using `id_gt` as is described [here](https://thegraph.com/docs/en/querying/graphql-api/#example-using-and-2).
 * Make sure that the timezone of the `expiryTime` and your off-chain data source are in sync.
+* The settlement fee as well as the settlement related periods (`submissionPeriod`, `challengePeriod` and `reviewPeriod`) are pool specific and should be read from the subgraph data.
 
 
 ## Data submission
@@ -189,7 +196,35 @@ Each position token holder of a pool can submit a challenge including a value th
 
 ## Settlement fees
 
-Data providers are rewarded with a settlement fee of 0.05% of the total collateral that is deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool and can be claimed by the corresponding data provider at any point in time. The data provider can also transfer the fee claim to another recipient. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract.
+Data providers are rewarded with a settlement fee of 0.05% of the total (gross) collateral that was deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool (via remove liquidity or redeem) and can be claimed by the corresponding data provider at any point in time. The data provider can also transfer the fee claim to another recipient using the `transferFeeClaim` function. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract.
+
+```js
+function transferFeeClaim(
+    address _recipient,         // Address of fee claim recipient
+    address _collateralToken,   // Collateral token address
+    uint256 _amount             // Amount (expressed as an integer with collateral token decimals) to transfer to recipient
+)
+    external;
+```
+
+Batch version of `transferFeeClaim` to transfer multiple fee claims to multiple recipient addresses in one single transaction.
+
+```js
+function batchTransferFeeClaim(
+    ArgsBatchTransferFeeClaim[] calldata _argsBatchTransferFeeClaim
+)
+    external;
+```
+
+where `ArgsBatchTransferFeeClaim` struct is defined as
+
+```js
+struct ArgsBatchTransferFeeClaim {
+    address recipient;          // Address of fee claim recipient
+    address collateralToken;    // Collateral token address
+    uint256 amount;             // Amount (expressed as an integer with collateral token decimals) to transfer to recipient
+}
+```
 
 ### Get fee claim
 
