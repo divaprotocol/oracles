@@ -200,9 +200,9 @@ Each position token holder of a pool can submit a challenge including a value th
 
 ## Settlement fees
 
-Data providers are rewarded with a settlement fee of 0.05% of the total (gross) collateral that was deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool (via remove liquidity or redeem) and can be claimed by the corresponding data provider at any point in time. The entitled data provider can also transfer the fee claim to another recipient using the `transferFeeClaim` function. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract.
+Data providers are rewarded with a settlement fee of 0.05% of the total (gross) collateral that was deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool (via remove liquidity or redeem) and can be claimed by the corresponding data provider at any point in time. The entitled data provider can also transfer the fee claim to another recipient. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract (as the middleware smart contract acts as the data provider; see Tellor module for example).
 
-The relevant fee related functions inside DIVA protocol are presented below. Note that some oracle integrations such as Tellor module implement an additional tipping functionality to offer reporters additional incentives, especially for smaller size pools, to report values. Refer to the oracle specific documentation in the `docs` directory for details.
+The relevant fee related functions inside DIVA protocol are listed below. Note that some oracle integrations such as Tellor module implement an additional tipping functionality to offer reporters additional incentives, especially for smaller size pools, to report values. Refer to the oracle specific documentation in the `docs` directory for details.
 
 ### Get fee claim
 
@@ -294,7 +294,7 @@ struct ArgsBatchClaimFee {
 
 ### Transfer fee claim
 
-By default, the account reporting the final vlaue is entitled to claim the fee. If the data provider is a smart contract, the smart contract will be entitled to claim that fee. Additional logic needs to be implemented within such contracts to transfer the fee payment by using the following function:
+By default, the data provider is entitled to claim the fee. If the data provider is a smart contract, it may be desireable to transfer the fee claim to another recipient using the `transferFeeClaim` function:
 
 ```js
 function transferFeeClaim(
@@ -339,7 +339,7 @@ function batchTransferFeeClaim(
     external;
 ```
 
-where `ArgsBatchTransferFeeClaim` struct is defined as
+where
 
 ```js
 struct ArgsBatchTransferFeeClaim {
@@ -381,7 +381,9 @@ ABI:
   }
 ```
 
-All fee claims are stored in the subgraph inside the `FeeRecipient` entity. Example subgraph query to get the fees claims for a given data provider address (user lower case for the address in the where condition):
+### Query fee information from subgraph
+
+All fee information is stored in the DIVA subgraph inside the `FeeRecipient` entity. Example subgraph query to get the fees claims for a given data provider address (user lower case for the address in the where condition):
 
 ```js
 {
