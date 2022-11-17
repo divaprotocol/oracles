@@ -59,6 +59,8 @@ Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contrac
 ## Function overview
 This overview covers the DIVA smart contract functions that are most relevant for data providers. All other functions can be found in the official [DIVA documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md). 
 
+TODO
+
 
 ## Data request
 The creation event of a derivative contract (also referred to as a "contingent pool" or simply "pool") constitutes a request to a data provider to provide a data point at a pre-defined future point in time. It's the data provider's responsibility to set up the required listeners and notification services to not miss the reporting window.
@@ -73,7 +75,7 @@ Pool information can also be obtained via the `getPoolParameters` smart contract
 
 ### DIVA subgraph
 
-The following DIVA subgraph query provides an example including a subset of fields that should cover most of a data provider's needs to build a listener. The full list of available fields is in the [DIVA subgraph](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new).
+Below provides an example DIVA subgraph query including the most relevant fields for data providers. The full list of available fields can be found in the [DIVA subgraph](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new).
 
 ```js
 { 
@@ -192,9 +194,9 @@ The `setFinalReferenceValue` function can be either called directly or wrapped i
 
 ## Challenges
 
-DIVA integrates an optional dispute/challenge mechanism which can be activated on demand (e.g., when manual oracles such as a human reporter are used). A data provider can indicate via the `_allowChallenge` parameter in the `setFinalReferenceValue` function at the time of submission whether the submitted value can be challenged or not. To avoid surprises for users, data providers can wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be challenged or not.
+DIVA integrates an optional dispute/challenge mechanism which can be activated by setting the`_allowChallenge` parameter to `true` when a data provider calls the `setFinalReferenceValue` function. This is particularly useful when manual oracles such as a human reporters are used. To avoid surprises for users, data providers are encouraged to wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators know the data provider's challenge policy at the time of pool creation.
 
-Each position token holder of a pool can submit a challenge including a value that they deem correct. This value is not stored inside the DIVA smart contract but emitted as part of the `StatusChanged` event and indexed in the DIVA subgraph. Data providers should leverage this information as part of their review process in case of challenges (only relevant if challenge is enabled by the data provider).
+Each position token holder of a pool can submit a challenge including a value that they deem correct. This value is not stored inside the DIVA smart contract but emitted as part of the `StatusChanged` event and indexed in the DIVA subgraph. Data providers should leverage this information as part of their review process in case of a challenge.
 
 ## Settlement fees
 
