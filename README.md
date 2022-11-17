@@ -146,9 +146,7 @@ where:
 
 Data is submitted to the DIVA smart contract by calling the `setFinalReferenceValue` function. This function is callable only by the data provider assigned to the specific pool being reported during the 7d submission window following pool expiration. If a value is challenged, the data provider has a 5d review window starting at the time of the first challenge to re-submit a value calling the same function. 
 
-Once a value has been submitted, `statusFinalReferenceValue` switches from `0` (Open) to `1` (Submitted) or `3` (Confirmed) depending on whether the [challenge mechanism](##optional-challenge-mechanism) was activated or not. The data provider cannot submit a second value unless the status changes to `2` (Challenged) which is only possible when DIVA's challenge mechanism was activated. Once the value reaches "Confirmed" stage, the value is considered final and no changes can be made anymore.
-
-Refer to the official [DIVA documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#set-final-reference-value) for details.
+Once a value has been submitted, `statusFinalReferenceValue` switches from `0` (Open) to `1` (Submitted) or `3` (Confirmed) depending on whether the [challenge mechanism](##optional-challenge-mechanism) was activated or not. The data provider cannot submit a second value unless the status changes to `2` (Challenged) which is only possible when DIVA's challenge mechanism was activated. Once the value reaches "Confirmed" stage, the value is considered final and no changes can be made anymore. Refer to the official [DIVA documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#set-final-reference-value) for details.
 
 ```js
 function setFinalReferenceValue(
@@ -194,41 +192,13 @@ The `setFinalReferenceValue` function can be either called directly or wrapped i
 
 ## Challenges
 
-DIVA integrates an optional dispute/challenge mechanism which can be activated on demand (e.g., when manual oracles such as a human reporter are used). A data provider can indicate via the `_allowChallenge` parameter at the time of submission whether the submitted value can be challenged or not. To avoid surprises for users, data providers can wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be challenged or not.
+DIVA integrates an optional dispute/challenge mechanism which can be activated on demand (e.g., when manual oracles such as a human reporter are used). A data provider can indicate via the `_allowChallenge` parameter in the `setFinalReferenceValue` function at the time of submission whether the submitted value can be challenged or not. To avoid surprises for users, data providers can wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators already know at the time of pool creation whether a submitted value can be challenged or not.
 
-Each position token holder of a pool can submit a challenge including a value that they deem correct. This value is not stored in the DIVA smart contract but emitted as part of the `StatusChanged` event and indexed in the subgraph. Data providers should leverage this information as part of their review process (only relevant if challenge is enabled by the data provider).
+Each position token holder of a pool can submit a challenge including a value that they deem correct. This value is not stored inside the DIVA smart contract but emitted as part of the `StatusChanged` event and indexed in the DIVA subgraph. Data providers should leverage this information as part of their review process in case of challenges (only relevant if challenge is enabled by the data provider).
 
 ## Settlement fees
 
 Data providers are rewarded with a settlement fee of 0.05% of the total (gross) collateral that was deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool (via remove liquidity or redeem) and can be claimed by the corresponding data provider at any point in time. The data provider can also transfer the fee claim to another recipient using the `transferFeeClaim` function. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract.
-
-```js
-function transferFeeClaim(
-    address _recipient,         // Address of fee claim recipient
-    address _collateralToken,   // Collateral token address
-    uint256 _amount             // Amount (expressed as an integer with collateral token decimals) to transfer to recipient
-)
-    external;
-```
-
-Batch version of `transferFeeClaim` to transfer multiple fee claims to multiple recipient addresses in one single transaction.
-
-```js
-function batchTransferFeeClaim(
-    ArgsBatchTransferFeeClaim[] calldata _argsBatchTransferFeeClaim
-)
-    external;
-```
-
-where `ArgsBatchTransferFeeClaim` struct is defined as
-
-```js
-struct ArgsBatchTransferFeeClaim {
-    address recipient;          // Address of fee claim recipient
-    address collateralToken;    // Collateral token address
-    uint256 amount;             // Amount (expressed as an integer with collateral token decimals) to transfer to recipient
-}
-```
 
 ### Get fee claim
 
@@ -299,31 +269,27 @@ ABI:
 }
 ```
 
+
+
+
 ### Transfer fee claim
 
 By default, the account reporting the final vlaue is entitled to claim the fee. If the data provider is a smart contract, the smart contract will be entitled to claim that fee. Additional logic needs to be implemented within such contracts to transfer the fee payment by using the following function:
 
-```
-transferFeeClaim(
-    address _recipient,
-    address _collateralToken,
-    uint256 _amount
+```js
+function transferFeeClaim(
+    address _recipient,         // Address of fee claim recipient
+    address _collateralToken,   // Collateral token address
+    uint256 _amount             // Amount (expressed as an integer with collateral token decimals) to transfer to recipient
 )
+    external;
 ```
-
-where:
-
-- `_recipient` is the address of the new fee claim recipient
-- `_collateralToken` is the address of the collateral token in which the fee is denominated
-- `_amount` is the fee amount to be transferred
 
 ABI:
-
 ```json
 {
   "inputs": [
-    {
-      "internalType": "address",
+    { "internalType": "address",
       "name": "_recipient",
       "type": "address"
     },
@@ -332,8 +298,7 @@ ABI:
       "name": "_collateralToken",
       "type": "address"
     },
-    {
-      "internalType": "uint256",
+    { "internalType": "uint256",
       "name": "_amount",
       "type": "uint256"
     }
@@ -342,14 +307,65 @@ ABI:
   "outputs": [],
   "stateMutability": "nonpayable",
   "type": "function"
+  }
+```
+
+Batch version of `transferFeeClaim` to transfer multiple fee claims to multiple recipient addresses in one single transaction.
+
+```js
+function batchTransferFeeClaim(
+    ArgsBatchTransferFeeClaim[] calldata _argsBatchTransferFeeClaim
+)
+    external;
+```
+
+where `ArgsBatchTransferFeeClaim` struct is defined as
+
+```js
+struct ArgsBatchTransferFeeClaim {
+    address recipient;          // Address of fee claim recipient
+    address collateralToken;    // Collateral token address
+    uint256 amount;             // Amount (expressed as an integer with collateral token decimals) to transfer to recipient
 }
 ```
 
-All fee claims are stored in the subgraph inside the `FeeRecipient` entity. Example subgraph query to get the fees claims for a given data provider address:
-
+ABI:
 ```json
 {
-	feeRecipients(where: {id: "0x9adefeb576dcf52f5220709c1b267d89d5208d78"}) {
+  "inputs": [
+    {
+      "components": [
+        { "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "collateralToken",
+          "type": "address"
+        },
+        { "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "internalType": "struct IClaim.ArgsBatchTransferFeeClaim[]",
+      "name": "_argsBatchTransferFeeClaim",
+      "type": "tuple[]"
+    }
+  ],
+  "name": "batchTransferFeeClaim",
+  "outputs": [],
+  "stateMutability": "nonpayable",
+  "type": "function"
+  }
+```
+
+All fee claims are stored in the subgraph inside the `FeeRecipient` entity. Example subgraph query to get the fees claims for a given data provider address (user lower case for the address in the where condition):
+
+```js
+{
+  feeRecipients(where: {id: "0x9adefeb576dcf52f5220709c1b267d89d5208d78"}) {
     id
     collateralTokens {
       amount
@@ -357,13 +373,12 @@ All fee claims are stored in the subgraph inside the `FeeRecipient` entity. Exam
         id
         name
         symbol
+        decimals
       }
     }
   }
 }
 ```
-
-IMPORTANT: the `id` in the `where` condition represents the address of the fee recipient and needs to be in lower case without any capital letters.
 
 ## Whitelist queries
 
@@ -371,14 +386,12 @@ To protect users from malicious pools, DIVA token holders maintain a whitelist o
 
 In addition to data providers and data feeds, the whitelist contract also stores collateral tokens. Whitelisted data providers are expected to report values for pools where whitelisted collateral tokens are used. For pools with non-whitelisted collateral tokens, data providers are not expected to submit any values. This is to prevent that data providers are abused and paid in worthless tokens.
 
-DIVA whitelist smart contract addresses (same address across networks):
+DIVA whitelist smart contract addresses:
 
-- Ropsten: 0x2A5c18f001719f4663ab8d3E65E3E54182376B20
-- Rinkeby: 0x2A5c18f001719f4663ab8d3E65E3E54182376B20
-- Kovan: 0x2A5c18f001719f4663ab8d3E65E3E54182376B20
-- Mumbai: 0x2A5c18f001719f4663ab8d3E65E3E54182376B20
-- Polygon: n/a
-- Mainnet: n/a
+* Goerli: 0x017aA6E15e406b85b8b1dF322e39444D819C8F43
+* Polygon: n/a
+* Mainnet: n/a
+* Arbitrum: n/a
 
 ### Whitelist smart contract
 
@@ -386,7 +399,7 @@ The following getter functions can be called to retrieve whitelist information f
 
 Function to get the data provider name and whitelist status:
 
-```
+```js
 getDataProvider(address _address)
 ```
 
