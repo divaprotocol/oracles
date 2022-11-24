@@ -38,7 +38,7 @@ module.exports = {
         // url: process.env.RPC_URL_ROPSTEN,
         // blockNumber: 12750642,
         url: process.env.RPC_URL_GOERLI,
-        blockNumber: 7833318,
+        blockNumber: 7997850,
       },
       accounts: {
         mnemonic: MNEMONIC,
