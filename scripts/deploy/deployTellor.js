@@ -8,6 +8,7 @@ const { parseEther } = require("ethers/lib/utils");
 
 const {
   TELLOR_PLAYGROUND_ADDRESS,
+  TELLOR_ADDRESS,
   DIVA_ADDRESS,
 } = require("../../utils/constants"); //  DIVA Protocol v0.9.0
 
@@ -15,7 +16,7 @@ async function main() {
   const network = "goerli";
 
   const divaAddress = DIVA_ADDRESS[network];
-  const tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
+  const tellorPlaygroundAddress = TELLOR_ADDRESS[network];
   const excessFeeRecipient = "0x1EE5730C710cF06dFA7952D61A321eC8e16b9d3A"; // temporary address
   const periodMinPeriodUndisputed = 10; // IMPORTANT to set correctly!; input in seconds
   const maxFeeAmountUSD = parseEther("10"); // $10
