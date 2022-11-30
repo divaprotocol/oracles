@@ -27,7 +27,7 @@ The Tellor adapter offers a way to receive data inputs in a fully decentralized 
 
 ## Fees
 * Max $10 to reporter. The remainder goes to the Tellor treasury.
-* 
+* To calculate the split, the reporters are also submitted the USD value of the collateral token. 
 
 
 ## Relevant addresses
@@ -39,6 +39,7 @@ Relevant addresses on Goerli:
 |TRB token|`0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2`| Token that needs to be staked in order to be able to report values to the Tellor system. One stake corresponds to 100 TRB allows and allows to report one value every 12 hours.  |
 |Tellor system|`0xB3B662644F8d3138df63D2F43068ea621e2981f9`|Tellor contract where values are reported to and TRB staked.|
 |Tellor governance contract|`0x02803dcFD7Cb32E97320CFe7449BFb45b6C931b8`|Implements the `beginDispute` function to initiate a dispute.|
+|DIVA smart contract|`0x659f8bF63Dce2548eB4D9b4BfF6883dddFde4848`|The DIVA smart contract address that the Tellor adapter contract points to. Selecting the Tellor adapter contract as the oracle for any other version of the DIVA smart contract will result in failure to report.|
 
 Note that depositing a stake or or disputing a value requires prior approval for the TRB token for the corresponding contract to transfer the token.
 
