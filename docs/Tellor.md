@@ -94,7 +94,15 @@ Position token holders that are in the money have a natural incentive to report 
    * `_amount`: `100000000000000000000`
 1. **Get data:** Obtain the underlying value as well as the USD value of the prevailing at the time of expiration from the data source of your choice. Use 0 if no USD value of the collateral asset is available.
 1. **Convert decimal numbers to integers:** Convert data values represented as decimals into integers with 18 decimals, i.e. 100 -> `100000000000000000000`, 0.5 -> `500000000000000000`, etc.
-1. **Get queryId:** Get queryId (https://querybuilder.tellor.io/custom)
+1. **Generate queryId:** 
+   * Go to https://querybuilder.tellor.io/custom
+   * Choose Custom option
+   * Put `DIVAProtocol` as type
+   * Choose `uint256` as arg type and put the poolId there
+   * Choose `address` as arg type and put the DIVA contract adddress there (`0x659f8bF63Dce2548eB4D9b4BfF6883dddFde4848`)
+   * Choose `uint256` as arg type and put the chainId there (`5` for Goerli, `1` for Ethereum mainnet, etc.)
+   * Click Generate ID
+   * Query Data and Query Id will be necessary for the next step
 1. **Tellor submission:** Submit value by calling the `submitValue` function using the queryId and the two values as input. Example: ...
 2. **DIVA submission:** Call the `setFinalReferenceValue` function on the DIVA Tellor using the `poolId` as input. 
 
