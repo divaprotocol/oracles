@@ -1,3 +1,6 @@
+# TODO
+* Create video guide for manual reporting
+
 # Tellor adapter for DIVA Protocol v1 - Documentation
 
 This documentation outlines the functionality of the Tellor adapter for DIVA Protocol v1.
@@ -17,7 +20,7 @@ The key benefits of using the Tellor integration are highlighted below:
 * Disputes do not interrupt the reporting process meaning that reporters can continue to report values without the need for an additional request
 * The Tellor adapter offers the possibility to add tips to incentivize reporting
 
-Those advantages give users a high confidence that pools will settle correctly. Refer to the [risks](#risks) section to understand the risks involved.
+Those advantages give users a high confidence that pools will settle correctly. Refer to the [risks](#risks-and-mitigants) section to understand the risks involved.
 
 ## How it works
 
@@ -67,10 +70,33 @@ The Tellor client implementations for DIVA Protocol support any data feed. BTC/U
 ## DIVA Disputes
 The Tellor adapter deactivates the possibility to challenge within DIVA Protocol as the Tellor system comes with an embedded dispute mechanism. That is, the value that is reported to DIVA Protocol via the Tellor adapter is considered the final one.
 
-# Risks
+# Risks and mitigants
 
 | Risks        | Mitigants                                                                                                                                 |
 | :---------------- |:---------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
-|No value is reported. This may be the case if the costs of reporting exceed the expected fee reward or if the data point is simply not publicly accessible. |Add tips or report yourself |
-|Inaccurate value submitted to Tellor Protocol may remain undisputed for more than 12h and pushed into DIVA Protocol resulting in inaccurate payouts. | Choose underlyings that are monitored and reported by many reporters. |
-|Bug in Tellor adapter contract| Both the Tellor Protocol as well as the Tellor adapter contract have been audited to reduce the likelihood of bugs.|
+|No value is reported because the cost of reporting exceeds the expected fee reward (e.g., if gas price is high or fee reward is small). |Add tips as additional incentive to report or report yourself. |
+|No value is reported because the data point is not publicly available. |Choose publicly available and verifiable data as underlyings. |
+|Inaccurate value submitted to Tellor Protocol remains undisputed for more than 12h and pushed into DIVA Protocol resulting in inaccurate settlement. | Choose underlyings that are monitored and reported by many reporters. |
+|Bug in Tellor adapter contract.| Both the Tellor Protocol as well as the Tellor adapter contract have been audited to reduce the likelihood of bugs.|
+
+
+
+
+## How to manually report a value
+**NOTE:** All links and addresses refer to versions on Goerli and will be updated at mainnet launch.
+
+Position token holders that are in the money have a natural incentive to report the outcome. Follow the steps described below or watch our [video guide](www.google.com) to learn how to manually report a value in the event that no one else is reporting, using Goerli network as an example.
+1. **Get TRB token:** Get 100 TRB which is the minimum stake to report once every 12 hours.
+1. **Approve transfer for stake deposit:** On [Etherscan](https://goerli.etherscan.io/address/0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2#writeProxyContract), call the `approve` function on the TRB contract with the following inputs:
+   * `_spender`: `0xB3B662644F8d3138df63D2F43068ea621e2981f9` (Tellor contract)
+   * `_amount`: `100000000000000000000` (integer representation of 100 using 18 decimals)
+1. **Deposit stake:** On [Etherscan](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `depositStake` function with the following input: 
+   * `_amount`: `100000000000000000000`
+1. **Get data:** Obtain the underlying value as well as the USD value of the prevailing at the time of expiration from the data source of your choice. Use 0 if no USD value of the collateral asset is available.
+1. **Convert decimal numbers to integers:** Convert data values represented as decimals into integers with 18 decimals, i.e. 100 -> `100000000000000000000`, 0.5 -> `500000000000000000`, etc.
+1. **Get queryId:** Get queryId (https://querybuilder.tellor.io/custom)
+1. **Tellor submission:** Submit value by calling the `submitValue` function using the queryId and the two values as input. Example: ...
+2. **DIVA submission:** Call the `setFinalReferenceValue` function on the DIVA Tellor using the `poolId` as input. 
+
+For help, reach out to the [DIVA](https://discord.com/invite/DE5b8ZeJjK) or the [Tellor discord](https://discord.com/invite/n7drGjh).
+

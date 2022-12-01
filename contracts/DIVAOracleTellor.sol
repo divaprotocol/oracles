@@ -498,7 +498,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         returns (bytes32)
     {
         // Construct Tellor queryID
-        // https://github.com/tellor-io/dataSpecs/blob/main/types/DIVAProtocolPolygon.md
         return
             keccak256(
                 abi.encode(
