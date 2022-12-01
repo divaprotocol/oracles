@@ -38,11 +38,14 @@ Tellor reporters are required to stake 100 TRB (also referred to as 1 stake) to 
 
 ## Fees
 Reporters receive two types of rewards:
-* **Settlement fee:** DIVA Protocol pays a 0.05% reporting fee to the assigned data provider. As the assigned reporter is the Tellor adapter contract in the DIVA Tellor integration, the fee is transferred to the original reporter when the `setFinalReferenceValue` function inside the Tellor adapter contract is called. Reporters can calculate the settlement fee reward by multiplying the gross collateral that was deposited into the pool during its lifetime (`collateralBalanceGross` field in subgraph) by 0.05%. The fee is paid collateral token. **The settlement fee is retained inside the DIVA Protocol until it is claimed by the recipient from the DIVA smart contract via the `claimFee` function.**
-* **Tips:** Anyone can add tips in any ERC20 token to incentivize reporting. Multiple tips in multiple ERC20 tokens are possible. The reporter can choose which ones to claim. **The tip is retained inside the Tellor adapter contract until it is claimed by the recipient.**
+### Settlement fee
+* DIVA Protocol pays a 0.05% fee to the assigned data provider. As the assigned reporter in the DIVA Tellor integration is the Tellor adapter contract, the fee is transferred to the actual reporter when the `setFinalReferenceValue` function inside the Tellor adapter contract is called. Reporters can calculate the settlement fee reward by multiplying the gross collateral that was deposited into the pool during its lifetime (`collateralBalanceGross` field in subgraph) by 0.05%. The fee is paid in collateral token. The settlement fee is retained inside the DIVA smart contract until it is claimed by the recipient. This can be done via the `claimFee` function in the DIVA smart contract directly or via the `claimDIVAFee` function in the Tellor adapter contract.
+* The maximum fee for  $10 to reporter. The remainder goes to the Tellor treasury. This logic was implemented to prevent "dispute wars" to receive the reward
+
+### Tips
+* Anyone can add tips in any ERC20 token to incentivize reporting. Multiple tips in multiple ERC20 tokens are possible. The reporter can choose which ones to claim. The tip is retained inside the Tellor adapter contract until it is claimed by the recipient. This can be done via the `claimTips` function in the Tellor adapter contract.
 
 Notes:
-* The maximum fee for  $10 to reporter. The remainder goes to the Tellor treasury. This logic was implemented to prevent "dispute wars" to receive the reward
 * To calculate the split, the reporters are also submitted the USD value of the collateral token. 
 * Only the first reporter whose reported value remained undisputed for at least 12h receives a reward. It is recommended to check existing value submission before spending gas on submitted a value. 
 
