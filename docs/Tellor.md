@@ -18,7 +18,7 @@ Derivative contracts (also referred to as "contingent pools" or simply "pools") 
 The key benefits of using the Tellor integration are highlighted below: 
 * No single point of failure as anyone can report the outcome in a permissionless way
 * Disputes do not interrupt the reporting process meaning that reporters can continue to report values without the need for an additional request
-* The Tellor adapter offers the possibility to add tips to incentivize reporting
+* The Tellor adapter offers the possibility to add tips to create additional incentivizes for reporting
 
 Those advantages give users a high confidence that pools will settle correctly. Refer to the [risks](#risks-and-mitigants) section to understand the risks involved.
 
@@ -44,6 +44,14 @@ Reporters receive
 Notes:
 * The maximum fee for  $10 to reporter. The remainder goes to the Tellor treasury. This logic was implemented to prevent "dispute wars" to receive the reward
 * To calculate the split, the reporters are also submitted the USD value of the collateral token. 
+
+
+## Cost reward calculations
+* `submitValue`: 160k gas
+* `setFinalReferenceValue`: 250k gas
+
+At 100 Gwei/gas, the gas fee is 41m Gwei (0.041 ETH, 0.041 MATIC, etc.).
+
 
 
 ## Relevant addresses
@@ -80,8 +88,6 @@ The Tellor adapter deactivates the possibility to challenge within DIVA Protocol
 |Bug in Tellor adapter contract.| Both the Tellor Protocol as well as the Tellor adapter contract have been audited to reduce the likelihood of bugs.|
 
 
-
-
 ## How to manually report a value
 **NOTE:** All links and addresses refer to versions on Goerli and will be updated at mainnet launch.
 
@@ -98,13 +104,17 @@ Position token holders that are in the money have a natural incentive to report 
    * Go to https://querybuilder.tellor.io/custom
    * Choose Custom option
    * Put `DIVAProtocol` as type
-   * Choose `uint256` as arg type and put the poolId there
+   * Choose `uint256` as arg type and put the pool Id there
    * Choose `address` as arg type and put the DIVA contract adddress there (`0x659f8bF63Dce2548eB4D9b4BfF6883dddFde4848`)
    * Choose `uint256` as arg type and put the chainId there (`5` for Goerli, `1` for Ethereum mainnet, etc.)
    * Click Generate ID
    * Query Data and Query Id will be necessary for the next step
-1. **Tellor submission:** Submit value by calling the `submitValue` function using the queryId and the two values as input. Example: ...
-2. **DIVA submission:** Call the `setFinalReferenceValue` function on the DIVA Tellor using the `poolId` as input. 
+1. **Tellor submission:** On [Etherscan](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `submitValue` function with the followig inputs:
+   * `_queryId`: Query Id from the step above
+   * `_value`: **TODO**
+   * `_nonce`: **TODO**
+   * `_queryData`: Query Data from the step before
+2. **DIVA submission:** On [Etherscan](https://goerli.etherscan.io/address/0x9959f7f8eFa6B77069e817c1Af97094A9CC830FD#code), call the `setFinalReferenceValue` function on the DIVA Tellor adapter contract (`0x9959f7f8eFa6B77069e817c1Af97094A9CC830FD`) using the pool Id as input. 
 
-For help, reach out to the [DIVA](https://discord.com/invite/DE5b8ZeJjK) or the [Tellor discord](https://discord.com/invite/n7drGjh).
+For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK) or the [Tellor discord](https://discord.com/invite/n7drGjh).
 
