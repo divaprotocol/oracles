@@ -89,7 +89,7 @@ The Tellor adapter deactivates the possibility to challenge within DIVA Protocol
 
 
 ## How to manually report a value
-**NOTE:** All links and addresses refer to versions on Goerli and will be updated at mainnet launch.
+**NOTE:** All links and addresses refer to Goerli.  will be updated at mainnet launch.
 
 Position token holders that are in the money have a natural incentive to report the outcome. Follow the steps described below or watch our [video guide](www.google.com) to learn how to manually report a value in the event that no one else is reporting, using Goerli network as an example.
 1. **Get TRB token:** Get 100 TRB which is the minimum stake to report once every 12 hours.
@@ -118,3 +118,9 @@ Position token holders that are in the money have a natural incentive to report 
 
 For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK) or the [Tellor discord](https://discord.com/invite/n7drGjh).
 
+
+## How to add a tip manually
+1. On [Etherscan](https://goerli.etherscan.io/address/0x9959f7f8eFa6B77069e817c1Af97094A9CC830FD#code), call the `addTip` function with the following inputs:
+   * `_poolId`: the pool Id to tip
+   * `_amount`: amount expressed as an integer (e.g., 100000000 for 100 USDC on Polygon)
+   * `_tippingToken`: address of the tipping token (e.g., `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` for USDC on Polygon)
