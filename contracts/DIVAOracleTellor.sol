@@ -265,50 +265,18 @@ contract DIVAOracleTellor is
         // Get queryId from poolId
         bytes32 _queryId = getQueryId(_poolId);
 
-        // Find first oracle submission
-        uint256 _timestampRetrieved = getTimestampbyQueryIdandIndex(
-            _queryId,
-            0
-        );
+        // Find first oracle submission after expiryTime, if it exists
+        (bytes memory _valueRetrieved, uint256 _timestampRetrieved) = getDataAfter(_queryId, _params.expiryTime - 1);
 
-        // Handle case where data was submitted before expiryTime
-        if (_timestampRetrieved < _params.expiryTime) {
-            // Check that data exists (_timestampRetrieved = 0 if it doesn't)
-            if (_timestampRetrieved == 0) {
-                revert NoOracleSubmission();
-            }
-
-            // Retrieve latest array index of data before `_expiryTime` for the queryId
-            (, uint256 _index) = getIndexForDataBefore(
-                _queryId,
-                _params.expiryTime
-            );
-
-            // Increment index to get the first data point after `_expiryTime`
-            ++_index;
-
-            // Get timestamp of first data point after `_expiryTime`
-            _timestampRetrieved = getTimestampbyQueryIdandIndex(
-                _queryId,
-                _index
-            );
-
-            // _timestampRetrieved = 0 if there is no submission
-            if (_timestampRetrieved == 0) {
-                revert NoOracleSubmissionAfterExpiryTime();
-            }
+        // Check that data exists (_timestampRetrieved = 0 if it doesn't)
+        if (_timestampRetrieved == 0) {
+            revert NoOracleSubmissionAfterExpiryTime();
         }
 
         // Check that _minPeriodUndisputed has passed after _timestampRetrieved
         if (block.timestamp - _timestampRetrieved < _minPeriodUndisputed) {
             revert MinPeriodUndisputedNotPassed();
         }
-
-        // Retrieve values (final reference value and USD value of collateral asset)
-        bytes memory _valueRetrieved = retrieveData(
-            _queryId,
-            _timestampRetrieved
-        );
 
         // Format values (18 decimals)
         (
