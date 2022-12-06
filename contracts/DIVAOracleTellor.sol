@@ -265,7 +265,7 @@ contract DIVAOracleTellor is
         // Get queryId from poolId
         bytes32 _queryId = getQueryId(_poolId);
 
-        // Find first oracle submission after expiryTime, if it exists
+        // Find first oracle submission after or at expiryTime, if it exists
         (bytes memory _valueRetrieved, uint256 _timestampRetrieved) = getDataAfter(_queryId, _params.expiryTime - 1);
 
         // Check that data exists (_timestampRetrieved = 0 if it doesn't)
