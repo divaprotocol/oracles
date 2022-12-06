@@ -775,7 +775,7 @@ describe("DIVAOracleTellor", () => {
         // ---------
         await expect(
           divaOracleTellor.connect(user2).setFinalReferenceValue(latestPoolId)
-        ).to.be.revertedWith("NoOracleSubmission()");
+        ).to.be.revertedWith("NoOracleSubmissionAfterExpiryTime()");
       });
 
       it("Should revert if a value has been reported prior to expiryTime only", async () => {
