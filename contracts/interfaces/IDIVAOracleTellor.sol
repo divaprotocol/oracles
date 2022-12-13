@@ -16,11 +16,7 @@ interface IDIVAOracleTellor {
     error OutOfRange();
 
     // Thrown when user calls `setFinalReferenceValue` (or a variant of it) but
-    // there is no data sitting in the Tellor contract
-    error NoOracleSubmission();
-
-    // Thrown if a value was reported to the Tellor contract but it was before
-    // the expiry time of the underlying pool
+    // there is no data reported after the expiry time of the underlying pool
     error NoOracleSubmissionAfterExpiryTime();
 
     // Thrown if user tries to call `setFinalReferenceValue` (or a variant of it)

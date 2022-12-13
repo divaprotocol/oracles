@@ -12,17 +12,6 @@ interface ITellor {
     function changeDeity(address _newDeity) external;
 
     function changeOwner(address _newOwner) external;
-
-    function changeTellorContract(address _tContract) external;
-
-    function changeControllerContract(address _newController) external;
-
-    function changeGovernanceContract(address _newGovernance) external;
-
-    function changeOracleContract(address _newOracle) external;
-
-    function changeTreasuryContract(address _newTreasury) external;
-
     function changeUint(bytes32 _target, uint256 _amount) external;
 
     function migrate() external;
@@ -194,6 +183,8 @@ interface ITellor {
 
     function tallyVotes(uint256 _disputeId) external;
 
+    function governance() external view returns (address);
+
     function updateMinDisputeFee() external;
 
     function verify() external pure returns (uint256);
@@ -288,110 +279,25 @@ interface ITellor {
     function reportingLock() external view returns (uint256);
 
     function removeValue(bytes32 _queryId, uint256 _timestamp) external;
-
-    function getReportsSubmittedByAddress(address _reporter)
-        external
-        view
-        returns (uint256);
-
-    function getTipsByUser(address _user) external view returns (uint256);
-
-    function tipQuery(
-        bytes32 _queryId,
-        uint256 _tip,
-        bytes memory _queryData
-    ) external;
-
-    function submitValue(
-        bytes32 _queryId,
-        bytes calldata _value,
-        uint256 _nonce,
-        bytes memory _queryData
-    ) external;
-
+    function getTipsByUser(address _user) external view returns(uint256);
+    function tipQuery(bytes32 _queryId, uint256 _tip, bytes memory _queryData) external;
+    function submitValue(bytes32 _queryId, bytes calldata _value, uint256 _nonce, bytes memory _queryData) external;
     function burnTips() external;
 
     function changeReportingLock(uint256 _newReportingLock) external;
-
+    function getReportsSubmittedByAddress(address _reporter) external view returns(uint256);
     function changeTimeBasedReward(uint256 _newTimeBasedReward) external;
-
-    function getReporterLastTimestamp(address _reporter)
-        external
-        view
-        returns (uint256);
-
-    function getTipsById(bytes32 _queryId) external view returns (uint256);
-
-    function getTimeBasedReward() external view returns (uint256);
-
-    function getTimestampCountById(bytes32 _queryId)
-        external
-        view
-        returns (uint256);
-
-    function getTimestampIndexByTimestamp(bytes32 _queryId, uint256 _timestamp)
-        external
-        view
-        returns (uint256);
-
-    function getCurrentReward(bytes32 _queryId)
-        external
-        view
-        returns (uint256, uint256);
-
-    function getCurrentValue(bytes32 _queryId)
-        external
-        view
-        returns (bytes memory);
-
-    function getTimeOfLastNewValue() external view returns (uint256);
-
-    //Treasury
-    function issueTreasury(
-        uint256 _maxAmount,
-        uint256 _rate,
-        uint256 _duration
-    ) external;
-
-    function payTreasury(address _investor, uint256 _id) external;
-
-    function buyTreasury(uint256 _id, uint256 _amount) external;
-
-    function getTreasuryDetails(uint256 _id)
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        );
-
-    function getTreasuryFundsByUser(address _user)
-        external
-        view
-        returns (uint256);
-
-    function getTreasuryAccount(uint256 _id, address _investor)
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            bool
-        );
-
-    function getTreasuryCount() external view returns (uint256);
-
-    function getTreasuryOwners(uint256 _id)
-        external
-        view
-        returns (address[] memory);
-
-    function wasPaid(uint256 _id, address _investor)
-        external
-        view
-        returns (bool);
+    function getReporterLastTimestamp(address _reporter) external view returns(uint256);
+    function getTipsById(bytes32 _queryId) external view returns(uint256);
+    function getTimeBasedReward() external view returns(uint256);
+    function getTimestampCountById(bytes32 _queryId) external view returns(uint256);
+    function getTimestampIndexByTimestamp(bytes32 _queryId, uint256 _timestamp) external view returns(uint256);
+    function getCurrentReward(bytes32 _queryId) external view returns(uint256, uint256);
+    function getCurrentValue(bytes32 _queryId) external view returns(bytes memory);
+    function getDataBefore(bytes32 _queryId, uint256 _timestamp) external view returns(bool _ifRetrieve, bytes memory _value, uint256 _timestampRetrieved);
+    function getTimeOfLastNewValue() external view returns(uint256);
+    function depositStake(uint256 _amount) external;
+    function requestStakingWithdraw(uint256 _amount) external;
 
     //Test functions
     function changeAddressVar(bytes32 _id, address _addy) external;
@@ -406,4 +312,173 @@ interface ITellor {
     function rescueBrokenDataReporting() external;
 
     function rescueFailedUpdate() external;
+
+    //Tellor 360
+    function addStakingRewards(uint256 _amount) external;
+
+    function _sliceUint(bytes memory _b)
+        external
+        pure
+        returns (uint256 _number);
+
+    function claimOneTimeTip(bytes32 _queryId, uint256[] memory _timestamps)
+        external;
+
+    function claimTip(
+        bytes32 _feedId,
+        bytes32 _queryId,
+        uint256[] memory _timestamps
+    ) external;
+
+    function fee() external view returns (uint256);
+
+    function feedsWithFunding(uint256) external view returns (bytes32);
+
+    function fundFeed(
+        bytes32 _feedId,
+        bytes32 _queryId,
+        uint256 _amount
+    ) external;
+
+    function getCurrentFeeds(bytes32 _queryId)
+        external
+        view
+        returns (bytes32[] memory);
+
+    function getCurrentTip(bytes32 _queryId) external view returns (uint256);
+
+    function getDataAfter(bytes32 _queryId, uint256 _timestamp)
+        external
+        view
+        returns (bytes memory _value, uint256 _timestampRetrieved);
+
+    function getDataFeed(bytes32 _feedId)
+        external
+        view
+        returns (Autopay.FeedDetails memory);
+
+    function getFundedFeeds() external view returns (bytes32[] memory);
+
+    function getFundedQueryIds() external view returns (bytes32[] memory);
+
+    function getIndexForDataAfter(bytes32 _queryId, uint256 _timestamp)
+        external
+        view
+        returns (bool _found, uint256 _index);
+
+    function getIndexForDataBefore(bytes32 _queryId, uint256 _timestamp)
+        external
+        view
+        returns (bool _found, uint256 _index);
+
+    function getMultipleValuesBefore(
+        bytes32 _queryId,
+        uint256 _timestamp,
+        uint256 _maxAge,
+        uint256 _maxCount
+    )
+        external
+        view
+        returns (uint256[] memory _values, uint256[] memory _timestamps);
+
+    function getPastTipByIndex(bytes32 _queryId, uint256 _index)
+        external
+        view
+        returns (Autopay.Tip memory);
+
+    function getPastTipCount(bytes32 _queryId) external view returns (uint256);
+
+    function getPastTips(bytes32 _queryId)
+        external
+        view
+        returns (Autopay.Tip[] memory);
+
+    function getQueryIdFromFeedId(bytes32 _feedId)
+        external
+        view
+        returns (bytes32);
+
+    function getRewardAmount(
+        bytes32 _feedId,
+        bytes32 _queryId,
+        uint256[] memory _timestamps
+    ) external view returns (uint256 _cumulativeReward);
+
+    function getRewardClaimedStatus(
+        bytes32 _feedId,
+        bytes32 _queryId,
+        uint256 _timestamp
+    ) external view returns (bool);
+
+    function getTipsByAddress(address _user) external view returns (uint256);
+
+    function isInDispute(bytes32 _queryId, uint256 _timestamp)
+        external
+        view
+        returns (bool);
+
+    function queryIdFromDataFeedId(bytes32) external view returns (bytes32);
+
+    function queryIdsWithFunding(uint256) external view returns (bytes32);
+
+    function queryIdsWithFundingIndex(bytes32) external view returns (uint256);
+
+    function setupDataFeed(
+        bytes32 _queryId,
+        uint256 _reward,
+        uint256 _startTime,
+        uint256 _interval,
+        uint256 _window,
+        uint256 _priceThreshold,
+        uint256 _rewardIncreasePerSecond,
+        bytes memory _queryData,
+        uint256 _amount
+    ) external;
+
+    function tellor() external view returns (address);
+
+    function tip(
+        bytes32 _queryId,
+        uint256 _amount,
+        bytes memory _queryData
+    ) external;
+
+    function tips(bytes32, uint256)
+        external
+        view
+        returns (uint256 amount, uint256 timestamp);
+
+    function token() external view returns (address);
+
+    function userTipsTotal(address) external view returns (uint256);
+
+    function valueFor(bytes32 _id)
+        external
+        view
+        returns (
+            int256 _value,
+            uint256 _timestamp,
+            uint256 _statusCode
+        );
+}
+
+interface Autopay {
+    struct FeedDetails {
+        uint256 reward;
+        uint256 balance;
+        uint256 startTime;
+        uint256 interval;
+        uint256 window;
+        uint256 priceThreshold;
+        uint256 rewardIncreasePerSecond;
+        uint256 feedsWithFundingIndex;
+    }
+
+    struct Tip {
+        uint256 amount;
+        uint256 timestamp;
+    }
+    function getStakeAmount() external view returns(uint256);
+    function stakeAmount() external view returns(uint256);
+    function token() external view returns(address);
 }

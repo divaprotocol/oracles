@@ -37,12 +37,12 @@ const TELLOR_PLAYGROUND_ADDRESS = {
   ropsten: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A", // new used for testnet
   kovan: "0x320f09D9f92Cfa0e9C272b179e530634D873aeFa",
   rinkeby: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A",
-  goerli: "0x7B8AC044ebce66aCdF14197E8De38C1Cc802dB4A",
+  goerli: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
 };
 
 const DIVA_TELLOR_ORACLE_ADDRESS = {
   ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
-  goerli: "0x9F6Cd21bF0f18cf7bcd1bd9AF75476537d8295fB", // Deployed on 30 Oct 2022
+  goerli: "0x63098cC6EDa33B0FbD07472B1a8dD54D4a5C2153", // Deployed on 22 Nov 2022
 };
 
 const COLLATERAL_TOKENS = {

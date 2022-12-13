@@ -153,7 +153,7 @@ describe("DIVAOracleTellor", () => {
 
     // Create an expired contingent pool that uses Tellor as the data provider
     poolExpiryTime = (await getLastTimestamp()) + TEN_MINS;
-    await diva.createContingentPool([
+    const tx = await diva.createContingentPool([
       referenceAsset, // reference asset
       poolExpiryTime, // expiryTime
       parseUnits("40000"), // floor
@@ -168,7 +168,10 @@ describe("DIVAOracleTellor", () => {
       user1.address, // shortRecipient
       ethers.constants.AddressZero,
     ]);
-    latestPoolId = await diva.getLatestPoolId();
+    const receipt = await tx.wait();
+
+    latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")?.args
+      ?.poolId;
     poolParams = await diva.getPoolParameters(latestPoolId);
 
     feesParams = await diva.getFees(latestPoolId);
@@ -363,7 +366,7 @@ describe("DIVAOracleTellor", () => {
         // Arrange: Create a contingent pool with expiry time in the future, prepare the submission to tellorPlayground
         // and submit two values, one before and one after expiration
         // ---------
-        await diva.createContingentPool([
+        const tx = await diva.createContingentPool([
           referenceAsset, // reference asset
           poolExpiryTime, // expiryTime
           parseUnits("40000"), // floor
@@ -378,7 +381,10 @@ describe("DIVAOracleTellor", () => {
           user1.address, // shortRecipient
           ethers.constants.AddressZero,
         ]);
-        latestPoolId = await diva.getLatestPoolId();
+        const receipt = await tx.wait();
+
+        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
+          ?.args?.poolId;
         poolParams = await diva.getPoolParameters(latestPoolId);
 
         // Prepare value submission to tellorPlayground
@@ -429,7 +435,93 @@ describe("DIVAOracleTellor", () => {
         // ---------
         poolParams = await diva.getPoolParameters(latestPoolId);
         expect(await poolParams.statusFinalReferenceValue).to.eq(3);
-        expect(await poolParams.finalReferenceValue).to.eq(parseUnits("42500"));
+        expect(await poolParams.finalReferenceValue).to.eq(
+          finalReferenceValue2
+        );
+      });
+
+      it("Should take the second value if the first one was disputed", async () => {
+        // ---------
+        // Arrange: Create a contingent pool with expiry time in the future, prepare the submission to tellorPlayground
+        // and submit two values, begin dispute for first one
+        // ---------
+        const tx = await diva.createContingentPool([
+          referenceAsset, // reference asset
+          poolExpiryTime, // expiryTime
+          parseUnits("40000"), // floor
+          parseUnits("60000"), // inflection
+          parseUnits("80000"), // cap
+          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
+          parseUnits("100", collateralTokenDecimals), // collateral amount
+          collateralToken.address, // collateral token
+          divaOracleTellor.address, // data provider
+          parseUnits("200", collateralTokenDecimals).toString(), // capacity
+          user1.address, // longRecipient
+          user1.address, // shortRecipient
+          ethers.constants.AddressZero,
+        ]);
+        const receipt = await tx.wait();
+
+        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
+          ?.args?.poolId;
+        poolParams = await diva.getPoolParameters(latestPoolId);
+
+        // Prepare value submission to tellorPlayground
+        // Re-construct as latestPoolId changed in this test
+        [queryData, queryId] = getQueryDataAndId(
+          latestPoolId,
+          divaAddress,
+          chainId
+        );
+
+        nextBlockTimestamp = poolParams.expiryTime.add(1);
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
+
+        // First reporter submission
+        finalReferenceValue1 = parseUnits("42000");
+        collateralToUSDRate1 = parseUnits("1.14");
+        oracleValue1 = encodeOracleValue(
+          finalReferenceValue1,
+          collateralToUSDRate1
+        );
+        await tellorPlayground
+          .connect(reporter)
+          .submitValue(queryId, oracleValue1, 0, queryData);
+
+        // Begin dispute for the first submission
+        await tellorPlayground.beginDispute(queryId, nextBlockTimestamp);
+        expect(
+          await tellorPlayground.isInDispute(queryId, nextBlockTimestamp)
+        ).to.eq(true);
+
+        // Second reporter submission
+        finalReferenceValue2 = parseUnits("42500");
+        collateralToUSDRate2 = parseUnits("1.15");
+        oracleValue2 = encodeOracleValue(
+          finalReferenceValue2,
+          collateralToUSDRate2
+        );
+        await tellorPlayground
+          .connect(reporter)
+          .submitValue(queryId, oracleValue2, 0, queryData);
+
+        // ---------
+        // Act: Call `setFinalReferenceValue` function inside DIVAOracleTellor contract after `minPeriodUndisputed` has passed
+        // ---------
+        nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed; // has to be `minPeriodDisputed` after the time of the second submission (assumed to be 1 second after expiration)
+        await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+        await divaOracleTellor
+          .connect(user2)
+          .setFinalReferenceValue(latestPoolId);
+
+        // ---------
+        // Assert: Confirm that the second value was set as the final
+        // ---------
+        poolParams = await diva.getPoolParameters(latestPoolId);
+        expect(await poolParams.statusFinalReferenceValue).to.eq(3);
+        expect(await poolParams.finalReferenceValue).to.eq(
+          finalReferenceValue2
+        );
       });
 
       it("Allocates all the settlement fee to reporter if it is below maxFeeAmountUSD", async () => {
@@ -493,7 +585,7 @@ describe("DIVAOracleTellor", () => {
         // Arrange: Create a contingent pool where settlement fee exceeds maxFeeAmountUSD
         // ---------
         poolExpiryTime = (await getLastTimestamp()) + TEN_MINS;
-        await diva.createContingentPool([
+        const tx = await diva.createContingentPool([
           referenceAsset, // reference asset
           poolExpiryTime, // expiryTime
           parseUnits("40000"), // floor
@@ -508,7 +600,10 @@ describe("DIVAOracleTellor", () => {
           user1.address, // shortRecipient
           ethers.constants.AddressZero,
         ]);
-        latestPoolId = await diva.getLatestPoolId();
+        const receipt = await tx.wait();
+
+        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
+          ?.args?.poolId;
         poolParams = await diva.getPoolParameters(latestPoolId);
 
         // Prepare value submission to tellorPlayground
@@ -619,7 +714,7 @@ describe("DIVAOracleTellor", () => {
         // Arrange: Create a contingent pool where settlement fee exceeds maxFeeAmountUSD and report zero collateralToUSDRate
         // ---------
         poolExpiryTime = (await getLastTimestamp()) + TEN_MINS;
-        await diva.createContingentPool([
+        const tx = await diva.createContingentPool([
           referenceAsset, // reference asset
           poolExpiryTime, // expiryTime
           parseUnits("40000"), // floor
@@ -634,7 +729,10 @@ describe("DIVAOracleTellor", () => {
           user1.address, // shortRecipient
           ethers.constants.AddressZero,
         ]);
-        latestPoolId = await diva.getLatestPoolId();
+        const receipt = await tx.wait();
+
+        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
+          ?.args?.poolId;
         poolParams = await diva.getPoolParameters(latestPoolId);
 
         // Prepare value submission to tellorPlayground
@@ -775,14 +873,14 @@ describe("DIVAOracleTellor", () => {
         // ---------
         await expect(
           divaOracleTellor.connect(user2).setFinalReferenceValue(latestPoolId)
-        ).to.be.revertedWith("NoOracleSubmission()");
+        ).to.be.revertedWith("NoOracleSubmissionAfterExpiryTime()");
       });
 
       it("Should revert if a value has been reported prior to expiryTime only", async () => {
         // ---------
         // Arrange: Create a non-expired pool and submit one value prior to expiration
         // ---------
-        await diva.createContingentPool([
+        const tx = await diva.createContingentPool([
           referenceAsset, // reference asset
           poolExpiryTime, // expiryTime
           parseUnits("40000"), // floor
@@ -797,7 +895,10 @@ describe("DIVAOracleTellor", () => {
           user1.address, // shortRecipient
           ethers.constants.AddressZero,
         ]);
-        latestPoolId = await diva.getLatestPoolId();
+        const receipt = await tx.wait();
+
+        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
+          ?.args?.poolId;
         poolParams = await diva.getPoolParameters(latestPoolId);
 
         // Prepare value submission to tellorPlayground
@@ -1233,14 +1334,9 @@ describe("DIVAOracleTellor", () => {
   });
 
   describe("addTip", async () => {
-    beforeEach(async () => {
-      // Get pool id
-      latestPoolId = await diva.getLatestPoolId();
-    });
-
     it("Should add tip to DIVAOracleTellor", async () => {
       // ---------
-      // Arrange: Check that there's  no tip added for latestPoolId
+      // Arrange: Check that there's no tip added for latestPoolId
       // ---------
       expect(
         await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
@@ -1367,9 +1463,6 @@ describe("DIVAOracleTellor", () => {
 
   describe("claim functions", async () => {
     beforeEach(async () => {
-      latestPoolId = await diva.getLatestPoolId();
-      poolParams = await diva.getPoolParameters(latestPoolId);
-
       // Add tips
       await divaOracleTellor
         .connect(tipper1)
