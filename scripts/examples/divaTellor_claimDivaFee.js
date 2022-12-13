@@ -11,7 +11,7 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const {
   DIVA_ADDRESS,
-  DIVA_TELLOR_ORACLE_ADDRESS,
+  DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 // Check the final value has been set and a fee has been assigned inside DIVA Protocol.
@@ -27,10 +27,10 @@ async function main() {
   const network = "goerli";
 
   const divaAddress = DIVA_ADDRESS[network];
-  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of existing pool
-  const poolId = 4;
+  const poolId = 59;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);

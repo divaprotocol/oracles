@@ -11,18 +11,18 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const {
   STATUS,
   DIVA_ADDRESS,
-  DIVA_TELLOR_ORACLE_ADDRESS,
+  DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 async function main() {
   // INPUT: network
   const network = "goerli";
 
-  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
   const divaAddress = DIVA_ADDRESS[network];
 
   // INPUT: id of existing pool
-  const poolId = 10;
+  const poolId = 59;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);

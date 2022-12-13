@@ -17,12 +17,8 @@ async function main() {
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
 
-  // Get latest pool id
-  const poolId = await diva.getLatestPoolId();
-
-  if (poolId.eq(0)) {
-    throw new Error("No pool created on DIVA contract");
-  }
+  // INPUT: id of pool
+  const poolId = 59;
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
@@ -36,7 +32,7 @@ async function main() {
 
   // Log relevant info
   console.log("DIVA address: ", diva.address);
-  console.log("Pool id: ", poolId.toNumber());
+  console.log("Pool id: ", poolId);
   console.log("Reference asset: ", poolParams.referenceAsset);
   console.log("Floor: ", formatUnits(poolParams.floor));
   console.log("Inflection: ", formatUnits(poolParams.inflection));

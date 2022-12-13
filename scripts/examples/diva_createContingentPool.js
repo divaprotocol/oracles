@@ -11,7 +11,7 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const {
   DIVA_ADDRESS,
   COLLATERAL_TOKENS,
-  DIVA_TELLOR_ORACLE_ADDRESS,
+  DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 const { getExpiryInSeconds } = require("../../utils/utils");
 
@@ -99,7 +99,7 @@ async function main() {
 
   const collateralTokenAddress =
     COLLATERAL_TOKENS[network][collateralTokenSymbol];
-  const dataProviderAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
+  const dataProviderAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // Get signer of pool creator
   const [creator] = await ethers.getSigners();
