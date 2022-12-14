@@ -81,7 +81,7 @@ async function main() {
   const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
-  const poolId = 59;
+  const poolId = 62;
 
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;

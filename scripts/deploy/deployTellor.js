@@ -16,9 +16,12 @@ async function main() {
   const network = "goerli";
 
   const divaAddress = DIVA_ADDRESS[network];
-  const tellorPlaygroundAddress = TELLOR_ADDRESS[network];
+  const tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
   const excessFeeRecipient = "0x1EE5730C710cF06dFA7952D61A321eC8e16b9d3A"; // temporary address
   const periodMinPeriodUndisputed = 10; // IMPORTANT to set correctly!; input in seconds
+  // if (periodMinPeriodUndisputed < 3600 || periodMinPeriodUndisputed > 64800) {
+  //   throw Error("Min period undisputed is too small or too large")
+  // }
   const maxFeeAmountUSD = parseEther("10"); // $10
 
   const divaOracleTellorFactory = await ethers.getContractFactory(

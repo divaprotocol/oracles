@@ -43,7 +43,7 @@ const TELLOR_PLAYGROUND_ADDRESS = {
 // DIVAOracleTellor contract using Tellor playground
 const DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS = {
   ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
-  goerli: "0x49E9E0005be2cDba9D5FD18F7E1114877D575039", // Deployed on 13 Dec 2022 (Playground version)
+  goerli: "0x0D297474ad0394c96988831edFD9c83c014F7070", // Deployed on 14 Dec 2022 (Playground version)
 };
 
 // DIVAOracleTellor contract using actual Tellor system

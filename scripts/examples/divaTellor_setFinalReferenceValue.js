@@ -22,7 +22,7 @@ async function main() {
   const divaAddress = DIVA_ADDRESS[network];
 
   // INPUT: id of existing pool
-  const poolId = 59;
+  const poolId = 62;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -41,6 +41,7 @@ async function main() {
   const finalReferenceValueSetEvent = receipt.events.find(
     (item) => item.event === "FinalReferenceValueSet"
   );
+  console.log('finalReferenceValueSetEvent', finalReferenceValueSetEvent)
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
@@ -51,7 +52,7 @@ async function main() {
   console.log("PoolId: ", poolId);
   console.log(
     "Final reference value: ",
-    STATUS[finalReferenceValueSetEvent.args.finalValue]
+    finalReferenceValueSetEvent.args.finalValue
   );
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(
