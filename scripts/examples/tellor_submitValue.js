@@ -14,7 +14,7 @@ const TELLOR_PLAYGROUND_ABI = require("../../contracts/abi/TellorPlayground.json
 const {
   DIVA_ADDRESS,
   TELLOR_PLAYGROUND_ADDRESS,
-  DIVA_TELLOR_ORACLE_ADDRESS,
+  DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 const {
@@ -49,7 +49,7 @@ const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
       tippingTokens.map(async (tippingToken) =>
         console.log(
           `Tips for ${tippingToken} is: `,
-          await divaOracleTellor.getTip(poolId, tippingToken)
+          (await divaOracleTellor.getTip(poolId, tippingToken)).toString()
         )
       )
     );
@@ -69,7 +69,7 @@ const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
     poolParams.collateralBalance,
     decimals
   );
-  console.log("Settlement fee: ", settlementFee);
+  console.log("Settlement fee: ", settlementFee.toString());
 };
 
 async function main() {
@@ -78,10 +78,10 @@ async function main() {
 
   const divaAddress = DIVA_ADDRESS[network];
   const tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
-  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
-  const poolId = 10;
+  const poolId = 62;
 
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;

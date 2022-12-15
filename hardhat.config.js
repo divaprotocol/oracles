@@ -33,12 +33,8 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        // url: process.env.RPC_URL_RINKEBY,
-        // blockNumber: 10932590,
-        // url: process.env.RPC_URL_ROPSTEN,
-        // blockNumber: 12750642,
         url: process.env.RPC_URL_GOERLI,
-        blockNumber: 7997850,
+        blockNumber: 8133146, // keep it aligned with the one in DIVAOracleTellor.test.js
       },
       accounts: {
         mnemonic: MNEMONIC,

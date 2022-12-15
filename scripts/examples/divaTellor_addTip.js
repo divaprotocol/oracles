@@ -9,7 +9,7 @@ const { parseUnits, formatUnits } = require("@ethersproject/units");
 
 const {
   COLLATERAL_TOKENS,
-  DIVA_TELLOR_ORACLE_ADDRESS,
+  DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
@@ -30,10 +30,10 @@ async function main() {
   const tippingTokenSymbol = "dUSD";
 
   const tippingTokenAddress = COLLATERAL_TOKENS[network][tippingTokenSymbol];
-  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
-  const poolId = 5;
+  const poolId = 59;
 
   // Get signer of tipper
   const [tipper] = await ethers.getSigners();
@@ -60,7 +60,7 @@ async function main() {
   const decimals = await tippingTokenContract.decimals();
 
   // INPUT: tipping amount
-  const amount = parseUnits("10", decimals);
+  const amount = parseUnits("1", decimals);
 
   // Set allowance for DIVAOracleTellor contract
   const approveTx = await tippingTokenContract

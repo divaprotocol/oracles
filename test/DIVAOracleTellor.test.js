@@ -71,7 +71,7 @@ describe("DIVAOracleTellor", () => {
 
   let divaOracleTellor;
   let tellorPlayground;
-  let tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network]; // Kovan: '0x320f09D9f92Cfa0e9C272b179e530634D873aeFa' deployed in Kovan block 29245508, // Ropsten: '0xF281e2De3bB71dE348040b10B420615104359c10' deployed in Ropsten block 11834223
+  let tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
   let divaAddress = DIVA_ADDRESS[network];
   let referenceAsset = "BTC/USD";
 
@@ -109,7 +109,7 @@ describe("DIVAOracleTellor", () => {
             // blockNumber: Choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
             // blockNumber: 10932590, // Rinkeby
             // blockNumber: 12750642, // Ropsten
-            blockNumber: 7997850, // Goerli
+            blockNumber: 8133146, // Goerli
           },
         },
       ],

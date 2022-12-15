@@ -10,7 +10,7 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
 const {
   DIVA_ADDRESS,
-  DIVA_TELLOR_ORACLE_ADDRESS,
+  DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
 const checkConditions = (reporter, tippingTokens) => {
@@ -28,7 +28,7 @@ async function main() {
   const network = "goerli";
 
   const divaAddress = DIVA_ADDRESS[network];
-  const divaOracleTellorAddress = DIVA_TELLOR_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of existing pool
   const poolId = 4;
