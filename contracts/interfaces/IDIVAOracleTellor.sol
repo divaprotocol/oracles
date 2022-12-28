@@ -39,17 +39,11 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Emitted when the tip is claimed.
-     * @param poolId The Id of an existing derivatives pool
      * @param recipient Address of the tip recipient
      * @param tippingToken Address of tipping token
      * @param amount Claimed tipping token amount
      */
-    event TipClaimed(
-        uint256 poolId,
-        address recipient,
-        address tippingToken,
-        uint256 amount
-    );
+    event TipClaimed(address recipient, address tippingToken, uint256 amount);
 
     /**
      * @notice Emitted when the final reference value is set.
@@ -79,27 +73,30 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Function to claim tips
-     * @param _poolId The unique identifier of the pool.
+     * @param _reporter Address of reporter.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      */
-    function claimTips(uint256 _poolId, address[] memory _tippingTokens)
+    function claimTips(address _reporter, address[] calldata _tippingTokens)
         external;
 
     /**
      * @dev Function to claim fee from DIVA
-     * @param _poolId The unique identifier of the pool.
+     * @param _reporter Address of reporter.
+     * @param _collateralToken Address of collateral token.
      */
-    function claimDIVAFee(uint256 _poolId) external;
+    function claimDIVAFee(address _reporter, address _collateralToken) external;
 
     /**
      * @dev Function to claim tips from DIVAOracleTellor and claim fee
      * from DIVA
-     * @param _poolId The unique identifier of the pool.
+     * @param _reporter Address of reporter.
+     * @param _collateralToken Address of collateral token.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      */
     function claimTipsAndDIVAFee(
-        uint256 _poolId,
-        address[] memory _tippingTokens
+        address _reporter,
+        address _collateralToken,
+        address[] calldata _tippingTokens
     ) external;
 
     /**
