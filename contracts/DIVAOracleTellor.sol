@@ -23,13 +23,19 @@ contract DIVAOracleTellor is
     mapping(uint256 => mapping(address => uint256)) private _tips; // mapping poolId => tipping token address => tip amount
     mapping(uint256 => address[]) private _poolIdToTippingTokens; // mapping poolId to tipping tokens
     mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
-    mapping(address => mapping(address => uint256)) private _reporterToTip; // mapping reporter => tipping token address => tip amount
 
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
     address private _excessFeeRecipient;
     uint32 private _minPeriodUndisputed;
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
+
+    modifier onlyConfirmedPool(uint256 _poolId) {
+        if (_poolIdToReporter[_poolId] == address(0)) {
+            revert NotConfirmedPool();
+        }
+        _;
+    }
 
     constructor(
         address payable tellorAddress_,
@@ -66,30 +72,30 @@ contract DIVAOracleTellor is
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
-    function claimTips(address _reporter, address[] calldata _tippingTokens)
+    function claimTips(uint256 _poolId, address[] calldata _tippingTokens)
         external
         override
         nonReentrant
+        onlyConfirmedPool(_poolId)
     {
-        _claimTips(_reporter, _tippingTokens);
+        _claimTips(_poolId, _tippingTokens);
     }
 
-    // QUESTION: need this function?
-    function claimDIVAFee(address _reporter, address _collateralToken)
+    function claimDIVAFee(uint256 _poolId)
         external
         override
         nonReentrant
+        onlyConfirmedPool(_poolId)
     {
-        _diva.claimFee(_collateralToken, _reporter);
+        _claimDIVAFee(_poolId);
     }
 
     function claimTipsAndDIVAFee(
-        address _reporter,
-        address _collateralToken,
+        uint256 _poolId,
         address[] calldata _tippingTokens
-    ) external override nonReentrant {
-        _claimTips(_reporter, _tippingTokens);
-        _diva.claimFee(_collateralToken, _reporter);
+    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+        _claimTips(_poolId, _tippingTokens);
+        _claimDIVAFee(_poolId);
     }
 
     function setFinalReferenceValue(uint256 _poolId)
@@ -105,7 +111,7 @@ contract DIVAOracleTellor is
         address[] calldata _tippingTokens
     ) external override nonReentrant {
         _setFinalReferenceValue(_poolId);
-        _claimTips(_poolIdToReporter[_poolId], _tippingTokens);
+        _claimTips(_poolId, _tippingTokens);
     }
 
     function setFinalReferenceValueAndClaimDIVAFee(uint256 _poolId)
@@ -122,7 +128,7 @@ contract DIVAOracleTellor is
         address[] calldata _tippingTokens
     ) external override nonReentrant {
         _setFinalReferenceValue(_poolId);
-        _claimTips(_poolIdToReporter[_poolId], _tippingTokens);
+        _claimTips(_poolId, _tippingTokens);
         _claimDIVAFee(_poolId);
     }
 
@@ -225,19 +231,27 @@ contract DIVAOracleTellor is
         _diva.claimFee(_params.collateralToken, _poolIdToReporter[_poolId]);
     }
 
-    function _claimTips(address _reporter, address[] calldata _tippingTokens)
+    function _claimTips(uint256 _poolId, address[] calldata _tippingTokens)
         private
     {
         uint256 len = _tippingTokens.length;
         for (uint256 i = 0; i < len; ) {
             address _tippingToken = _tippingTokens[i];
 
-            uint256 _tipAmount = _reporterToTip[_reporter][_tippingToken];
-            _reporterToTip[_reporter][_tippingToken] = 0;
+            uint256 _tipAmount = _tips[_poolId][_tippingToken];
+            _tips[_poolId][_tippingToken] = 0;
 
-            IERC20Metadata(_tippingToken).safeTransfer(_reporter, _tipAmount);
+            IERC20Metadata(_tippingToken).safeTransfer(
+                _poolIdToReporter[_poolId],
+                _tipAmount
+            );
 
-            emit TipClaimed(_reporter, _tippingToken, _tipAmount);
+            emit TipClaimed(
+                _poolId,
+                _poolIdToReporter[_poolId],
+                _tippingToken,
+                _tipAmount
+            );
 
             unchecked {
                 ++i;
@@ -252,10 +266,7 @@ contract DIVAOracleTellor is
         bytes32 _queryId = getQueryId(_poolId);
 
         // Find first oracle submission after or at expiryTime, if it exists
-        (
-            bytes memory _valueRetrieved,
-            uint256 _timestampRetrieved
-        ) = getDataAfter(_queryId, _params.expiryTime - 1);
+        (bytes memory _valueRetrieved, uint256 _timestampRetrieved) = getDataAfter(_queryId, _params.expiryTime - 1);
 
         // Check that data exists (_timestampRetrieved = 0 if it doesn't)
         if (_timestampRetrieved == 0) {
@@ -282,20 +293,6 @@ contract DIVAOracleTellor is
         // Set reporter with pool id
         _poolIdToReporter[_poolId] = _reporter;
 
-        // TODO need to update this for loop module
-        uint256 len = _poolIdToTippingTokens[_poolId].length;
-        for (uint256 i = 0; i < len; ) {
-            address _tippingToken = _poolIdToTippingTokens[_poolId][i];
-            _reporterToTip[_reporter][_tippingToken] += _tips[_poolId][
-                _tippingToken
-            ];
-            _tips[_poolId][_tippingToken] = 0;
-
-            unchecked {
-                ++i;
-            }
-        }
-
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(
             _poolId,
@@ -316,6 +313,7 @@ contract DIVAOracleTellor is
             _formattedCollateralToUSDRate
         ); // denominated in USD; integer with 18 decimals
         uint256 feeToReporter;
+        uint256 feeToExcessRecipient;
 
         if (feeClaimUSD > _maxFeeAmountUSD) {
             // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in which case it will
@@ -326,6 +324,8 @@ contract DIVAOracleTellor is
         } else {
             feeToReporter = feeClaim;
         }
+
+        feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
 
         // Transfer fee claim to reporter and excessFeeRecipient
         IDIVA.ArgsBatchTransferFeeClaim[]
@@ -340,7 +340,7 @@ contract DIVAOracleTellor is
         _feeClaimTransfers[1] = IDIVA.ArgsBatchTransferFeeClaim(
             _excessFeeRecipient,
             _params.collateralToken,
-            feeClaim - feeToReporter // feeToExcessRecipient: integer with collateral token decimals
+            feeToExcessRecipient
         );
         _diva.batchTransferFeeClaim(_feeClaimTransfers);
 
