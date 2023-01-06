@@ -1342,7 +1342,7 @@ describe("DIVAOracleTellor", () => {
         await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
       ).to.eq(0);
       expect(
-        (await divaOracleTellor.getTippingTokens(latestPoolId)).length
+        (await divaOracleTellor.getTippingTokens([latestPoolId]))[0].length
       ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
 
@@ -1359,9 +1359,9 @@ describe("DIVAOracleTellor", () => {
       expect(
         await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
       ).to.eq(tippingAmount1);
-      expect((await divaOracleTellor.getTippingTokens(latestPoolId))[0]).to.eq(
-        tippingToken1.address
-      );
+      expect(
+        (await divaOracleTellor.getTippingTokens([latestPoolId]))[0][0]
+      ).to.eq(tippingToken1.address);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
       );
@@ -1391,7 +1391,7 @@ describe("DIVAOracleTellor", () => {
         await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
       ).to.eq(secondTippingAmount.add(tippingAmount1));
       expect(
-        (await divaOracleTellor.getTippingTokens(latestPoolId)).length
+        (await divaOracleTellor.getTippingTokens([latestPoolId]))[0].length
       ).to.eq(1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         secondTippingAmount.add(tippingAmount1)

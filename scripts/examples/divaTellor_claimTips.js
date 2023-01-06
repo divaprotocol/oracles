@@ -48,7 +48,7 @@ async function main() {
   const reporter = (await divaOracleTellor.getReporters([poolId]))[0];
 
   // Get tipping tokens
-  const tippingTokens = await divaOracleTellor.getTippingTokens(poolId);
+  const tippingTokens = (await divaOracleTellor.getTippingTokens([poolId]))[0];
 
   // Check conditions
   checkConditions(reporter, tippingTokens);

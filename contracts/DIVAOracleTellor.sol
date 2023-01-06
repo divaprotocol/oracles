@@ -209,13 +209,22 @@ contract DIVAOracleTellor is
         return _minPeriodUndisputed;
     }
 
-    function getTippingTokens(uint256 _poolId)
+    function getTippingTokens(uint256[] calldata _poolIds)
         external
         view
         override
-        returns (address[] memory)
+        returns (address[][] memory)
     {
-        return _poolIdToTippingTokens[_poolId];
+        uint256 len = _poolIds.length;
+        address[][] memory _tippingTokens = new address[][](len);
+        for (uint256 i = 0; i < len; ) {
+            _tippingTokens[i] = _poolIdToTippingTokens[_poolIds[i]];
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _tippingTokens;
     }
 
     function getTip(uint256 _poolId, address _tippingToken)

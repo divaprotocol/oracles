@@ -204,12 +204,12 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Returns the length of tipping tokens with the poolId
-     * @param _poolId The unique identifier of the pool.
+     * @param _poolIds Array of pool id.
      */
-    function getTippingTokens(uint256 _poolId)
+    function getTippingTokens(uint256[] calldata _poolIds)
         external
         view
-        returns (address[] memory);
+        returns (address[][] memory);
 
     /**
      * @dev Returns the tipping amount
