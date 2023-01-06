@@ -72,15 +72,30 @@ contract DIVAOracleTellor is
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
+    // QUESTION: need this function?
     function claimTips(uint256 _poolId, address[] calldata _tippingTokens)
         external
         override
         nonReentrant
-        onlyConfirmedPool(_poolId)
     {
         _claimTips(_poolId, _tippingTokens);
     }
 
+    function batchClaimTips(
+        uint256[] calldata _poolIds,
+        address[] calldata _tippingTokens
+    ) external override nonReentrant {
+        uint256 len = _poolIds.length;
+        for (uint256 i = 0; i < len; ) {
+            _claimTips(_poolIds[i], _tippingTokens);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    // QUESTION: need this function? need batch version of this function?
     function claimDIVAFee(uint256 _poolId)
         external
         override
@@ -90,12 +105,28 @@ contract DIVAOracleTellor is
         _claimDIVAFee(_poolId);
     }
 
+    // QUESTION: need this function?
     function claimTipsAndDIVAFee(
         uint256 _poolId,
         address[] calldata _tippingTokens
-    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+    ) external override nonReentrant {
         _claimTips(_poolId, _tippingTokens);
         _claimDIVAFee(_poolId);
+    }
+
+    function batchClaimTipsAndDIVAFee(
+        uint256[] calldata _poolIds,
+        address[] calldata _tippingTokens
+    ) external override nonReentrant {
+        uint256 len = _poolIds.length;
+        for (uint256 i = 0; i < len; ) {
+            _claimTips(_poolIds[i], _tippingTokens);
+            _claimDIVAFee(_poolIds[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function setFinalReferenceValue(uint256 _poolId)
@@ -233,6 +264,7 @@ contract DIVAOracleTellor is
 
     function _claimTips(uint256 _poolId, address[] calldata _tippingTokens)
         private
+        onlyConfirmedPool(_poolId)
     {
         uint256 len = _tippingTokens.length;
         for (uint256 i = 0; i < len; ) {
@@ -266,7 +298,10 @@ contract DIVAOracleTellor is
         bytes32 _queryId = getQueryId(_poolId);
 
         // Find first oracle submission after or at expiryTime, if it exists
-        (bytes memory _valueRetrieved, uint256 _timestampRetrieved) = getDataAfter(_queryId, _params.expiryTime - 1);
+        (
+            bytes memory _valueRetrieved,
+            uint256 _timestampRetrieved
+        ) = getDataAfter(_queryId, _params.expiryTime - 1);
 
         // Check that data exists (_timestampRetrieved = 0 if it doesn't)
         if (_timestampRetrieved == 0) {
