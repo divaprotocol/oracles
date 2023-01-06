@@ -228,13 +228,16 @@ interface IDIVAOracleTellor {
     function getQueryId(uint256 _poolId) external view returns (bytes32);
 
     /**
-     * @dev Returns the reporter address. Note that it returns
+     * @dev Returns the array of reporter addresses. Note that it returns
      * the zero address if a value has been reported to the Tellor contract
      * but it hasn't been pulled into DIVA Protocol by calling
      * `setFinalReferenceValue` yet.
-     * @param _poolId The unique identifier of the pool.
+     * @param _poolIds Array of pool id.
      */
-    function getReporter(uint256 _poolId) external view returns (address);
+    function getReporters(uint256[] calldata _poolIds)
+        external
+        view
+        returns (address[] memory);
 
     /**
      * @dev Returns the DIVA address that the oracle is linked to

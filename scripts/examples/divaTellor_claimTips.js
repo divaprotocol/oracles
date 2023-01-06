@@ -28,7 +28,8 @@ async function main() {
   const network = "goerli";
 
   const divaAddress = DIVA_ADDRESS[network];
-  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress =
+    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of existing pool
   const poolId = 4;
@@ -44,7 +45,7 @@ async function main() {
   console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
 
   // Get reporter
-  const reporter = await divaOracleTellor.getReporter(poolId);
+  const reporter = (await divaOracleTellor.getReporters([poolId]))[0];
 
   // Get tipping tokens
   const tippingTokens = await divaOracleTellor.getTippingTokens(poolId);

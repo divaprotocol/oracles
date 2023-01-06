@@ -30,7 +30,8 @@ async function main() {
   const tippingTokenSymbol = "dUSD";
 
   const tippingTokenAddress = COLLATERAL_TOKENS[network][tippingTokenSymbol];
-  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress =
+    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
   const poolId = 59;
@@ -45,7 +46,7 @@ async function main() {
   );
 
   // Get reporter
-  const reporter = await divaOracleTellor.getReporter(poolId);
+  const reporter = (await divaOracleTellor.getReporters([poolId]))[0];
 
   // Check conditions
   checkConditions(reporter);

@@ -227,6 +227,28 @@ contract DIVAOracleTellor is
         return _tips[_poolId][_tippingToken];
     }
 
+    function getDIVAAddress() external view override returns (address) {
+        return address(_diva);
+    }
+
+    function getReporters(uint256[] calldata _poolIds)
+        external
+        view
+        override
+        returns (address[] memory)
+    {
+        uint256 len = _poolIds.length;
+        address[] memory _reporters = new address[](len);
+        for (uint256 i = 0; i < len; ) {
+            _reporters[i] = _poolIdToReporter[_poolIds[i]];
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _reporters;
+    }
+
     function getQueryId(uint256 _poolId)
         public
         view
@@ -242,19 +264,6 @@ contract DIVAOracleTellor is
                     abi.encode(_poolId, address(_diva), block.chainid)
                 )
             );
-    }
-
-    function getDIVAAddress() external view override returns (address) {
-        return address(_diva);
-    }
-
-    function getReporter(uint256 _poolId)
-        external
-        view
-        override
-        returns (address)
-    {
-        return _poolIdToReporter[_poolId];
     }
 
     function _claimDIVAFee(uint256 _poolId) private {
