@@ -123,11 +123,11 @@ contract DIVAOracleTellor is
 
     function batchClaimTipsAndDIVAFee(
         uint256[] calldata _poolIds,
-        address[] calldata _tippingTokens
+        address[][] calldata _tippingTokens
     ) external override nonReentrant {
         uint256 len = _poolIds.length;
         for (uint256 i = 0; i < len; ) {
-            _claimTips(_poolIds[i], _tippingTokens);
+            _claimTips(_poolIds[i], _tippingTokens[i]);
             _claimDIVAFee(_poolIds[i]);
 
             unchecked {

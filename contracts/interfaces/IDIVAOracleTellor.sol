@@ -125,7 +125,7 @@ interface IDIVAOracleTellor {
      */
     function batchClaimTipsAndDIVAFee(
         uint256[] calldata _poolIds,
-        address[] memory _tippingTokens
+        address[][] memory _tippingTokens
     ) external;
 
     /**
