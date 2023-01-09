@@ -68,7 +68,6 @@ const getQueryDataAndId = (latestPoolId, divaAddress, chainId) => {
 
 describe("DIVAOracleTellor", () => {
   let collateralTokenInstance;
-  let userStartTokenBalance;
   let user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2;
 
   let divaOracleTellor;
@@ -95,7 +94,7 @@ describe("DIVAOracleTellor", () => {
   let finalReferenceValue, collateralToUSDRate;
   let queryData, queryId, oracleValue;
 
-  beforeEach(async () => {
+  before(async () => {
     [user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2] =
       await ethers.getSigners();
 
@@ -137,9 +136,11 @@ describe("DIVAOracleTellor", () => {
 
     // Get DIVA contract
     diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
+  });
 
+  beforeEach(async () => {
     // Set user start token balance
-    userStartTokenBalance = parseUnits("1000000");
+    const userStartTokenBalance = parseUnits("1000000");
 
     // Deploy collateral token and approve it to DIVA contract
     collateralTokenInstance = await erc20DeployFixture(
@@ -388,23 +389,8 @@ describe("DIVAOracleTellor", () => {
 
       it("Should take the second value if the first one was submitted before expiryTime and the second one afterwards", async () => {
         // ---------
-        // Arrange: Create a contingent pool with expiry time in the future, prepare the submission to tellorPlayground
-        // and submit two values, one before and one after expiration
+        // Arrange: Prepare the submission to tellorPlayground and submit two values, one before and one after expiration
         // ---------
-        const tx = await createContingentPool();
-        const receipt = await tx.wait();
-
-        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
-          ?.args?.poolId;
-        poolParams = await diva.getPoolParameters(latestPoolId);
-
-        // Prepare value submission to tellorPlayground
-        // Re-construct as latestPoolId changed in this test
-        [queryData, queryId] = getQueryDataAndId(
-          latestPoolId,
-          divaAddress,
-          chainId
-        );
 
         // First reporter submission prior to expiration
         finalReferenceValue1 = parseUnits("42000");
@@ -453,23 +439,8 @@ describe("DIVAOracleTellor", () => {
 
       it("Should take the second value if the first one was disputed", async () => {
         // ---------
-        // Arrange: Create a contingent pool with expiry time in the future, prepare the submission to tellorPlayground
-        // and submit two values, begin dispute for first one
+        // Arrange: Prepare the submission to tellorPlayground and submit two values, begin dispute for first one
         // ---------
-        const tx = await createContingentPool();
-        const receipt = await tx.wait();
-
-        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
-          ?.args?.poolId;
-        poolParams = await diva.getPoolParameters(latestPoolId);
-
-        // Prepare value submission to tellorPlayground
-        // Re-construct as latestPoolId changed in this test
-        [queryData, queryId] = getQueryDataAndId(
-          latestPoolId,
-          divaAddress,
-          chainId
-        );
 
         nextBlockTimestamp = poolParams.expiryTime.add(1);
         await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
@@ -581,21 +552,6 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Arrange: Create a contingent pool where settlement fee exceeds maxFeeAmountUSD
         // ---------
-        // const tx = await diva.createContingentPool([
-        //   referenceAsset, // reference asset
-        //   poolExpiryTime, // expiryTime
-        //   parseUnits("40000"), // floor
-        //   parseUnits("60000"), // inflection
-        //   parseUnits("80000"), // cap
-        //   parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
-        //   parseUnits("100000", collateralTokenDecimals), // collateral amount
-        //   collateralToken.address, // collateral token
-        //   divaOracleTellor.address, // data provider
-        //   parseUnits("200000", collateralTokenDecimals).toString(), // capacity
-        //   user1.address, // longRecipient
-        //   user1.address, // shortRecipient
-        //   ethers.constants.AddressZero,
-        // ]);
         const tx = await createContingentPool({
           collateralAmount: 100000,
           capacity: 200000,
@@ -714,22 +670,8 @@ describe("DIVAOracleTellor", () => {
 
       it("Should allocate all fees to reporter if collateralToUSDRate = 0 (should typically be disputed by the Tellor mechanism)", async () => {
         // ---------
-        // Arrange: Create a contingent pool where settlement fee exceeds maxFeeAmountUSD and report zero collateralToUSDRate
+        // Arrange: Report zero collateralToUSDRate
         // ---------
-        const tx = await createContingentPool();
-        const receipt = await tx.wait();
-
-        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
-          ?.args?.poolId;
-        poolParams = await diva.getPoolParameters(latestPoolId);
-
-        // Prepare value submission to tellorPlayground
-        // Re-construct as latestPoolId changed in this test
-        [queryData, queryId] = getQueryDataAndId(
-          latestPoolId,
-          divaAddress,
-          chainId
-        );
 
         // Report value to tellor playground with collateralToUSDRate = 0
         finalReferenceValue = parseUnits("42000");
@@ -869,22 +811,8 @@ describe("DIVAOracleTellor", () => {
 
       it("Should revert if a value has been reported prior to expiryTime only", async () => {
         // ---------
-        // Arrange: Create a non-expired pool and submit one value prior to expiration
+        // Arrange: Submit one value prior to expiration
         // ---------
-        const tx = await createContingentPool();
-        const receipt = await tx.wait();
-
-        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
-          ?.args?.poolId;
-        poolParams = await diva.getPoolParameters(latestPoolId);
-
-        // Prepare value submission to tellorPlayground
-        // Re-construct as latestPoolId changed in this test
-        [queryData, queryId] = getQueryDataAndId(
-          latestPoolId,
-          divaAddress,
-          chainId
-        );
 
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
