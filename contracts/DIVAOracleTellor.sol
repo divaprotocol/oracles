@@ -72,7 +72,6 @@ contract DIVAOracleTellor is
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
-    // QUESTION: need this function?
     function claimTips(uint256 _poolId, address[] calldata _tippingTokens)
         external
         override
@@ -83,11 +82,11 @@ contract DIVAOracleTellor is
 
     function batchClaimTips(
         uint256[] calldata _poolIds,
-        address[] calldata _tippingTokens
+        address[][] calldata _tippingTokens
     ) external override nonReentrant {
         uint256 len = _poolIds.length;
         for (uint256 i = 0; i < len; ) {
-            _claimTips(_poolIds[i], _tippingTokens);
+            _claimTips(_poolIds[i], _tippingTokens[i]);
 
             unchecked {
                 ++i;
@@ -95,17 +94,25 @@ contract DIVAOracleTellor is
         }
     }
 
-    // QUESTION: need this function? need batch version of this function?
-    function claimDIVAFee(uint256 _poolId)
-        external
-        override
-        nonReentrant
-        onlyConfirmedPool(_poolId)
-    {
+    function claimDIVAFee(uint256 _poolId) external override nonReentrant {
         _claimDIVAFee(_poolId);
     }
 
-    // QUESTION: need this function?
+    function batchClaimDIVAFee(uint256[] calldata _poolIds)
+        external
+        override
+        nonReentrant
+    {
+        uint256 len = _poolIds.length;
+        for (uint256 i = 0; i < len; ) {
+            _claimDIVAFee(_poolIds[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     function claimTipsAndDIVAFee(
         uint256 _poolId,
         address[] calldata _tippingTokens
@@ -275,7 +282,7 @@ contract DIVAOracleTellor is
             );
     }
 
-    function _claimDIVAFee(uint256 _poolId) private {
+    function _claimDIVAFee(uint256 _poolId) private onlyConfirmedPool(_poolId) {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
         _diva.claimFee(_params.collateralToken, _poolIdToReporter[_poolId]);
     }

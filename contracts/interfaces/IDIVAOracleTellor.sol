@@ -92,7 +92,7 @@ interface IDIVAOracleTellor {
      */
     function batchClaimTips(
         uint256[] calldata _poolIds,
-        address[] memory _tippingTokens
+        address[][] memory _tippingTokens
     ) external;
 
     /**
@@ -100,6 +100,12 @@ interface IDIVAOracleTellor {
      * @param _poolId The unique identifier of the pool.
      */
     function claimDIVAFee(uint256 _poolId) external;
+
+    /**
+     * @dev Batch version of `claimDIVAFee`
+     * @param _poolIds Array of pool id.
+     */
+    function batchClaimDIVAFee(uint256[] calldata _poolIds) external;
 
     /**
      * @dev Function to claim tips from DIVAOracleTellor and claim fee
