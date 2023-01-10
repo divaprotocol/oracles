@@ -246,6 +246,15 @@ interface IDIVAOracleTellor {
         returns (address[] memory);
 
     /**
+     * @dev Returns the array of poolIds reported by reporter.
+     * @param _reporter Address of reporter.
+     */
+    function getPoolIdsForReporter(address _reporter)
+        external
+        view
+        returns (uint256[] memory);
+
+    /**
      * @dev Returns the DIVA address that the oracle is linked to
      */
     function getDIVAAddress() external view returns (address);

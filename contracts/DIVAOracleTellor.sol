@@ -23,6 +23,7 @@ contract DIVAOracleTellor is
     mapping(uint256 => mapping(address => uint256)) private _tips; // mapping poolId => tipping token address => tip amount
     mapping(uint256 => address[]) private _poolIdToTippingTokens; // mapping poolId to tipping tokens
     mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
+    mapping(address => uint256[]) private _reporterToPoolIds; // mapping reporter to poolIds
 
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
     address private _excessFeeRecipient;
@@ -265,6 +266,15 @@ contract DIVAOracleTellor is
         return _reporters;
     }
 
+    function getPoolIdsForReporter(address _reporter)
+        external
+        view
+        override
+        returns (uint256[] memory)
+    {
+        return _reporterToPoolIds[_reporter];
+    }
+
     function getQueryId(uint256 _poolId)
         public
         view
@@ -352,6 +362,7 @@ contract DIVAOracleTellor is
 
         // Set reporter with pool id
         _poolIdToReporter[_poolId] = _reporter;
+        _reporterToPoolIds[_reporter].push(_poolId);
 
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(
