@@ -81,13 +81,17 @@ contract DIVAOracleTellor is
         _claimTips(_poolId, _tippingTokens);
     }
 
-    function batchClaimTips(
-        uint256[] calldata _poolIds,
-        address[][] calldata _tippingTokens
-    ) external override nonReentrant {
-        uint256 len = _poolIds.length;
+    function batchClaimTips(ArgsBatchInput[] calldata _argsBatchInputs)
+        external
+        override
+        nonReentrant
+    {
+        uint256 len = _argsBatchInputs.length;
         for (uint256 i = 0; i < len; ) {
-            _claimTips(_poolIds[i], _tippingTokens[i]);
+            _claimTips(
+                _argsBatchInputs[i].poolId,
+                _argsBatchInputs[i].tippingTokens
+            );
 
             unchecked {
                 ++i;
@@ -123,13 +127,15 @@ contract DIVAOracleTellor is
     }
 
     function batchClaimTipsAndDIVAFee(
-        uint256[] calldata _poolIds,
-        address[][] calldata _tippingTokens
+        ArgsBatchInput[] calldata _argsBatchInputs
     ) external override nonReentrant {
-        uint256 len = _poolIds.length;
+        uint256 len = _argsBatchInputs.length;
         for (uint256 i = 0; i < len; ) {
-            _claimTips(_poolIds[i], _tippingTokens[i]);
-            _claimDIVAFee(_poolIds[i]);
+            _claimTips(
+                _argsBatchInputs[i].poolId,
+                _argsBatchInputs[i].tippingTokens
+            );
+            _claimDIVAFee(_argsBatchInputs[i].poolId);
 
             unchecked {
                 ++i;
@@ -235,13 +241,36 @@ contract DIVAOracleTellor is
         return _tippingTokens;
     }
 
-    function getTip(uint256 _poolId, address _tippingToken)
+    function getTipAmounts(ArgsBatchInput[] calldata _argsBatchInputs)
         external
         view
         override
-        returns (uint256)
+        returns (uint256[][] memory)
     {
-        return _tips[_poolId][_tippingToken];
+        uint256 len = _argsBatchInputs.length;
+        uint256[][] memory _tipAmounts = new uint256[][](len);
+        for (uint256 i = 0; i < len; ) {
+            uint256 tippingTokensLen = _argsBatchInputs[i].tippingTokens.length;
+            uint256[] memory _tipAmountsForPoolId = new uint256[](
+                tippingTokensLen
+            );
+            for (uint256 j = 0; j < tippingTokensLen; ) {
+                _tipAmountsForPoolId[j] = _tips[_argsBatchInputs[i].poolId][
+                    _argsBatchInputs[i].tippingTokens[j]
+                ];
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            _tipAmounts[i] = _tipAmountsForPoolId;
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _tipAmounts;
     }
 
     function getDIVAAddress() external view override returns (address) {

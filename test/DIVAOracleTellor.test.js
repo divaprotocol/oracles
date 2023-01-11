@@ -291,7 +291,11 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Get tips and balances for tippingToken1
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -300,7 +304,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get tips and balances for tippingToken2
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -365,7 +373,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken1 are unchanged
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -374,7 +386,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken2 are unchanged
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -858,7 +874,11 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Get tips and balances for tippingToken1
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -867,7 +887,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get tips and balances for tippingToken2
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -930,7 +954,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken1 are updated correctly
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(0);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           0
@@ -941,7 +969,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken2 are updated correctly
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(0);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           0
@@ -1044,7 +1076,11 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Get tips and balances for tippingToken1
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -1053,7 +1089,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get tips and balances for tippingToken2
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -1123,7 +1163,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check tips and balances for tippinToken1 are unchanged
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -1132,7 +1176,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check tips and balances for tippinToken2  are unchanged
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -1148,7 +1196,11 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Get tips and balances for tippingToken1
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -1157,7 +1209,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get tips and balances for tippingToken2
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -1220,7 +1276,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check tips and balances for tippinToken1 were updated correctly
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(0);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           0
@@ -1231,7 +1291,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken2 were updated correctly
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(0);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           0
@@ -1259,7 +1323,11 @@ describe("DIVAOracleTellor", () => {
       // Arrange: Check that there's no tip added for latestPoolId
       // ---------
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(
         (await divaOracleTellor.getTippingTokens([latestPoolId]))[0].length
@@ -1277,7 +1345,11 @@ describe("DIVAOracleTellor", () => {
       // Assert: Check that tip is added on divaOracleTellor correctly
       // ---------
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(
         (await divaOracleTellor.getTippingTokens([latestPoolId]))[0][0]
@@ -1308,7 +1380,11 @@ describe("DIVAOracleTellor", () => {
       // Assert: Check that tip is increased on divaOracleTellor correctly
       // ---------
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(secondTippingAmount.add(tippingAmount1));
       expect(
         (await divaOracleTellor.getTippingTokens([latestPoolId]))[0].length
@@ -1422,7 +1498,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
@@ -1431,7 +1511,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2
@@ -1464,14 +1548,22 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Check that tips are paid out to reporter
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(
         tippingAmount1
       );
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(
@@ -1497,7 +1589,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
@@ -1506,7 +1602,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2
@@ -1544,7 +1644,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check that tips and balances for tippingToken1 are unchanged
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
@@ -1553,7 +1657,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 are unchanged
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2
@@ -1574,7 +1682,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
@@ -1583,7 +1695,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2
@@ -1616,14 +1732,22 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Confirm that tips were paid out to the reporter
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(
         tippingAmount1
       );
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(
@@ -1793,10 +1917,18 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `batchClaimTips`
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1ForPoolId1);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1ForPoolId2);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
@@ -1805,10 +1937,18 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `batchClaimTips`
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2ForPoolId1);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2ForPoolId2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
@@ -1818,32 +1958,51 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Act: Call `batchClaimTips` function
       // ---------
-      await divaOracleTellor.batchClaimTips(
-        [poolId1, poolId2],
-        [
-          [tippingToken1.address, tippingToken2.address],
-          [tippingToken1.address, tippingToken2.address],
-        ]
-      );
+      await divaOracleTellor.batchClaimTips([
+        {
+          poolId: poolId1,
+          tippingTokens: [tippingToken1.address, tippingToken2.address],
+        },
+        {
+          poolId: poolId2,
+          tippingTokens: [tippingToken1.address, tippingToken2.address],
+        },
+      ]);
 
       // ---------
       // Assert: Check tips are paid to reporter
       // ---------
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(
         tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
       );
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(
@@ -1863,10 +2022,18 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1ForPoolId1);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1ForPoolId2);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
@@ -1875,10 +2042,18 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2ForPoolId1);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2ForPoolId2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
@@ -1922,10 +2097,18 @@ describe("DIVAOracleTellor", () => {
 
       // Check that tips and balances for tippingToken1 are unchanged
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1ForPoolId1);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1ForPoolId2);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
@@ -1934,10 +2117,18 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 are unchanged
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2ForPoolId1);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2ForPoolId2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
@@ -1957,10 +2148,18 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `batchClaimTips`
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1ForPoolId1);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1ForPoolId2);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
@@ -1969,10 +2168,18 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `batchClaimTips`
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2ForPoolId1);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2ForPoolId2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
@@ -2001,33 +2208,52 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Act: Call claimTipsAndDIVAFee function
       // ---------
-      await divaOracleTellor.batchClaimTipsAndDIVAFee(
-        [poolId1, poolId2],
-        [
-          [tippingToken1.address, tippingToken2.address],
-          [tippingToken1.address, tippingToken2.address],
-        ]
-      );
+      await divaOracleTellor.batchClaimTipsAndDIVAFee([
+        {
+          poolId: poolId1,
+          tippingTokens: [tippingToken1.address, tippingToken2.address],
+        },
+        {
+          poolId: poolId2,
+          tippingTokens: [tippingToken1.address, tippingToken2.address],
+        },
+      ]);
 
       // ---------
       // Assert: Check that tips and DIVA fees were paid out to the reporter
       // ---------
       // Confirm that tips were paid out to the reporter
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(
         tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
       );
       expect(
-        await divaOracleTellor.getTip(poolId1, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(
-        await divaOracleTellor.getTip(poolId2, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(

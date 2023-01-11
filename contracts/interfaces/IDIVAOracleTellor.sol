@@ -65,6 +65,12 @@ interface IDIVAOracleTellor {
         uint256 timestamp
     );
 
+    // Struct for `batchClaimTips`, `batchClaimTipsAndDIVAFee`, `getTipAmount` function input
+    struct ArgsBatchInput {
+        uint256 poolId;
+        address[] tippingTokens;
+    }
+
     /**
      * @dev Function to run a single tip
      * @param _poolId The unique identifier of the pool.
@@ -87,13 +93,10 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Batch version of `claimTips`
-     * @param _poolIds Array of pool id.
-     * @param _tippingTokens Array of tipping tokens to claim tip.
+     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
      */
-    function batchClaimTips(
-        uint256[] calldata _poolIds,
-        address[][] memory _tippingTokens
-    ) external;
+    function batchClaimTips(ArgsBatchInput[] calldata _argsBatchInputs)
+        external;
 
     /**
      * @dev Function to claim fee from DIVA
@@ -120,12 +123,10 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Batch version of `claimTipsAndDIVAFee`
-     * @param _poolIds Array of pool id.
-     * @param _tippingTokens Array of tipping tokens to claim tip.
+     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
      */
     function batchClaimTipsAndDIVAFee(
-        uint256[] calldata _poolIds,
-        address[][] memory _tippingTokens
+        ArgsBatchInput[] calldata _argsBatchInputs
     ) external;
 
     /**
@@ -219,13 +220,12 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Returns the tipping amount
-     * @param _poolId The unique identifier of the pool.
-     * @param _tippingToken Address of tipping token.
+     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
      */
-    function getTip(uint256 _poolId, address _tippingToken)
+    function getTipAmounts(ArgsBatchInput[] calldata _argsBatchInputs)
         external
         view
-        returns (uint256);
+        returns (uint256[][] memory);
 
     /**
      * @dev Returns query id
