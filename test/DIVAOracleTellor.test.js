@@ -285,7 +285,7 @@ describe("DIVAOracleTellor", () => {
         expect(formattedTellorValue[1]).to.eq(collateralToUSDRate);
       });
 
-      it.only("Should set a reported Tellor value as the final reference value in DIVA Protocol and leave tips and fee claims in DIVA unclaimed", async () => {
+      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and leave tips and fee claims in DIVA unclaimed", async () => {
         // ---------
         // Arrange: Confirm params and submit values to tellorPlayground
         // ---------
@@ -388,7 +388,9 @@ describe("DIVAOracleTellor", () => {
 
         // Check that pool id is added to `reporterToPoolIds`
         expect(
-          (await divaOracleTellor.getPoolIdsForReporter(reporter.address))[0]
+          (
+            await divaOracleTellor.getPoolIdsForReporters([reporter.address])
+          )[0][0]
         ).to.eq(latestPoolId);
       });
 

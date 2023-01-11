@@ -266,13 +266,22 @@ contract DIVAOracleTellor is
         return _reporters;
     }
 
-    function getPoolIdsForReporter(address _reporter)
+    function getPoolIdsForReporters(address[] calldata _reporters)
         external
         view
         override
-        returns (uint256[] memory)
+        returns (uint256[][] memory)
     {
-        return _reporterToPoolIds[_reporter];
+        uint256 len = _reporters.length;
+        uint256[][] memory _poolIds = new uint256[][](len);
+        for (uint256 i = 0; i < len; ) {
+            _poolIds[i] = _reporterToPoolIds[_reporters[i]];
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _poolIds;
     }
 
     function getQueryId(uint256 _poolId)
