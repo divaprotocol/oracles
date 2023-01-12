@@ -405,7 +405,16 @@ describe("DIVAOracleTellor", () => {
         // Check that pool id is added to `reporterToPoolIds`
         expect(
           (
-            await divaOracleTellor.getPoolIdsForReporters([reporter.address])
+            await divaOracleTellor.getPoolIdsLengthForReporters([
+              reporter.address,
+            ])
+          )[0]
+        ).to.eq(1);
+        expect(
+          (
+            await divaOracleTellor.getPoolIdsForReporters([
+              { reporter: reporter.address, startIndex: 0, endIndex: 2 },
+            ])
           )[0][0]
         ).to.eq(latestPoolId);
       });

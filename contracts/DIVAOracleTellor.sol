@@ -295,22 +295,66 @@ contract DIVAOracleTellor is
         return _reporters;
     }
 
-    function getPoolIdsForReporters(address[] calldata _reporters)
-        external
-        view
-        override
-        returns (uint256[][] memory)
-    {
-        uint256 len = _reporters.length;
+    function getPoolIdsForReporters(
+        ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
+    ) external view override returns (uint256[][] memory) {
+        uint256 len = _argsGetPoolIdsForReporters.length;
         uint256[][] memory _poolIds = new uint256[][](len);
         for (uint256 i = 0; i < len; ) {
-            _poolIds[i] = _reporterToPoolIds[_reporters[i]];
+            uint256[] memory _poolIdsForReporter = new uint256[](
+                _argsGetPoolIdsForReporters[i].endIndex -
+                    _argsGetPoolIdsForReporters[i].startIndex
+            );
+            for (
+                uint256 j = _argsGetPoolIdsForReporters[i].startIndex;
+                j < _argsGetPoolIdsForReporters[i].endIndex;
+
+            ) {
+                if (
+                    j >=
+                    _reporterToPoolIds[_argsGetPoolIdsForReporters[i].reporter]
+                        .length
+                ) {
+                    _poolIdsForReporter[
+                        j - _argsGetPoolIdsForReporters[i].startIndex
+                    ] = 0;
+                } else {
+                    _poolIdsForReporter[
+                        j - _argsGetPoolIdsForReporters[i].startIndex
+                    ] = _reporterToPoolIds[
+                        _argsGetPoolIdsForReporters[i].reporter
+                    ][j];
+                }
+
+                unchecked {
+                    ++j;
+                }
+            }
+            _poolIds[i] = _poolIdsForReporter;
 
             unchecked {
                 ++i;
             }
         }
         return _poolIds;
+    }
+
+    function getPoolIdsLengthForReporters(address[] calldata _reporters)
+        external
+        view
+        override
+        returns (uint256[] memory)
+    {
+        uint256 len = _reporters.length;
+        uint256[] memory _poolIdsLength = new uint256[](len);
+        for (uint256 i = 0; i < len; ) {
+            _poolIdsLength[i] = _reporterToPoolIds[_reporters[i]].length;
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _poolIdsLength;
     }
 
     function getQueryId(uint256 _poolId)

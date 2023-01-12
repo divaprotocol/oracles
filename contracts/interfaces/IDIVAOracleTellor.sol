@@ -71,6 +71,13 @@ interface IDIVAOracleTellor {
         address[] tippingTokens;
     }
 
+    // Struct for `getPoolIdsForReporters` function input
+    struct ArgsGetPoolIdsForReporters {
+        address reporter;
+        uint256 startIndex;
+        uint256 endIndex;
+    }
+
     /**
      * @dev Function to run a single tip
      * @param _poolId The unique identifier of the pool.
@@ -247,12 +254,17 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Returns the array of poolIds reported by reporter.
-     * @param _reporters Array of reporter address.
+     * @param _argsGetPoolIdsForReporters Struct array containing reporter
+     * address, start index and end index.
      */
-    function getPoolIdsForReporters(address[] calldata _reporters)
+    function getPoolIdsForReporters(
+        ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
+    ) external view returns (uint256[][] memory);
+
+    function getPoolIdsLengthForReporters(address[] calldata _reporters)
         external
         view
-        returns (uint256[][] memory);
+        returns (uint256[] memory);
 
     /**
      * @dev Returns the DIVA address that the oracle is linked to
