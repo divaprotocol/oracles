@@ -86,8 +86,8 @@ contract DIVAOracleTellor is
         override
         nonReentrant
     {
-        uint256 len = _argsBatchInputs.length;
-        for (uint256 i = 0; i < len; ) {
+        uint256 _len = _argsBatchInputs.length;
+        for (uint256 i = 0; i < _len; ) {
             _claimTips(
                 _argsBatchInputs[i].poolId,
                 _argsBatchInputs[i].tippingTokens
@@ -108,8 +108,8 @@ contract DIVAOracleTellor is
         override
         nonReentrant
     {
-        uint256 len = _poolIds.length;
-        for (uint256 i = 0; i < len; ) {
+        uint256 _len = _poolIds.length;
+        for (uint256 i = 0; i < _len; ) {
             _claimDIVAFee(_poolIds[i]);
 
             unchecked {
@@ -129,8 +129,8 @@ contract DIVAOracleTellor is
     function batchClaimTipsAndDIVAFee(
         ArgsBatchInput[] calldata _argsBatchInputs
     ) external override nonReentrant {
-        uint256 len = _argsBatchInputs.length;
-        for (uint256 i = 0; i < len; ) {
+        uint256 _len = _argsBatchInputs.length;
+        for (uint256 i = 0; i < _len; ) {
             _claimTips(
                 _argsBatchInputs[i].poolId,
                 _argsBatchInputs[i].tippingTokens
@@ -223,16 +223,42 @@ contract DIVAOracleTellor is
         return _minPeriodUndisputed;
     }
 
-    function getTippingTokens(uint256[] calldata _poolIds)
-        external
-        view
-        override
-        returns (address[][] memory)
-    {
-        uint256 len = _poolIds.length;
-        address[][] memory _tippingTokens = new address[][](len);
-        for (uint256 i = 0; i < len; ) {
-            _tippingTokens[i] = _poolIdToTippingTokens[_poolIds[i]];
+    function getTippingTokens(
+        ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+    ) external view override returns (address[][] memory) {
+        uint256 _len = _argsGetTippingTokens.length;
+        address[][] memory _tippingTokens = new address[][](_len);
+        for (uint256 i = 0; i < _len; ) {
+            address[] memory _tippingTokensForPoolId = new address[](
+                _argsGetTippingTokens[i].endIndex -
+                    _argsGetTippingTokens[i].startIndex
+            );
+            for (
+                uint256 j = _argsGetTippingTokens[i].startIndex;
+                j < _argsGetTippingTokens[i].endIndex;
+
+            ) {
+                if (
+                    j >=
+                    _poolIdToTippingTokens[_argsGetTippingTokens[i].poolId]
+                        .length
+                ) {
+                    _tippingTokensForPoolId[
+                        j - _argsGetTippingTokens[i].startIndex
+                    ] = address(0);
+                } else {
+                    _tippingTokensForPoolId[
+                        j - _argsGetTippingTokens[i].startIndex
+                    ] = _poolIdToTippingTokens[_argsGetTippingTokens[i].poolId][
+                        j
+                    ];
+                }
+
+                unchecked {
+                    ++j;
+                }
+            }
+            _tippingTokens[i] = _tippingTokensForPoolId;
 
             unchecked {
                 ++i;
@@ -241,20 +267,41 @@ contract DIVAOracleTellor is
         return _tippingTokens;
     }
 
+    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
+        external
+        view
+        override
+        returns (uint256[] memory)
+    {
+        uint256 _len = _poolIds.length;
+        uint256[] memory _tippingTokensLength = new uint256[](_len);
+        for (uint256 i = 0; i < _len; ) {
+            _tippingTokensLength[i] = _poolIdToTippingTokens[_poolIds[i]]
+                .length;
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _tippingTokensLength;
+    }
+
     function getTipAmounts(ArgsBatchInput[] calldata _argsBatchInputs)
         external
         view
         override
         returns (uint256[][] memory)
     {
-        uint256 len = _argsBatchInputs.length;
-        uint256[][] memory _tipAmounts = new uint256[][](len);
-        for (uint256 i = 0; i < len; ) {
-            uint256 tippingTokensLen = _argsBatchInputs[i].tippingTokens.length;
+        uint256 _len = _argsBatchInputs.length;
+        uint256[][] memory _tipAmounts = new uint256[][](_len);
+        for (uint256 i = 0; i < _len; ) {
+            uint256 _tippingTokensLen = _argsBatchInputs[i]
+                .tippingTokens
+                .length;
             uint256[] memory _tipAmountsForPoolId = new uint256[](
-                tippingTokensLen
+                _tippingTokensLen
             );
-            for (uint256 j = 0; j < tippingTokensLen; ) {
+            for (uint256 j = 0; j < _tippingTokensLen; ) {
                 _tipAmountsForPoolId[j] = _tips[_argsBatchInputs[i].poolId][
                     _argsBatchInputs[i].tippingTokens[j]
                 ];
@@ -283,9 +330,9 @@ contract DIVAOracleTellor is
         override
         returns (address[] memory)
     {
-        uint256 len = _poolIds.length;
-        address[] memory _reporters = new address[](len);
-        for (uint256 i = 0; i < len; ) {
+        uint256 _len = _poolIds.length;
+        address[] memory _reporters = new address[](_len);
+        for (uint256 i = 0; i < _len; ) {
             _reporters[i] = _poolIdToReporter[_poolIds[i]];
 
             unchecked {
@@ -298,9 +345,9 @@ contract DIVAOracleTellor is
     function getPoolIdsForReporters(
         ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
     ) external view override returns (uint256[][] memory) {
-        uint256 len = _argsGetPoolIdsForReporters.length;
-        uint256[][] memory _poolIds = new uint256[][](len);
-        for (uint256 i = 0; i < len; ) {
+        uint256 _len = _argsGetPoolIdsForReporters.length;
+        uint256[][] memory _poolIds = new uint256[][](_len);
+        for (uint256 i = 0; i < _len; ) {
             uint256[] memory _poolIdsForReporter = new uint256[](
                 _argsGetPoolIdsForReporters[i].endIndex -
                     _argsGetPoolIdsForReporters[i].startIndex
@@ -345,9 +392,9 @@ contract DIVAOracleTellor is
         override
         returns (uint256[] memory)
     {
-        uint256 len = _reporters.length;
-        uint256[] memory _poolIdsLength = new uint256[](len);
-        for (uint256 i = 0; i < len; ) {
+        uint256 _len = _reporters.length;
+        uint256[] memory _poolIdsLength = new uint256[](_len);
+        for (uint256 i = 0; i < _len; ) {
             _poolIdsLength[i] = _reporterToPoolIds[_reporters[i]].length;
 
             unchecked {
@@ -383,8 +430,8 @@ contract DIVAOracleTellor is
         private
         onlyConfirmedPool(_poolId)
     {
-        uint256 len = _tippingTokens.length;
-        for (uint256 i = 0; i < len; ) {
+        uint256 _len = _tippingTokens.length;
+        for (uint256 i = 0; i < _len; ) {
             address _tippingToken = _tippingTokens[i];
 
             uint256 _tipAmount = _tips[_poolId][_tippingToken];

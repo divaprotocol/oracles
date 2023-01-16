@@ -71,6 +71,13 @@ interface IDIVAOracleTellor {
         address[] tippingTokens;
     }
 
+    // Struct for `getTippingTokens` function input
+    struct ArgsGetTippingTokens {
+        uint256 poolId;
+        uint256 startIndex;
+        uint256 endIndex;
+    }
+
     // Struct for `getPoolIdsForReporters` function input
     struct ArgsGetPoolIdsForReporters {
         address reporter;
@@ -217,13 +224,22 @@ interface IDIVAOracleTellor {
     function getMaxFeeAmountUSD() external view returns (uint256);
 
     /**
-     * @dev Returns the length of tipping tokens with the poolId
-     * @param _poolIds Array of pool id.
+     * @dev Returns the array of tippingTokens for poolIds
+     * @param _argsGetTippingTokens Struct array containing pool id,
+     * start index and end index.
      */
-    function getTippingTokens(uint256[] calldata _poolIds)
+    function getTippingTokens(
+        ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+    ) external view returns (address[][] memory);
+
+    /**
+     * @dev Returns the length of tipping tokens with the poolIds
+     * @param _poolIds Array of pool ids.
+     */
+    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
         external
         view
-        returns (address[][] memory);
+        returns (uint256[] memory);
 
     /**
      * @dev Returns the tipping amount
@@ -253,7 +269,7 @@ interface IDIVAOracleTellor {
         returns (address[] memory);
 
     /**
-     * @dev Returns the array of poolIds reported by reporter.
+     * @dev Returns the array of poolIds reported by reporter
      * @param _argsGetPoolIdsForReporters Struct array containing reporter
      * address, start index and end index.
      */
@@ -261,6 +277,10 @@ interface IDIVAOracleTellor {
         ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
     ) external view returns (uint256[][] memory);
 
+    /**
+     * @dev Returns the length of pool ids for the reporters
+     * @param _reporters Array of reporter address.
+     */
     function getPoolIdsLengthForReporters(address[] calldata _reporters)
         external
         view

@@ -114,6 +114,17 @@ describe("DIVAOracleTellor", () => {
       ],
     });
 
+    // Get TellorPlayground contract
+    tellorPlayground = await ethers.getContractAt(
+      "TellorPlayground",
+      tellorPlaygroundAddress
+    );
+
+    // Get DIVA contract
+    diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
+  });
+
+  beforeEach(async () => {
     // Deploy DIVAOracleTellor contract
     const divaOracleTellorFactory = await ethers.getContractFactory(
       "DIVAOracleTellor"
@@ -128,17 +139,6 @@ describe("DIVAOracleTellor", () => {
     // Check challengeable
     expect(await divaOracleTellor.challengeable()).to.eq(false);
 
-    // Get TellorPlayground contract
-    tellorPlayground = await ethers.getContractAt(
-      "TellorPlayground",
-      tellorPlaygroundAddress
-    );
-
-    // Get DIVA contract
-    diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
-  });
-
-  beforeEach(async () => {
     // Set user start token balance
     const userStartTokenBalance = parseUnits("1000000");
 
@@ -1338,9 +1338,6 @@ describe("DIVAOracleTellor", () => {
           ])
         )[0][0]
       ).to.eq(0);
-      expect(
-        (await divaOracleTellor.getTippingTokens([latestPoolId]))[0].length
-      ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
 
       // ---------
@@ -1360,9 +1357,6 @@ describe("DIVAOracleTellor", () => {
           ])
         )[0][0]
       ).to.eq(tippingAmount1);
-      expect(
-        (await divaOracleTellor.getTippingTokens([latestPoolId]))[0][0]
-      ).to.eq(tippingToken1.address);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
       );
@@ -1395,9 +1389,6 @@ describe("DIVAOracleTellor", () => {
           ])
         )[0][0]
       ).to.eq(secondTippingAmount.add(tippingAmount1));
-      expect(
-        (await divaOracleTellor.getTippingTokens([latestPoolId]))[0].length
-      ).to.eq(1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         secondTippingAmount.add(tippingAmount1)
       );
@@ -2276,6 +2267,160 @@ describe("DIVAOracleTellor", () => {
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(0);
+    });
+  });
+
+  describe("getTippingTokens", async () => {
+    let startIndex, endIndex;
+    let poolId;
+
+    beforeEach(async () => {
+      // Add tips
+      await divaOracleTellor
+        .connect(tipper1)
+        .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
+      await divaOracleTellor
+        .connect(tipper2)
+        .addTip(latestPoolId, tippingAmount2, tippingToken2.address);
+    });
+
+    it("Should get tipping tokens with correct start and end index", async () => {
+      // ---------
+      // Arrange: Set start, end index and poolId
+      // ---------
+      poolId = latestPoolId;
+      startIndex = 0;
+      endIndex = (
+        await divaOracleTellor.getTippingTokensLengthForPoolIds([poolId])
+      )[0];
+
+      // ---------
+      // Assert: Check that params are correct
+      // ---------
+      // Get tipping tokens for poolId
+      const tippingTokensForPoolId = (
+        await divaOracleTellor.getTippingTokens([
+          {
+            poolId,
+            startIndex,
+            endIndex,
+          },
+        ])
+      )[0];
+      // Confirm that tipping tokens for poolId are correct
+      expect(tippingTokensForPoolId[0]).to.eq(tippingToken1.address);
+      expect(tippingTokensForPoolId[1]).to.eq(tippingToken2.address);
+    });
+
+    it("Should get tipping tokens with end index larger than length of tipping tokens added for poolId", async () => {
+      // ---------
+      // Arrange: Set start, end index and poolId
+      // ---------
+      poolId = latestPoolId;
+      startIndex = 0;
+      endIndex =
+        (
+          await divaOracleTellor.getTippingTokensLengthForPoolIds([poolId])
+        )[0].toNumber() + 1;
+
+      // ---------
+      // Assert: Check that params are correct
+      // ---------
+      // Get tipping tokens for poolId
+      const tippingTokensForPoolId = (
+        await divaOracleTellor.getTippingTokens([
+          {
+            poolId,
+            startIndex,
+            endIndex,
+          },
+        ])
+      )[0];
+      // Confirm that tipping tokens for poolId are correct
+      expect(tippingTokensForPoolId[0]).to.eq(tippingToken1.address);
+      expect(tippingTokensForPoolId[1]).to.eq(tippingToken2.address);
+      expect(tippingTokensForPoolId[2]).to.eq(ethers.constants.AddressZero);
+    });
+  });
+
+  describe("getPoolIdsForReporters", async () => {
+    let startIndex, endIndex;
+
+    beforeEach(async () => {
+      // Prepare value submission to tellorPlayground
+      finalReferenceValue = parseUnits("42000");
+      collateralToUSDRate = parseUnits("1.14");
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
+
+      // Submit value to Tellor playground contract
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
+
+      // Set final reference value after exactly `minPeriodUndisputed` period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(latestPoolId);
+    });
+
+    it("Should get pool ids with correct start and end index", async () => {
+      // ---------
+      // Arrange: Set start, end index and reporter
+      // ---------
+      startIndex = 0;
+      endIndex = (
+        await divaOracleTellor.getPoolIdsLengthForReporters([reporter.address])
+      )[0];
+
+      // ---------
+      // Assert: Check that params are correct
+      // ---------
+      // Get pool ids for reporter
+      const poolIdsForReporter = (
+        await divaOracleTellor.getPoolIdsForReporters([
+          {
+            reporter: reporter.address,
+            startIndex,
+            endIndex,
+          },
+        ])
+      )[0];
+      // Confirm that poolId for reporter is correct
+      expect(poolIdsForReporter[0]).to.eq(latestPoolId);
+    });
+
+    it("Should get pool ids with end index larger than length of pool ids reportedy by reporter", async () => {
+      // ---------
+      // Arrange: Set start, end index and reporter
+      // ---------
+      startIndex = 0;
+      endIndex =
+        (
+          await divaOracleTellor.getPoolIdsLengthForReporters([
+            reporter.address,
+          ])
+        )[0].toNumber() + 1;
+
+      // ---------
+      // Assert: Check that params are correct
+      // ---------
+      // Get pool ids for reporter
+      const poolIdsForReporter = (
+        await divaOracleTellor.getPoolIdsForReporters([
+          {
+            reporter: reporter.address,
+            startIndex,
+            endIndex,
+          },
+        ])
+      )[0];
+      // Confirm that poolId for reporter is correct
+      expect(poolIdsForReporter[0]).to.eq(latestPoolId);
+      expect(poolIdsForReporter[1]).to.eq(0);
     });
   });
 
