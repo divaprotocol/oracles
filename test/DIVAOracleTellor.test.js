@@ -151,7 +151,7 @@ describe("DIVAOracleTellor", () => {
       divaAddress
     );
     // Check challengeable
-    expect(await divaOracleTellor.challengeable()).to.eq(false);
+    expect(await divaOracleTellor.getChallengeable()).to.eq(false);
 
     // Check ownership contract address
     expect(await divaOracleTellor.getOwnershipContract()).to.eq(

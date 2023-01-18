@@ -256,7 +256,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function challengeable() external view override returns (bool) {
+    function getChallengeable() external view override returns (bool) {
         return _challengeable;
     }
 

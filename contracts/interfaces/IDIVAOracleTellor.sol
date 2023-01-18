@@ -205,7 +205,7 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Batch version of `claimReward`.
-     * @param _argsBatchClaimReward Struct array containing poolIds, tipping
+     * @param _argsBatchClaimReward Struct array containing pool ids, tipping
      * tokens, and `claimDIVAFee` flag.
      */
     function batchClaimReward(
@@ -251,13 +251,14 @@ interface IDIVAOracleTellor {
     function revokePendingMaxFeeAmountUSDUpdate() external;
 
     /**
-     * @dev Returns whether the oracle's data feed is challengeable or not.
+     * @dev Function to return whether the oracle's data feed is challengeable
+     * or not.
      * Will return false in that implementation.
      */
-    function challengeable() external view returns (bool);
+    function getChallengeable() external view returns (bool);
 
     /**
-     * @dev Returns the excess fee recipient info.
+     * @dev Function to return the excess fee recipient info.
      */
     function getExcessFeeRecipientInfo()
         external
@@ -269,13 +270,13 @@ interface IDIVAOracleTellor {
         );
 
     /**
-     * @dev Returns the minimum period (in seconds) a reported value has
-     * to remain undisputed in order to be considered valid.
+     * @dev Function to return the minimum period (in seconds) a reported
+     * value has to remain undisputed in order to be considered valid.
      */
     function getMinPeriodUndisputed() external pure returns (uint32);
 
     /**
-     * @dev Returns the max USD fee amount info.
+     * @dev Function to return the max USD fee amount info.
      */
     function getMaxFeeAmountUSDInfo()
         external
@@ -287,30 +288,15 @@ interface IDIVAOracleTellor {
         );
 
     /**
-     * @dev Returns the list of tippingTokens for a given list of
-     * poolIds.
-     * @param _argsGetTippingTokens Struct array containing poolId,
-     * start index and end index.
+     * @dev Function to return the DIVA address that the oracle is linked to.
      */
-    function getTippingTokens(
-        ArgsGetTippingTokens[] calldata _argsGetTippingTokens
-    ) external view returns (address[][] memory);
+    function getDIVAAddress() external view returns (address);
 
     /**
-     * @dev Returns the number of different tipping tokens for a given
-     * list of poolIds.
-     * @param _poolIds Array of poolIds.
-     */
-    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
-        external
-        view
-        returns (uint256[] memory);
-
-    /**
-     * @dev Returns the tipping amount for a given list of poolIds
-     * and tipping tokens.
-     * @param _argsGetTipAmounts Struct array containing poolIds
-     * and tipping tokens.
+     * @dev Function to return the tipping amount for the given array of
+     * `ArgsGetTipAmounts` struct.
+     * @param _argsGetTipAmounts Struct array containing pool ids and tipping
+     * tokens.
      */
     function getTipAmounts(ArgsGetTipAmounts[] calldata _argsGetTipAmounts)
         external
@@ -318,18 +304,12 @@ interface IDIVAOracleTellor {
         returns (uint256[][] memory);
 
     /**
-     * @dev Returns the Tellor query id for a given poolId.
-     * @param _poolId The unique identifier of the pool.
-     */
-    function getQueryId(uint256 _poolId) external view returns (bytes32);
-
-    /**
-     * @dev Returns the list of reporter addresses that are entitled to receive
-     * the fees/tips for the provided poolIds. Note that it returns
+     * @dev Function to return the list of reporter addresses that are entitled
+     * to receive the fees/tips for the provided poolIds. Note that it returns
      * the zero address if a value has been reported to the Tellor contract
      * but it hasn't been pulled into DIVA Protocol by calling
      * `setFinalReferenceValue` yet.
-     * @param _poolIds Array of poolIds.
+     * @param _poolIds Array of pool id.
      */
     function getReporters(uint256[] calldata _poolIds)
         external
@@ -337,8 +317,28 @@ interface IDIVAOracleTellor {
         returns (address[] memory);
 
     /**
-     * @dev Returns the array of poolIds for which the provided reporters
-     * are entitled to claim the fees/tip.
+     * @dev Function to return the array of tipping tokens for the given array
+     * of `ArgsGetTippingTokens` struct.
+     * @param _argsGetTippingTokens Struct array containing pool id,
+     * start index and end index.
+     */
+    function getTippingTokens(
+        ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+    ) external view returns (address[][] memory);
+
+    /**
+     * @dev Function to return the length of tipping tokens for the given
+     * `_poolIds`.
+     * @param _poolIds Array of pool ids.
+     */
+    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
+        external
+        view
+        returns (uint256[] memory);
+
+    /**
+     * @dev Function to return the array of pool ids reported by reporters for
+     * the given array of `ArgsGetPoolIdsForReporters` struct.
      * @param _argsGetPoolIdsForReporters Struct array containing reporter
      * address, start index and end index.
      */
@@ -347,18 +347,14 @@ interface IDIVAOracleTellor {
     ) external view returns (uint256[][] memory);
 
     /**
-     * @dev Returns the length of pool ids for the reporters.
-     * @param _reporters Array of reporter addresses.
+     * @dev Function to return the length of pool ids reported by reporters
+     * for the given `_reporters`.
+     * @param _reporters Array of reporter address.
      */
     function getPoolIdsLengthForReporters(address[] calldata _reporters)
         external
         view
         returns (uint256[] memory);
-
-    /**
-     * @dev Returns the DIVA protocol contract address that the oracle is linked to.
-     */
-    function getDIVAAddress() external view returns (address);
 
     /**
      * @dev Returns the DIVA ownership contract address.
@@ -369,4 +365,10 @@ interface IDIVAOracleTellor {
      * @dev Returns the activation delay in seconds.
      */
     function getActivationDelay() external pure returns (uint256);
+
+    /**
+     * @dev Function to return the query id for a given `_poolId`.
+     * @param _poolId The unique identifier of the pool.
+     */
+    function getQueryId(uint256 _poolId) external view returns (bytes32);
 }

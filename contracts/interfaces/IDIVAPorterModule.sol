@@ -76,7 +76,7 @@ interface IDIVAPorterModule {
      * @dev Returns whether the oracle's data feed is challengeable or not.
      * Will return false in that implementation.
      */
-    function challengeable() external view returns (bool);
+    function getChallengeable() external view returns (bool);
 
     /**
      * @dev Returns Bond Factory address
