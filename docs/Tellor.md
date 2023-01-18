@@ -10,6 +10,7 @@ This documentation outlines the functionality of the Tellor adapter for DIVA Pro
 
 1.  [System overview](#system-overview)
 2.  [Function overview](#function-overview)
+3.  [Getter functions](#getter-functions)
 
 # System overview
 
@@ -153,17 +154,17 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 | [`setFinalReferenceValueAndClaimDIVAFee`](#setFinalReferenceValueAndClaimDIVAFee)               | Function to set the final reference value and claim DIVA fee for a given `_poolId` with given tipping tokens.                                                                                                                                                                                                                                                                                            |
 | [`setFinalReferenceValueAndClaimTipsAndDIVAFee`](#setFinalReferenceValueAndClaimTipsAndDIVAFee) | Function to set the final reference value and claim tips and DIVA fee for a given `_poolId` with given tipping tokens.                                                                                                                                                                                                                                                                                   |
 | **Getter functions**                                                                            |                                                                                                                                                                                                                                                                                                                                                                                                          |
-| [`getChallengeable`](#getChallengeable)                                                         | Function to return whether the oracle's data feed is challengeable or not. Will return false in that implementation.                                                                                                                                                                                                                                                                                     |
+| [`getChallengeable`](#getChallengeable)                                                         | Function to return whether the oracle's data feed is challengeable or not. Will return `false` in that implementation.                                                                                                                                                                                                                                                                                   |
 | [`getExcessFeeRecipient`](#getExcessFeeRecipient)                                               | Function to return the excess fee recipient address.                                                                                                                                                                                                                                                                                                                                                     |
 | [`getMinPeriodUndisputed`](#getMinPeriodUndisputed)                                             | Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid.                                                                                                                                                                                                                                                                            |
 | [`getMaxFeeAmountUSD`](#getMaxFeeAmountUSD)                                                     | Function to return the max fee amount usd value with 18 decimals.                                                                                                                                                                                                                                                                                                                                        |
 | [`getDIVAAddress`](#getDIVAAddress)                                                             | Function to return the DIVA address that the oracle is linked to.                                                                                                                                                                                                                                                                                                                                        |
-| [`getTipAmounts`](#getTipAmounts)                                                               | Function to return the tipping amount for the given array of `ArgsBatchInput` struct.                                                                                                                                                                                                                                                                                                                    |
+| [`getTipAmounts`](#getTipAmounts)                                                               | Function to return the array of tipping amounts for the given array of `ArgsBatchInput` struct.                                                                                                                                                                                                                                                                                                          |
 | [`getReporters`](#getReporters)                                                                 | Function to return the array of reporter addresses for the given `_poolIds`. Note that it returns the zero address if a value has been reported to the Tellor contract but it hasn't been pulled into DIVA Protocol by calling any one of `setFinalReferenceValue`, `setFinalReferenceValueAndClaimTips`, `setFinalReferenceValueAndClaimDIVAFee` or `setFinalReferenceValueAndClaimTipsAndDIVAFee` yet. |
 | [`getTippingTokens`](#getTippingTokens)                                                         | Function to return the array of tipping tokens for the given array of `ArgsGetTippingTokens` struct.                                                                                                                                                                                                                                                                                                     |
-| [`getTippingTokensLengthForPoolIds`](#getTippingTokensLengthForPoolIds)                         | Function to return the length of tipping tokens for the given `_poolIds`.                                                                                                                                                                                                                                                                                                                                |
+| [`getTippingTokensLengthForPoolIds`](#getTippingTokensLengthForPoolIds)                         | Function to return the lengths of tipping tokens for the given `_poolIds`.                                                                                                                                                                                                                                                                                                                               |
 | [`getPoolIdsForReporters`](#getPoolIdsForReporters)                                             | Function to return the array of pool ids reported by reporters for the given array of `ArgsGetPoolIdsForReporters` struct.                                                                                                                                                                                                                                                                               |
-| [`getPoolIdsLengthForReporters`](#getPoolIdsLengthForReporters)                                 | Function to return the length of pool ids reported by reporters for the given `_reporters`.                                                                                                                                                                                                                                                                                                              |
+| [`getPoolIdsLengthForReporters`](#getPoolIdsLengthForReporters)                                 | Function to return the lengths of pool ids reported by reporters for the given `_reporters`.                                                                                                                                                                                                                                                                                                             |
 | [`getQueryId`](#getQueryId)                                                                     | Function to return the query id for a given `_poolId`.                                                                                                                                                                                                                                                                                                                                                   |
 | **Setter functions** (execution is reserved for contract owner only)                            |                                                                                                                                                                                                                                                                                                                                                                                                          |
 | [`setExcessFeeRecipient`](#setExcessFeeRecipient)                                               | Function to update `_excessFeeRecipient`. Only callable by contract owner.                                                                                                                                                                                                                                                                                                                               |     |
@@ -173,3 +174,186 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 | [`batchClaimTips`](#batchClaimTips)                                                             | Batch version of `claimTips`.                                                                                                                                                                                                                                                                                                                                                                            |
 | [`batchClaimDIVAFee`](#batchClaimDIVAFee)                                                       | Batch version of `claimDIVAFee`.                                                                                                                                                                                                                                                                                                                                                                         |
 | [`batchClaimTipsAndDIVAFee`](#batchClaimTipsAndDIVAFee)                                         | Batch version of `claimTipsAndDIVAFee`.                                                                                                                                                                                                                                                                                                                                                                  |
+
+# Getter functions
+
+DIVAOracleTellor implements the following getter functions.
+
+## getChallengeable
+
+Function to return whether the oracle's data feed is challengeable or not.
+
+Will return `false` in that implementation.
+
+```js
+function getChallengeable()
+    external
+    view
+    returns (bool);
+```
+
+## getExcessFeeRecipient
+
+Function to return the excess fee recipient address.
+
+```js
+function getExcessFeeRecipient()
+    external
+    view
+    returns (address);
+```
+
+## getMinPeriodUndisputed
+
+Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid.
+
+```js
+function getMinPeriodUndisputed()
+    external
+    view
+    returns (uint32);
+```
+
+## getMaxFeeAmountUSD
+
+Function to return the max fee amount usd value with 18 decimals.
+
+```js
+function getMaxFeeAmountUSD()
+    external
+    view
+    returns (uint256);
+```
+
+## getDIVAAddress
+
+Function to return the DIVA address that the oracle is linked to.
+
+```js
+function getDIVAAddress()
+    external
+    view
+    returns (address);
+```
+
+## getTipAmounts
+
+Function to return the array of tipping amounts for the given array of `ArgsBatchInput` struct.
+
+```js
+function getTipAmounts(
+    ArgsBatchInput[] calldata _argsBatchInputs
+)
+    external
+    view
+    returns (uint256[][] memory);
+```
+
+where `ArgsBatchInput` struct is defined as
+
+```js
+struct ArgsBatchInput {
+    uint256 poolId;
+    address[] tippingTokens;
+}
+```
+
+## getReporters
+
+Function to return the array of reporter addresses for the given `_poolIds`.
+
+Note that it returns the zero address if a value has been reported to the Tellor contract but it hasn't been pulled into DIVA Protocol by calling any one of [`setFinalReferenceValue`](#setFinalReferenceValue), [`setFinalReferenceValueAndClaimTips`](#setFinalReferenceValueAndClaimTips), [`setFinalReferenceValueAndClaimDIVAFee`](#setFinalReferenceValueAndClaimDIVAFee) or [`setFinalReferenceValueAndClaimTipsAndDIVAFee`](#setFinalReferenceValueAndClaimTipsAndDIVAFee) yet.
+
+```js
+function getReporters(
+    uint256[] calldata _poolIds
+)
+    external
+    view
+    returns (address[] memory);
+```
+
+## getTippingTokens
+
+Function to return the array of tipping tokens for the given array of `ArgsGetTippingTokens` struct.
+
+```js
+function getTippingTokens(
+    ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+)
+    external
+    view
+    returns (address[][] memory);
+```
+
+where `ArgsGetTippingTokens` struct is defined as
+
+```js
+struct ArgsGetTippingTokens {
+    uint256 poolId;
+    uint256 startIndex;
+    uint256 endIndex;
+}
+```
+
+## getTippingTokensLengthForPoolIds
+
+Function to return the lengths of tipping tokens for the given `_poolIds`.
+
+```js
+function getTippingTokensLengthForPoolIds(
+    uint256[] calldata _poolIds
+)
+    external
+    view
+    returns (uint256[] memory);
+```
+
+## getPoolIdsForReporters
+
+Function to return the array of pool ids reported by reporters for the given array of `ArgsGetPoolIdsForReporters` struct.
+
+```js
+function getPoolIdsForReporters(
+    ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
+)
+    external
+    view
+    returns (uint256[][] memory);
+```
+
+where `ArgsGetPoolIdsForReporters` struct is defined as
+
+```js
+struct ArgsGetPoolIdsForReporters {
+    address reporter;
+    uint256 startIndex;
+    uint256 endIndex;
+}
+```
+
+## getPoolIdsLengthForReporters
+
+Function to return the lengths of pool ids reported by reporters for the given `_reporters`.
+
+```js
+function getPoolIdsLengthForReporters(
+    address[] calldata _reporters
+)
+    external
+    view
+    returns (uint256[] memory);
+```
+
+## getQueryId
+
+Function to return the query id for a given `_poolId`.
+
+```js
+function getQueryId(
+    uint256 _poolId
+)
+    external
+    view
+    returns (bytes32);
+```

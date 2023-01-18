@@ -253,7 +253,7 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to return whether the oracle's data feed is challengeable
      * or not.
-     * Will return false in that implementation.
+     * Will return `false` in that implementation.
      */
     function getChallengeable() external view returns (bool);
 
@@ -293,8 +293,8 @@ interface IDIVAOracleTellor {
     function getDIVAAddress() external view returns (address);
 
     /**
-     * @dev Function to return the tipping amount for the given array of
-     * `ArgsGetTipAmounts` struct.
+     * @dev Function to return the array of tipping amounts for the given
+     * array of `ArgsGetTipAmounts` struct.
      * @param _argsGetTipAmounts Struct array containing pool ids and tipping
      * tokens.
      */
@@ -327,7 +327,7 @@ interface IDIVAOracleTellor {
     ) external view returns (address[][] memory);
 
     /**
-     * @dev Function to return the length of tipping tokens for the given
+     * @dev Function to return the lengths of tipping tokens for the given
      * `_poolIds`.
      * @param _poolIds Array of pool ids.
      */
@@ -347,7 +347,7 @@ interface IDIVAOracleTellor {
     ) external view returns (uint256[][] memory);
 
     /**
-     * @dev Function to return the length of pool ids reported by reporters
+     * @dev Function to return the lengths of pool ids reported by reporters
      * for the given `_reporters`.
      * @param _reporters Array of reporter address.
      */
