@@ -23,6 +23,7 @@ contract DIVAOracleTellor is
     mapping(uint256 => mapping(address => uint256)) private _tips; // mapping poolId => tipping token address => tip amount
     mapping(uint256 => address[]) private _poolIdToTippingTokens; // mapping poolId to tipping tokens
     mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
+    mapping(address => uint256[]) private _reporterToPoolIds; // mapping reporter to poolIds
 
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
     address private _excessFeeRecipient;
@@ -76,26 +77,70 @@ contract DIVAOracleTellor is
         external
         override
         nonReentrant
-        onlyConfirmedPool(_poolId)
     {
         _claimTips(_poolId, _tippingTokens);
     }
 
-    function claimDIVAFee(uint256 _poolId)
+    function batchClaimTips(ArgsBatchInput[] calldata _argsBatchInputs)
         external
         override
         nonReentrant
-        onlyConfirmedPool(_poolId)
     {
+        uint256 _len = _argsBatchInputs.length;
+        for (uint256 i = 0; i < _len; ) {
+            _claimTips(
+                _argsBatchInputs[i].poolId,
+                _argsBatchInputs[i].tippingTokens
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function claimDIVAFee(uint256 _poolId) external override nonReentrant {
         _claimDIVAFee(_poolId);
+    }
+
+    function batchClaimDIVAFee(uint256[] calldata _poolIds)
+        external
+        override
+        nonReentrant
+    {
+        uint256 _len = _poolIds.length;
+        for (uint256 i = 0; i < _len; ) {
+            _claimDIVAFee(_poolIds[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function claimTipsAndDIVAFee(
         uint256 _poolId,
         address[] calldata _tippingTokens
-    ) external override nonReentrant onlyConfirmedPool(_poolId) {
+    ) external override nonReentrant {
         _claimTips(_poolId, _tippingTokens);
         _claimDIVAFee(_poolId);
+    }
+
+    function batchClaimTipsAndDIVAFee(
+        ArgsBatchInput[] calldata _argsBatchInputs
+    ) external override nonReentrant {
+        uint256 _len = _argsBatchInputs.length;
+        for (uint256 i = 0; i < _len; ) {
+            _claimTips(
+                _argsBatchInputs[i].poolId,
+                _argsBatchInputs[i].tippingTokens
+            );
+            _claimDIVAFee(_argsBatchInputs[i].poolId);
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function setFinalReferenceValue(uint256 _poolId)
@@ -178,22 +223,185 @@ contract DIVAOracleTellor is
         return _minPeriodUndisputed;
     }
 
-    function getTippingTokens(uint256 _poolId)
+    function getTippingTokens(
+        ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+    ) external view override returns (address[][] memory) {
+        uint256 _len = _argsGetTippingTokens.length;
+        address[][] memory _tippingTokens = new address[][](_len);
+        for (uint256 i = 0; i < _len; ) {
+            address[] memory _tippingTokensForPoolId = new address[](
+                _argsGetTippingTokens[i].endIndex -
+                    _argsGetTippingTokens[i].startIndex
+            );
+            for (
+                uint256 j = _argsGetTippingTokens[i].startIndex;
+                j < _argsGetTippingTokens[i].endIndex;
+
+            ) {
+                if (
+                    j >=
+                    _poolIdToTippingTokens[_argsGetTippingTokens[i].poolId]
+                        .length
+                ) {
+                    _tippingTokensForPoolId[
+                        j - _argsGetTippingTokens[i].startIndex
+                    ] = address(0);
+                } else {
+                    _tippingTokensForPoolId[
+                        j - _argsGetTippingTokens[i].startIndex
+                    ] = _poolIdToTippingTokens[_argsGetTippingTokens[i].poolId][
+                        j
+                    ];
+                }
+
+                unchecked {
+                    ++j;
+                }
+            }
+            _tippingTokens[i] = _tippingTokensForPoolId;
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _tippingTokens;
+    }
+
+    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
+        external
+        view
+        override
+        returns (uint256[] memory)
+    {
+        uint256 _len = _poolIds.length;
+        uint256[] memory _tippingTokensLength = new uint256[](_len);
+        for (uint256 i = 0; i < _len; ) {
+            _tippingTokensLength[i] = _poolIdToTippingTokens[_poolIds[i]]
+                .length;
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _tippingTokensLength;
+    }
+
+    function getTipAmounts(ArgsBatchInput[] calldata _argsBatchInputs)
+        external
+        view
+        override
+        returns (uint256[][] memory)
+    {
+        uint256 _len = _argsBatchInputs.length;
+        uint256[][] memory _tipAmounts = new uint256[][](_len);
+        for (uint256 i = 0; i < _len; ) {
+            uint256 _tippingTokensLen = _argsBatchInputs[i]
+                .tippingTokens
+                .length;
+            uint256[] memory _tipAmountsForPoolId = new uint256[](
+                _tippingTokensLen
+            );
+            for (uint256 j = 0; j < _tippingTokensLen; ) {
+                _tipAmountsForPoolId[j] = _tips[_argsBatchInputs[i].poolId][
+                    _argsBatchInputs[i].tippingTokens[j]
+                ];
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            _tipAmounts[i] = _tipAmountsForPoolId;
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _tipAmounts;
+    }
+
+    function getDIVAAddress() external view override returns (address) {
+        return address(_diva);
+    }
+
+    function getReporters(uint256[] calldata _poolIds)
         external
         view
         override
         returns (address[] memory)
     {
-        return _poolIdToTippingTokens[_poolId];
+        uint256 _len = _poolIds.length;
+        address[] memory _reporters = new address[](_len);
+        for (uint256 i = 0; i < _len; ) {
+            _reporters[i] = _poolIdToReporter[_poolIds[i]];
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _reporters;
     }
 
-    function getTip(uint256 _poolId, address _tippingToken)
+    function getPoolIdsForReporters(
+        ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
+    ) external view override returns (uint256[][] memory) {
+        uint256 _len = _argsGetPoolIdsForReporters.length;
+        uint256[][] memory _poolIds = new uint256[][](_len);
+        for (uint256 i = 0; i < _len; ) {
+            uint256[] memory _poolIdsForReporter = new uint256[](
+                _argsGetPoolIdsForReporters[i].endIndex -
+                    _argsGetPoolIdsForReporters[i].startIndex
+            );
+            for (
+                uint256 j = _argsGetPoolIdsForReporters[i].startIndex;
+                j < _argsGetPoolIdsForReporters[i].endIndex;
+
+            ) {
+                if (
+                    j >=
+                    _reporterToPoolIds[_argsGetPoolIdsForReporters[i].reporter]
+                        .length
+                ) {
+                    _poolIdsForReporter[
+                        j - _argsGetPoolIdsForReporters[i].startIndex
+                    ] = 0;
+                } else {
+                    _poolIdsForReporter[
+                        j - _argsGetPoolIdsForReporters[i].startIndex
+                    ] = _reporterToPoolIds[
+                        _argsGetPoolIdsForReporters[i].reporter
+                    ][j];
+                }
+
+                unchecked {
+                    ++j;
+                }
+            }
+            _poolIds[i] = _poolIdsForReporter;
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _poolIds;
+    }
+
+    function getPoolIdsLengthForReporters(address[] calldata _reporters)
         external
         view
         override
-        returns (uint256)
+        returns (uint256[] memory)
     {
-        return _tips[_poolId][_tippingToken];
+        uint256 _len = _reporters.length;
+        uint256[] memory _poolIdsLength = new uint256[](_len);
+        for (uint256 i = 0; i < _len; ) {
+            _poolIdsLength[i] = _reporterToPoolIds[_reporters[i]].length;
+
+            unchecked {
+                ++i;
+            }
+        }
+        return _poolIdsLength;
     }
 
     function getQueryId(uint256 _poolId)
@@ -213,29 +421,17 @@ contract DIVAOracleTellor is
             );
     }
 
-    function getDIVAAddress() external view override returns (address) {
-        return address(_diva);
-    }
-
-    function getReporter(uint256 _poolId)
-        external
-        view
-        override
-        returns (address)
-    {
-        return _poolIdToReporter[_poolId];
-    }
-
-    function _claimDIVAFee(uint256 _poolId) private {
+    function _claimDIVAFee(uint256 _poolId) private onlyConfirmedPool(_poolId) {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
         _diva.claimFee(_params.collateralToken, _poolIdToReporter[_poolId]);
     }
 
     function _claimTips(uint256 _poolId, address[] calldata _tippingTokens)
         private
+        onlyConfirmedPool(_poolId)
     {
-        uint256 len = _tippingTokens.length;
-        for (uint256 i = 0; i < len; ) {
+        uint256 _len = _tippingTokens.length;
+        for (uint256 i = 0; i < _len; ) {
             address _tippingToken = _tippingTokens[i];
 
             uint256 _tipAmount = _tips[_poolId][_tippingToken];
@@ -266,7 +462,10 @@ contract DIVAOracleTellor is
         bytes32 _queryId = getQueryId(_poolId);
 
         // Find first oracle submission after or at expiryTime, if it exists
-        (bytes memory _valueRetrieved, uint256 _timestampRetrieved) = getDataAfter(_queryId, _params.expiryTime - 1);
+        (
+            bytes memory _valueRetrieved,
+            uint256 _timestampRetrieved
+        ) = getDataAfter(_queryId, _params.expiryTime - 1);
 
         // Check that data exists (_timestampRetrieved = 0 if it doesn't)
         if (_timestampRetrieved == 0) {
@@ -292,6 +491,7 @@ contract DIVAOracleTellor is
 
         // Set reporter with pool id
         _poolIdToReporter[_poolId] = _reporter;
+        _reporterToPoolIds[_reporter].push(_poolId);
 
         // Forward final value to DIVA contract. Allocates the fee as part of that process.
         _diva.setFinalReferenceValue(

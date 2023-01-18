@@ -27,7 +27,8 @@ async function main() {
   const network = "goerli";
 
   const divaAddress = DIVA_ADDRESS[network];
-  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress =
+    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of existing pool
   const poolId = 59;
@@ -42,7 +43,7 @@ async function main() {
   );
 
   // Get reporter
-  const reporter = await divaOracleTellor.getReporter(poolId);
+  const reporter = (await divaOracleTellor.getReporters([poolId]))[0];
 
   // Check conditions
   checkConditions(reporter);

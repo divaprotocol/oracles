@@ -1,8 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const DIVA_ABI = require("../contracts/abi/DIVA.json");
-const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture");
 const { parseUnits } = require("@ethersproject/units");
+
+const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const { getLastTimestamp, setNextTimestamp } = require("../utils/utils");
 const {
   ONE_HOUR,
@@ -10,6 +10,8 @@ const {
   DIVA_ADDRESS,
   TELLOR_PLAYGROUND_ADDRESS,
 } = require("../utils/constants"); //  DIVA Protocol v1.0.0
+
+const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture");
 
 const network = "goerli"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
@@ -65,15 +67,13 @@ const getQueryDataAndId = (latestPoolId, divaAddress, chainId) => {
 };
 
 describe("DIVAOracleTellor", () => {
-  let collateralToken;
-  let userStartTokenBalance;
+  let collateralTokenInstance;
   let user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2;
 
   let divaOracleTellor;
   let tellorPlayground;
   let tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
   let divaAddress = DIVA_ADDRESS[network];
-  let referenceAsset = "BTC/USD";
 
   let maxFeeAmountUSD = parseUnits("10");
   let newMaxFeeAmountUSD;
@@ -81,7 +81,6 @@ describe("DIVAOracleTellor", () => {
   let minPeriodUndisputed = ONE_HOUR;
   let newMinPeriodUndisputed;
 
-  let poolExpiryTime;
   let latestPoolId;
   let poolParams;
   let feesParams;
@@ -95,7 +94,7 @@ describe("DIVAOracleTellor", () => {
   let finalReferenceValue, collateralToUSDRate;
   let queryData, queryId, oracleValue;
 
-  beforeEach(async () => {
+  before(async () => {
     [user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2] =
       await ethers.getSigners();
 
@@ -115,6 +114,17 @@ describe("DIVAOracleTellor", () => {
       ],
     });
 
+    // Get TellorPlayground contract
+    tellorPlayground = await ethers.getContractAt(
+      "TellorPlayground",
+      tellorPlaygroundAddress
+    );
+
+    // Get DIVA contract
+    diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
+  });
+
+  beforeEach(async () => {
     // Deploy DIVAOracleTellor contract
     const divaOracleTellorFactory = await ethers.getContractFactory(
       "DIVAOracleTellor"
@@ -129,45 +139,21 @@ describe("DIVAOracleTellor", () => {
     // Check challengeable
     expect(await divaOracleTellor.challengeable()).to.eq(false);
 
-    // Get TellorPlayground contract
-    tellorPlayground = await ethers.getContractAt(
-      "TellorPlayground",
-      tellorPlaygroundAddress
-    );
-
-    // Get DIVA contract
-    diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
-
     // Set user start token balance
-    userStartTokenBalance = parseUnits("1000000");
+    const userStartTokenBalance = parseUnits("1000000");
 
     // Deploy collateral token and approve it to DIVA contract
-    collateralToken = await erc20DeployFixture(
+    collateralTokenInstance = await erc20DeployFixture(
       "DummyToken",
       "DCT",
       userStartTokenBalance,
       user1.address,
       collateralTokenDecimals
     );
-    await collateralToken.approve(diva.address, userStartTokenBalance);
+    await collateralTokenInstance.approve(diva.address, userStartTokenBalance);
 
     // Create an expired contingent pool that uses Tellor as the data provider
-    poolExpiryTime = (await getLastTimestamp()) + TEN_MINS;
-    const tx = await diva.createContingentPool([
-      referenceAsset, // reference asset
-      poolExpiryTime, // expiryTime
-      parseUnits("40000"), // floor
-      parseUnits("60000"), // inflection
-      parseUnits("80000"), // cap
-      parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
-      parseUnits("100", collateralTokenDecimals), // collateral amount
-      collateralToken.address, // collateral token
-      divaOracleTellor.address, // data provider
-      parseUnits("200", collateralTokenDecimals).toString(), // capacity
-      user1.address, // longRecipient
-      user1.address, // shortRecipient
-      ethers.constants.AddressZero,
-    ]);
+    const tx = await createContingentPool();
     const receipt = await tx.wait();
 
     latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")?.args
@@ -214,6 +200,42 @@ describe("DIVAOracleTellor", () => {
       .connect(tipper2)
       .approve(divaOracleTellor.address, ethers.constants.MaxUint256);
   });
+
+  // Function to create contingent pools pre-populated with default values that can be overwritten depending on the test case
+  const createContingentPool = async ({
+    referenceAsset = "BTC/USD", // reference asset
+    expireInSeconds = TEN_MINS, // expiryTime
+    floor = 40000, // floor
+    inflection = 60000, // inflection
+    cap = 80000, // cap
+    gradient = 0.7, // gradient
+    collateralAmount = 100, // collateral amount
+    collateralToken = collateralTokenInstance.address, // collateral token
+    dataProvider = divaOracleTellor.address, // data provider
+    capacity = 200, // capacity
+    longRecipient = user1.address, // longRecipient
+    shortRecipient = user1.address, // shortRecipient
+    permissionedERC721Token = ethers.constants.AddressZero,
+  } = {}) => {
+    return await diva.createContingentPool({
+      referenceAsset,
+      expiryTime: (await getLastTimestamp()) + expireInSeconds,
+      floor: parseUnits(floor.toString()),
+      inflection: parseUnits(inflection.toString()),
+      cap: parseUnits(cap.toString()),
+      gradient: parseUnits(gradient.toString(), collateralTokenDecimals),
+      collateralAmount: parseUnits(
+        collateralAmount.toString(),
+        collateralTokenDecimals
+      ),
+      collateralToken,
+      dataProvider,
+      capacity: parseUnits(capacity.toString(), collateralTokenDecimals),
+      longRecipient,
+      shortRecipient,
+      permissionedERC721Token,
+    });
+  };
 
   describe("setFinalReferenceValue functions", async () => {
     beforeEach(async () => {
@@ -269,7 +291,11 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Get tips and balances for tippingToken1
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -278,7 +304,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get tips and balances for tippingToken2
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -286,7 +316,9 @@ describe("DIVAOracleTellor", () => {
         expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
         // Check collateral token balance for reporter
-        expect(await collateralToken.balanceOf(reporter.address)).to.eq(0);
+        expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
+          0
+        );
 
         // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol
         expect(poolParams.finalReferenceValue).to.eq(0);
@@ -336,12 +368,16 @@ describe("DIVAOracleTellor", () => {
 
         // Check that the fee claim was allocated to the reporter in DIVA Protocol
         expect(
-          await diva.getClaim(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralTokenInstance.address, reporter.address)
         ).to.eq(settlementFeeAmount);
 
         // Check that tips and balances for tippinToken1 are unchanged
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -350,7 +386,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken2 are unchanged
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -358,42 +398,31 @@ describe("DIVAOracleTellor", () => {
         expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
         // Check that the reporter's collateral token balance is unchanged (as the DIVA fee claim resides inside DIVA Protocol)
-        expect(await collateralToken.balanceOf(reporter.address)).to.eq(0);
+        expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
+          0
+        );
+
+        // Check that pool id is added to `reporterToPoolIds`
+        expect(
+          (
+            await divaOracleTellor.getPoolIdsLengthForReporters([
+              reporter.address,
+            ])
+          )[0]
+        ).to.eq(1);
+        expect(
+          (
+            await divaOracleTellor.getPoolIdsForReporters([
+              { reporter: reporter.address, startIndex: 0, endIndex: 2 },
+            ])
+          )[0][0]
+        ).to.eq(latestPoolId);
       });
 
       it("Should take the second value if the first one was submitted before expiryTime and the second one afterwards", async () => {
         // ---------
-        // Arrange: Create a contingent pool with expiry time in the future, prepare the submission to tellorPlayground
-        // and submit two values, one before and one after expiration
+        // Arrange: Prepare the submission to tellorPlayground and submit two values, one before and one after expiration
         // ---------
-        const tx = await diva.createContingentPool([
-          referenceAsset, // reference asset
-          poolExpiryTime, // expiryTime
-          parseUnits("40000"), // floor
-          parseUnits("60000"), // inflection
-          parseUnits("80000"), // cap
-          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
-          parseUnits("100", collateralTokenDecimals), // collateral amount
-          collateralToken.address, // collateral token
-          divaOracleTellor.address, // data provider
-          parseUnits("200", collateralTokenDecimals).toString(), // capacity
-          user1.address, // longRecipient
-          user1.address, // shortRecipient
-          ethers.constants.AddressZero,
-        ]);
-        const receipt = await tx.wait();
-
-        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
-          ?.args?.poolId;
-        poolParams = await diva.getPoolParameters(latestPoolId);
-
-        // Prepare value submission to tellorPlayground
-        // Re-construct as latestPoolId changed in this test
-        [queryData, queryId] = getQueryDataAndId(
-          latestPoolId,
-          divaAddress,
-          chainId
-        );
 
         // First reporter submission prior to expiration
         finalReferenceValue1 = parseUnits("42000");
@@ -442,37 +471,8 @@ describe("DIVAOracleTellor", () => {
 
       it("Should take the second value if the first one was disputed", async () => {
         // ---------
-        // Arrange: Create a contingent pool with expiry time in the future, prepare the submission to tellorPlayground
-        // and submit two values, begin dispute for first one
+        // Arrange: Prepare the submission to tellorPlayground and submit two values, begin dispute for first one
         // ---------
-        const tx = await diva.createContingentPool([
-          referenceAsset, // reference asset
-          poolExpiryTime, // expiryTime
-          parseUnits("40000"), // floor
-          parseUnits("60000"), // inflection
-          parseUnits("80000"), // cap
-          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
-          parseUnits("100", collateralTokenDecimals), // collateral amount
-          collateralToken.address, // collateral token
-          divaOracleTellor.address, // data provider
-          parseUnits("200", collateralTokenDecimals).toString(), // capacity
-          user1.address, // longRecipient
-          user1.address, // shortRecipient
-          ethers.constants.AddressZero,
-        ]);
-        const receipt = await tx.wait();
-
-        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
-          ?.args?.poolId;
-        poolParams = await diva.getPoolParameters(latestPoolId);
-
-        // Prepare value submission to tellorPlayground
-        // Re-construct as latestPoolId changed in this test
-        [queryData, queryId] = getQueryDataAndId(
-          latestPoolId,
-          divaAddress,
-          chainId
-        );
 
         nextBlockTimestamp = poolParams.expiryTime.add(1);
         await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
@@ -530,7 +530,7 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Confirm that user1's fee claim balance is zero
         expect(
-          await diva.getClaim(collateralToken.address, user1.address)
+          await diva.getClaim(collateralTokenInstance.address, user1.address)
         ).to.eq(0);
 
         // Prepare value submission to tellorPlayground
@@ -570,11 +570,11 @@ describe("DIVAOracleTellor", () => {
         // Assert: Confirm that the reporter receives the full settlement fee payment (in collateral asset) and 0 goes to excess fee recipient
         // ---------
         expect(
-          await diva.getClaim(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralTokenInstance.address, reporter.address)
         ).to.eq(settlementFeeAmount);
         expect(
           await diva.getClaim(
-            collateralToken.address,
+            collateralTokenInstance.address,
             excessFeeRecipient.address
           )
         ).to.eq(0);
@@ -584,22 +584,10 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Arrange: Create a contingent pool where settlement fee exceeds maxFeeAmountUSD
         // ---------
-        poolExpiryTime = (await getLastTimestamp()) + TEN_MINS;
-        const tx = await diva.createContingentPool([
-          referenceAsset, // reference asset
-          poolExpiryTime, // expiryTime
-          parseUnits("40000"), // floor
-          parseUnits("60000"), // inflection
-          parseUnits("80000"), // cap
-          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
-          parseUnits("100000", collateralTokenDecimals), // collateral amount
-          collateralToken.address, // collateral token
-          divaOracleTellor.address, // data provider
-          parseUnits("200000", collateralTokenDecimals).toString(), // capacity
-          user1.address, // longRecipient
-          user1.address, // shortRecipient
-          ethers.constants.AddressZero,
-        ]);
+        const tx = await createContingentPool({
+          collateralAmount: 100000,
+          capacity: 200000,
+        });
         const receipt = await tx.wait();
 
         latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
@@ -646,11 +634,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get reporter's and excess fee recipient's fee claim before the final reference value is set
         const feeClaimReporterBefore = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           reporter.address
         );
         const feeClaimExcessFeeRecipientBefore = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           excessFeeRecipient.address
         );
         expect(feeClaimReporterBefore).to.eq(0);
@@ -660,7 +648,7 @@ describe("DIVAOracleTellor", () => {
         // and confirm that the diva claim balance is zero
         const randomUser = user3;
         const feeClaimRandomUserBefore = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           randomUser.address
         );
         expect(feeClaimRandomUserBefore).to.eq(0);
@@ -685,15 +673,15 @@ describe("DIVAOracleTellor", () => {
         // allocated any fees
         // ---------
         const feeClaimReporterAfter = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           reporter.address
         );
         const feeClaimExcessFeeRecipientAfter = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           excessFeeRecipient.address
         );
         const feeClaimRandomUserAfter = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           randomUser.address
         );
 
@@ -705,43 +693,17 @@ describe("DIVAOracleTellor", () => {
         );
         expect(feeClaimRandomUserAfter).to.eq(0);
         expect(
-          await diva.getClaim(collateralToken.address, divaOracleTellor.address)
+          await diva.getClaim(
+            collateralTokenInstance.address,
+            divaOracleTellor.address
+          )
         ).to.eq(0);
       });
 
       it("Should allocate all fees to reporter if collateralToUSDRate = 0 (should typically be disputed by the Tellor mechanism)", async () => {
         // ---------
-        // Arrange: Create a contingent pool where settlement fee exceeds maxFeeAmountUSD and report zero collateralToUSDRate
+        // Arrange: Report zero collateralToUSDRate
         // ---------
-        poolExpiryTime = (await getLastTimestamp()) + TEN_MINS;
-        const tx = await diva.createContingentPool([
-          referenceAsset, // reference asset
-          poolExpiryTime, // expiryTime
-          parseUnits("40000"), // floor
-          parseUnits("60000"), // inflection
-          parseUnits("80000"), // cap
-          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
-          parseUnits("100000", collateralTokenDecimals), // collateral amount
-          collateralToken.address, // collateral token
-          divaOracleTellor.address, // data provider
-          parseUnits("200000", collateralTokenDecimals).toString(), // capacity
-          user1.address, // longRecipient
-          user1.address, // shortRecipient
-          ethers.constants.AddressZero,
-        ]);
-        const receipt = await tx.wait();
-
-        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
-          ?.args?.poolId;
-        poolParams = await diva.getPoolParameters(latestPoolId);
-
-        // Prepare value submission to tellorPlayground
-        // Re-construct as latestPoolId changed in this test
-        [queryData, queryId] = getQueryDataAndId(
-          latestPoolId,
-          divaAddress,
-          chainId
-        );
 
         // Report value to tellor playground with collateralToUSDRate = 0
         finalReferenceValue = parseUnits("42000");
@@ -766,11 +728,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get reporter's and excess fee recipient's fee claim before the final reference value is set
         const feeClaimReporterBefore = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           reporter.address
         );
         const feeClaimExcessFeeRecipientBefore = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           excessFeeRecipient.address
         );
         expect(feeClaimReporterBefore).to.eq(0);
@@ -780,7 +742,7 @@ describe("DIVAOracleTellor", () => {
         // and confirm that the diva claim balance is zero
         const randomUser = user3;
         const feeClaimRandomUserBefore = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           randomUser.address
         );
         expect(feeClaimRandomUserBefore).to.eq(0);
@@ -805,15 +767,15 @@ describe("DIVAOracleTellor", () => {
         // allocated any fees
         // ---------
         const feeClaimReporterAfter = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           reporter.address
         );
         const feeClaimExcessFeeRecipientAfter = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           excessFeeRecipient.address
         );
         const feeClaimRandomUserAfter = await diva.getClaim(
-          collateralToken.address,
+          collateralTokenInstance.address,
           randomUser.address
         );
 
@@ -821,7 +783,10 @@ describe("DIVAOracleTellor", () => {
         expect(feeClaimExcessFeeRecipientAfter).to.eq(0);
         expect(feeClaimRandomUserAfter).to.eq(0);
         expect(
-          await diva.getClaim(collateralToken.address, divaOracleTellor.address)
+          await diva.getClaim(
+            collateralTokenInstance.address,
+            divaOracleTellor.address
+          )
         ).to.eq(0);
       });
 
@@ -878,36 +843,8 @@ describe("DIVAOracleTellor", () => {
 
       it("Should revert if a value has been reported prior to expiryTime only", async () => {
         // ---------
-        // Arrange: Create a non-expired pool and submit one value prior to expiration
+        // Arrange: Submit one value prior to expiration
         // ---------
-        const tx = await diva.createContingentPool([
-          referenceAsset, // reference asset
-          poolExpiryTime, // expiryTime
-          parseUnits("40000"), // floor
-          parseUnits("60000"), // inflection
-          parseUnits("80000"), // cap
-          parseUnits("0.7", collateralTokenDecimals).toString(), // gradient
-          parseUnits("100", collateralTokenDecimals), // collateral amount
-          collateralToken.address, // collateral token
-          divaOracleTellor.address, // data provider
-          parseUnits("200", collateralTokenDecimals).toString(), // capacity
-          user1.address, // longRecipient
-          user1.address, // shortRecipient
-          ethers.constants.AddressZero,
-        ]);
-        const receipt = await tx.wait();
-
-        latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")
-          ?.args?.poolId;
-        poolParams = await diva.getPoolParameters(latestPoolId);
-
-        // Prepare value submission to tellorPlayground
-        // Re-construct as latestPoolId changed in this test
-        [queryData, queryId] = getQueryDataAndId(
-          latestPoolId,
-          divaAddress,
-          chainId
-        );
 
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
@@ -946,7 +883,11 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Get tips and balances for tippingToken1
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -955,7 +896,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get tips and balances for tippingToken2
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -963,7 +908,9 @@ describe("DIVAOracleTellor", () => {
         expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
         // Check collateral token balance for reporter
-        expect(await collateralToken.balanceOf(reporter.address)).to.eq(0);
+        expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
+          0
+        );
 
         // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol
         expect(poolParams.finalReferenceValue).to.eq(0);
@@ -1016,7 +963,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken1 are updated correctly
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(0);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           0
@@ -1027,7 +978,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken2 are updated correctly
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(0);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           0
@@ -1037,13 +992,13 @@ describe("DIVAOracleTellor", () => {
         );
 
         // Check that reporter received the DIVA fee
-        expect(await collateralToken.balanceOf(reporter.address)).to.eq(
+        expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
           settlementFeeAmount
         );
 
         // Check that reporter's fee claim on DIVA Protocol dropped to zero
         expect(
-          await diva.getClaim(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralTokenInstance.address, reporter.address)
         ).to.eq(0);
       });
 
@@ -1130,7 +1085,11 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Get tips and balances for tippingToken1
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -1139,7 +1098,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get tips and balances for tippingToken2
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -1147,7 +1110,9 @@ describe("DIVAOracleTellor", () => {
         expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
         // Check collateral token balance for reporter
-        expect(await collateralToken.balanceOf(reporter.address)).to.eq(0);
+        expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
+          0
+        );
 
         // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol
         expect(poolParams.finalReferenceValue).to.eq(0);
@@ -1197,17 +1162,21 @@ describe("DIVAOracleTellor", () => {
 
         // Check that reporter's fee claim on DIVA Protocol dropped to zero
         expect(
-          await diva.getClaim(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralTokenInstance.address, reporter.address)
         ).to.eq(0);
 
         // Check that the reporter's collateral token balance increased to `settlementFeeAmount`
-        expect(await collateralToken.balanceOf(reporter.address)).to.eq(
+        expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
           settlementFeeAmount
         );
 
         // Check tips and balances for tippinToken1 are unchanged
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -1216,7 +1185,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check tips and balances for tippinToken2  are unchanged
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -1232,7 +1205,11 @@ describe("DIVAOracleTellor", () => {
         // ---------
         // Get tips and balances for tippingToken1
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount1);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount1
@@ -1241,7 +1218,11 @@ describe("DIVAOracleTellor", () => {
 
         // Get tips and balances for tippingToken2
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(tippingAmount2);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           tippingAmount2
@@ -1249,7 +1230,9 @@ describe("DIVAOracleTellor", () => {
         expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
         // Check collateral token balance for reporter
-        expect(await collateralToken.balanceOf(reporter.address)).to.eq(0);
+        expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
+          0
+        );
 
         // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol
         expect(poolParams.finalReferenceValue).to.eq(0);
@@ -1302,7 +1285,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check tips and balances for tippinToken1 were updated correctly
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+            ])
+          )[0][0]
         ).to.eq(0);
         expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
           0
@@ -1313,7 +1300,11 @@ describe("DIVAOracleTellor", () => {
 
         // Check that tips and balances for tippinToken2 were updated correctly
         expect(
-          await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+            ])
+          )[0][0]
         ).to.eq(0);
         expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
           0
@@ -1324,11 +1315,13 @@ describe("DIVAOracleTellor", () => {
 
         // Check the reporter's fee claim on DIVA Protocol is unchanged
         expect(
-          await diva.getClaim(collateralToken.address, reporter.address)
+          await diva.getClaim(collateralTokenInstance.address, reporter.address)
         ).to.eq(settlementFeeAmount);
 
         // Check that the reporter's collateral token balance is unchanged
-        expect(await collateralToken.balanceOf(reporter.address)).to.eq(0);
+        expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
+          0
+        );
       });
     });
   });
@@ -1339,10 +1332,11 @@ describe("DIVAOracleTellor", () => {
       // Arrange: Check that there's no tip added for latestPoolId
       // ---------
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
-      ).to.eq(0);
-      expect(
-        (await divaOracleTellor.getTippingTokens(latestPoolId)).length
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
 
@@ -1357,11 +1351,12 @@ describe("DIVAOracleTellor", () => {
       // Assert: Check that tip is added on divaOracleTellor correctly
       // ---------
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
-      expect((await divaOracleTellor.getTippingTokens(latestPoolId))[0]).to.eq(
-        tippingToken1.address
-      );
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
       );
@@ -1388,11 +1383,12 @@ describe("DIVAOracleTellor", () => {
       // Assert: Check that tip is increased on divaOracleTellor correctly
       // ---------
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(secondTippingAmount.add(tippingAmount1));
-      expect(
-        (await divaOracleTellor.getTippingTokens(latestPoolId)).length
-      ).to.eq(1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         secondTippingAmount.add(tippingAmount1)
       );
@@ -1502,7 +1498,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
@@ -1511,7 +1511,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2
@@ -1528,7 +1532,7 @@ describe("DIVAOracleTellor", () => {
 
       // Check fee claim in DIVA
       expect(
-        await diva.getClaim(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
 
       // ---------
@@ -1544,23 +1548,31 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Check that tips are paid out to reporter
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(
         tippingAmount1
       );
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(
         tippingAmount2
       );
 
-      // Confirm that DIVA fee remains remains unchanged
+      // Confirm that DIVA fee remains unchanged
       expect(
-        await diva.getClaim(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
     });
 
@@ -1577,7 +1589,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
@@ -1586,7 +1602,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2
@@ -1603,7 +1623,7 @@ describe("DIVAOracleTellor", () => {
 
       // Check fee claim in DIVA
       expect(
-        await diva.getClaim(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
 
       // ---------
@@ -1615,16 +1635,20 @@ describe("DIVAOracleTellor", () => {
       // Assert: Check that DIVA fee was claimed but tips remain untouched
       // ---------
       // Check that DIVA fee was claimed and sent to reporter
-      expect(await collateralToken.balanceOf(reporter.address)).to.eq(
+      expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount
       );
       expect(
-        await diva.getClaim(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(0);
 
       // Check that tips and balances for tippingToken1 are unchanged
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
@@ -1633,7 +1657,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 are unchanged
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2
@@ -1654,7 +1682,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken1 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount1);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount1
@@ -1663,7 +1695,11 @@ describe("DIVAOracleTellor", () => {
 
       // Check tips and balances for tippingToken2 before calling `claimTips`
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(tippingAmount2);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
         tippingAmount2
@@ -1680,7 +1716,7 @@ describe("DIVAOracleTellor", () => {
 
       // Check fee claim in DIVA
       expect(
-        await diva.getClaim(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
 
       // ---------
@@ -1696,14 +1732,22 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Confirm that tips were paid out to the reporter
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken1.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(
         tippingAmount1
       );
       expect(
-        await divaOracleTellor.getTip(latestPoolId, tippingToken2.address)
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
       ).to.eq(0);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(
@@ -1711,11 +1755,11 @@ describe("DIVAOracleTellor", () => {
       );
 
       // Confirm that DIVA fee were paid out to the reporter
-      expect(await collateralToken.balanceOf(reporter.address)).to.eq(
+      expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount
       );
       expect(
-        await diva.getClaim(collateralToken.address, reporter.address)
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(0);
     });
 
@@ -1777,6 +1821,606 @@ describe("DIVAOracleTellor", () => {
         tippingToken2.address
       );
       expect(tipClaimedEvents[1].args.amount).to.eq(tippingAmount2);
+    });
+  });
+
+  describe("batch version of claim functions", async () => {
+    let poolId1, poolId2;
+    let tippingAmount1ForPoolId1, tippingAmount2ForPoolId1;
+    let tippingAmount1ForPoolId2, tippingAmount2ForPoolId2;
+    let poolParams1, poolParams2;
+    let feesParams1, feesParams2;
+
+    beforeEach(async () => {
+      // Set tipping amounts
+      tippingAmount1ForPoolId1 = parseUnits("1000", tippingTokenDecimals);
+      tippingAmount2ForPoolId1 = parseUnits("2000", tippingTokenDecimals);
+      tippingAmount1ForPoolId2 = parseUnits("3000", tippingTokenDecimals);
+      tippingAmount2ForPoolId2 = parseUnits("4000", tippingTokenDecimals);
+
+      // Set poolId1
+      poolId1 = latestPoolId;
+      poolParams1 = await diva.getPoolParameters(poolId1);
+      feesParams1 = await diva.getFees(poolId1);
+
+      // Create an expired contingent pool that uses Tellor as the data provider
+      const tx = await createContingentPool();
+      const receipt = await tx.wait();
+
+      // Set poolId2
+      poolId2 = receipt.events?.find((x) => x.event === "PoolIssued")?.args
+        ?.poolId;
+      poolParams2 = await diva.getPoolParameters(poolId2);
+      feesParams2 = await diva.getFees(poolId2);
+
+      // Add tips for poolId1
+      await divaOracleTellor
+        .connect(tipper1)
+        .addTip(poolId1, tippingAmount1ForPoolId1, tippingToken1.address);
+      await divaOracleTellor
+        .connect(tipper2)
+        .addTip(poolId1, tippingAmount2ForPoolId1, tippingToken2.address);
+
+      // Add tips for poolId2
+      await divaOracleTellor
+        .connect(tipper1)
+        .addTip(poolId2, tippingAmount1ForPoolId2, tippingToken1.address);
+      await divaOracleTellor
+        .connect(tipper2)
+        .addTip(poolId2, tippingAmount2ForPoolId2, tippingToken2.address);
+
+      // Prepare Tellor value submission for poolId1
+      const [queryData1, queryId1] = getQueryDataAndId(
+        poolId1,
+        divaAddress,
+        chainId
+      );
+
+      // Set next block timestamp
+      nextBlockTimestamp =
+        Math.max(
+          poolParams1.expiryTime.toNumber(),
+          poolParams2.expiryTime.toNumber()
+        ) + 1;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+
+      finalReferenceValue = parseUnits("42000");
+      collateralToUSDRate = parseUnits("1.14");
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
+      // Submit value to Tellor playground contract
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId1, oracleValue, 0, queryData1);
+
+      // Prepare Tellor value submission for poolId2
+      const [queryData2, queryId2] = getQueryDataAndId(
+        poolId2,
+        divaAddress,
+        chainId
+      );
+
+      // Submit value to Tellor playground contract
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId2, oracleValue, 0, queryData2);
+    });
+
+    it("Should batch claim tips after final reference value is set", async () => {
+      // ---------
+      // Arrange: Set final reference value and check tips
+      // ---------
+      // Call `setFinalReferenceValue` function for poolId1 and poolId2 inside DIVAOracleTellor contract after exactly `minPeriodUndisputed` period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor.connect(user2).setFinalReferenceValue(poolId1);
+      await divaOracleTellor.connect(user2).setFinalReferenceValue(poolId2);
+
+      // Check tips and balances for tippingToken1 before calling `batchClaimTips`
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount1ForPoolId1);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount1ForPoolId2);
+      expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
+      );
+      expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
+
+      // Check tips and balances for tippingToken2 before calling `batchClaimTips`
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount2ForPoolId1);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount2ForPoolId2);
+      expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
+      );
+      expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
+
+      // ---------
+      // Act: Call `batchClaimTips` function
+      // ---------
+      await divaOracleTellor.batchClaimTips([
+        {
+          poolId: poolId1,
+          tippingTokens: [tippingToken1.address, tippingToken2.address],
+        },
+        {
+          poolId: poolId2,
+          tippingTokens: [tippingToken1.address, tippingToken2.address],
+        },
+      ]);
+
+      // ---------
+      // Assert: Check tips are paid to reporter
+      // ---------
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(0);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(0);
+      expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
+      expect(await tippingToken1.balanceOf(reporter.address)).to.eq(
+        tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
+      );
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(0);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(0);
+      expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
+      expect(await tippingToken2.balanceOf(reporter.address)).to.eq(
+        tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
+      );
+    });
+
+    it("Should batch claim DIVA fee after final reference value is set", async () => {
+      // ---------
+      // Arrange: Set final reference value and calc settlementFeeAmount
+      // ---------
+      // Call `setFinalReferenceValue` function for poolId1 and poolId2 inside DIVAOracleTellor contract after exactly `minPeriodUndisputed` period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor.connect(user2).setFinalReferenceValue(poolId1);
+      await divaOracleTellor.connect(user2).setFinalReferenceValue(poolId2);
+
+      // Check tips and balances for tippingToken1 before calling `claimTips`
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount1ForPoolId1);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount1ForPoolId2);
+      expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
+      );
+      expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
+
+      // Check tips and balances for tippingToken2 before calling `claimTips`
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount2ForPoolId1);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount2ForPoolId2);
+      expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
+      );
+      expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
+
+      // Calculate settlement fee expressed in collateral token
+      const [settlementFeeAmount1] = calcSettlementFee(
+        poolParams1.collateralBalance,
+        feesParams1.settlementFee,
+        collateralTokenDecimals,
+        collateralToUSDRate
+      );
+      const [settlementFeeAmount2] = calcSettlementFee(
+        poolParams2.collateralBalance,
+        feesParams2.settlementFee,
+        collateralTokenDecimals,
+        collateralToUSDRate
+      );
+
+      // Check fee claim in DIVA
+      expect(
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
+      ).to.eq(settlementFeeAmount1.add(settlementFeeAmount2));
+
+      // ---------
+      // Act: Call `claimDIVAFee` function
+      // ---------
+      await divaOracleTellor.batchClaimDIVAFee([poolId1, poolId2]);
+
+      // ---------
+      // Assert: Check that DIVA fee was claimed but tips remain untouched
+      // ---------
+      // Check that DIVA fee was claimed and sent to reporter
+      expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
+        settlementFeeAmount1.add(settlementFeeAmount2)
+      );
+      expect(
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
+      ).to.eq(0);
+
+      // Check that tips and balances for tippingToken1 are unchanged
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount1ForPoolId1);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount1ForPoolId2);
+      expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
+      );
+      expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
+
+      // Check tips and balances for tippingToken2 are unchanged
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount2ForPoolId1);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount2ForPoolId2);
+      expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
+      );
+      expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
+    });
+
+    it("Should batch claim tips and DIVA fee after final reference value is set", async () => {
+      // ---------
+      // Arrange: Set final reference value and check tips
+      // ---------
+      // Call `setFinalReferenceValue` function for poolId1 and poolId2 inside DIVAOracleTellor contract after exactly `minPeriodUndisputed` period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor.connect(user2).setFinalReferenceValue(poolId1);
+      await divaOracleTellor.connect(user2).setFinalReferenceValue(poolId2);
+
+      // Check tips and balances for tippingToken1 before calling `batchClaimTips`
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount1ForPoolId1);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount1ForPoolId2);
+      expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
+      );
+      expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
+
+      // Check tips and balances for tippingToken2 before calling `batchClaimTips`
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount2ForPoolId1);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(tippingAmount2ForPoolId2);
+      expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
+      );
+      expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
+
+      // Calculate settlement fee expressed in collateral token
+      const [settlementFeeAmount1] = calcSettlementFee(
+        poolParams1.collateralBalance,
+        feesParams1.settlementFee,
+        collateralTokenDecimals,
+        collateralToUSDRate
+      );
+      const [settlementFeeAmount2] = calcSettlementFee(
+        poolParams2.collateralBalance,
+        feesParams2.settlementFee,
+        collateralTokenDecimals,
+        collateralToUSDRate
+      );
+
+      // Check fee claim in DIVA
+      expect(
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
+      ).to.eq(settlementFeeAmount1.add(settlementFeeAmount2));
+
+      // ---------
+      // Act: Call claimTipsAndDIVAFee function
+      // ---------
+      await divaOracleTellor.batchClaimTipsAndDIVAFee([
+        {
+          poolId: poolId1,
+          tippingTokens: [tippingToken1.address, tippingToken2.address],
+        },
+        {
+          poolId: poolId2,
+          tippingTokens: [tippingToken1.address, tippingToken2.address],
+        },
+      ]);
+
+      // ---------
+      // Assert: Check that tips and DIVA fees were paid out to the reporter
+      // ---------
+      // Confirm that tips were paid out to the reporter
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(0);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+      ).to.eq(0);
+      expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
+      expect(await tippingToken1.balanceOf(reporter.address)).to.eq(
+        tippingAmount1ForPoolId1.add(tippingAmount1ForPoolId2)
+      );
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId1, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(0);
+      expect(
+        (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: poolId2, tippingTokens: [tippingToken2.address] },
+          ])
+        )[0][0]
+      ).to.eq(0);
+      expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
+      expect(await tippingToken2.balanceOf(reporter.address)).to.eq(
+        tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
+      );
+
+      // Confirm that DIVA fee were paid out to the reporter
+      expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
+        settlementFeeAmount1.add(settlementFeeAmount2)
+      );
+      expect(
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
+      ).to.eq(0);
+    });
+  });
+
+  describe("getTippingTokens", async () => {
+    let startIndex, endIndex;
+    let poolId;
+
+    beforeEach(async () => {
+      // Add tips
+      await divaOracleTellor
+        .connect(tipper1)
+        .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
+      await divaOracleTellor
+        .connect(tipper2)
+        .addTip(latestPoolId, tippingAmount2, tippingToken2.address);
+    });
+
+    it("Should get tipping tokens with correct start and end index", async () => {
+      // ---------
+      // Arrange: Set start, end index and poolId
+      // ---------
+      poolId = latestPoolId;
+      startIndex = 0;
+      endIndex = (
+        await divaOracleTellor.getTippingTokensLengthForPoolIds([poolId])
+      )[0];
+
+      // ---------
+      // Assert: Check that params are correct
+      // ---------
+      // Get tipping tokens for poolId
+      const tippingTokensForPoolId = (
+        await divaOracleTellor.getTippingTokens([
+          {
+            poolId,
+            startIndex,
+            endIndex,
+          },
+        ])
+      )[0];
+      // Confirm that tipping tokens for poolId are correct
+      expect(tippingTokensForPoolId[0]).to.eq(tippingToken1.address);
+      expect(tippingTokensForPoolId[1]).to.eq(tippingToken2.address);
+    });
+
+    it("Should get tipping tokens with end index larger than length of tipping tokens added for poolId", async () => {
+      // ---------
+      // Arrange: Set start, end index and poolId
+      // ---------
+      poolId = latestPoolId;
+      startIndex = 0;
+      endIndex =
+        (
+          await divaOracleTellor.getTippingTokensLengthForPoolIds([poolId])
+        )[0].toNumber() + 1;
+
+      // ---------
+      // Assert: Check that params are correct
+      // ---------
+      // Get tipping tokens for poolId
+      const tippingTokensForPoolId = (
+        await divaOracleTellor.getTippingTokens([
+          {
+            poolId,
+            startIndex,
+            endIndex,
+          },
+        ])
+      )[0];
+      // Confirm that tipping tokens for poolId are correct
+      expect(tippingTokensForPoolId[0]).to.eq(tippingToken1.address);
+      expect(tippingTokensForPoolId[1]).to.eq(tippingToken2.address);
+      expect(tippingTokensForPoolId[2]).to.eq(ethers.constants.AddressZero);
+    });
+  });
+
+  describe("getPoolIdsForReporters", async () => {
+    let startIndex, endIndex;
+
+    beforeEach(async () => {
+      // Prepare value submission to tellorPlayground
+      finalReferenceValue = parseUnits("42000");
+      collateralToUSDRate = parseUnits("1.14");
+      oracleValue = encodeOracleValue(finalReferenceValue, collateralToUSDRate);
+
+      // Submit value to Tellor playground contract
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
+
+      // Set final reference value after exactly `minPeriodUndisputed` period has passed
+      nextBlockTimestamp = (await getLastTimestamp()) + minPeriodUndisputed;
+      await setNextTimestamp(ethers.provider, nextBlockTimestamp);
+      await divaOracleTellor
+        .connect(user2)
+        .setFinalReferenceValue(latestPoolId);
+    });
+
+    it("Should get pool ids with correct start and end index", async () => {
+      // ---------
+      // Arrange: Set start, end index and reporter
+      // ---------
+      startIndex = 0;
+      endIndex = (
+        await divaOracleTellor.getPoolIdsLengthForReporters([reporter.address])
+      )[0];
+
+      // ---------
+      // Assert: Check that params are correct
+      // ---------
+      // Get pool ids for reporter
+      const poolIdsForReporter = (
+        await divaOracleTellor.getPoolIdsForReporters([
+          {
+            reporter: reporter.address,
+            startIndex,
+            endIndex,
+          },
+        ])
+      )[0];
+      // Confirm that poolId for reporter is correct
+      expect(poolIdsForReporter[0]).to.eq(latestPoolId);
+    });
+
+    it("Should get pool ids with end index larger than length of pool ids reportedy by reporter", async () => {
+      // ---------
+      // Arrange: Set start, end index and reporter
+      // ---------
+      startIndex = 0;
+      endIndex =
+        (
+          await divaOracleTellor.getPoolIdsLengthForReporters([
+            reporter.address,
+          ])
+        )[0].toNumber() + 1;
+
+      // ---------
+      // Assert: Check that params are correct
+      // ---------
+      // Get pool ids for reporter
+      const poolIdsForReporter = (
+        await divaOracleTellor.getPoolIdsForReporters([
+          {
+            reporter: reporter.address,
+            startIndex,
+            endIndex,
+          },
+        ])
+      )[0];
+      // Confirm that poolId for reporter is correct
+      expect(poolIdsForReporter[0]).to.eq(latestPoolId);
+      expect(poolIdsForReporter[1]).to.eq(0);
     });
   });
 

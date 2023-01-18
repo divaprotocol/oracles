@@ -65,6 +65,26 @@ interface IDIVAOracleTellor {
         uint256 timestamp
     );
 
+    // Struct for `batchClaimTips`, `batchClaimTipsAndDIVAFee`, `getTipAmount` function input
+    struct ArgsBatchInput {
+        uint256 poolId;
+        address[] tippingTokens;
+    }
+
+    // Struct for `getTippingTokens` function input
+    struct ArgsGetTippingTokens {
+        uint256 poolId;
+        uint256 startIndex;
+        uint256 endIndex;
+    }
+
+    // Struct for `getPoolIdsForReporters` function input
+    struct ArgsGetPoolIdsForReporters {
+        address reporter;
+        uint256 startIndex;
+        uint256 endIndex;
+    }
+
     /**
      * @dev Function to run a single tip
      * @param _poolId The unique identifier of the pool.
@@ -86,10 +106,23 @@ interface IDIVAOracleTellor {
         external;
 
     /**
+     * @dev Batch version of `claimTips`
+     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
+     */
+    function batchClaimTips(ArgsBatchInput[] calldata _argsBatchInputs)
+        external;
+
+    /**
      * @dev Function to claim fee from DIVA
      * @param _poolId The unique identifier of the pool.
      */
     function claimDIVAFee(uint256 _poolId) external;
+
+    /**
+     * @dev Batch version of `claimDIVAFee`
+     * @param _poolIds Array of pool id.
+     */
+    function batchClaimDIVAFee(uint256[] calldata _poolIds) external;
 
     /**
      * @dev Function to claim tips from DIVAOracleTellor and claim fee
@@ -100,6 +133,14 @@ interface IDIVAOracleTellor {
     function claimTipsAndDIVAFee(
         uint256 _poolId,
         address[] memory _tippingTokens
+    ) external;
+
+    /**
+     * @dev Batch version of `claimTipsAndDIVAFee`
+     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
+     */
+    function batchClaimTipsAndDIVAFee(
+        ArgsBatchInput[] calldata _argsBatchInputs
     ) external;
 
     /**
@@ -183,23 +224,31 @@ interface IDIVAOracleTellor {
     function getMaxFeeAmountUSD() external view returns (uint256);
 
     /**
-     * @dev Returns the length of tipping tokens with the poolId
-     * @param _poolId The unique identifier of the pool.
+     * @dev Returns the array of tippingTokens for poolIds
+     * @param _argsGetTippingTokens Struct array containing pool id,
+     * start index and end index.
      */
-    function getTippingTokens(uint256 _poolId)
+    function getTippingTokens(
+        ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+    ) external view returns (address[][] memory);
+
+    /**
+     * @dev Returns the length of tipping tokens with the poolIds
+     * @param _poolIds Array of pool ids.
+     */
+    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
         external
         view
-        returns (address[] memory);
+        returns (uint256[] memory);
 
     /**
      * @dev Returns the tipping amount
-     * @param _poolId The unique identifier of the pool.
-     * @param _tippingToken Address of tipping token.
+     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
      */
-    function getTip(uint256 _poolId, address _tippingToken)
+    function getTipAmounts(ArgsBatchInput[] calldata _argsBatchInputs)
         external
         view
-        returns (uint256);
+        returns (uint256[][] memory);
 
     /**
      * @dev Returns query id
@@ -208,13 +257,34 @@ interface IDIVAOracleTellor {
     function getQueryId(uint256 _poolId) external view returns (bytes32);
 
     /**
-     * @dev Returns the reporter address. Note that it returns
+     * @dev Returns the array of reporter addresses. Note that it returns
      * the zero address if a value has been reported to the Tellor contract
      * but it hasn't been pulled into DIVA Protocol by calling
      * `setFinalReferenceValue` yet.
-     * @param _poolId The unique identifier of the pool.
+     * @param _poolIds Array of pool id.
      */
-    function getReporter(uint256 _poolId) external view returns (address);
+    function getReporters(uint256[] calldata _poolIds)
+        external
+        view
+        returns (address[] memory);
+
+    /**
+     * @dev Returns the array of poolIds reported by reporter
+     * @param _argsGetPoolIdsForReporters Struct array containing reporter
+     * address, start index and end index.
+     */
+    function getPoolIdsForReporters(
+        ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
+    ) external view returns (uint256[][] memory);
+
+    /**
+     * @dev Returns the length of pool ids for the reporters
+     * @param _reporters Array of reporter address.
+     */
+    function getPoolIdsLengthForReporters(address[] calldata _reporters)
+        external
+        view
+        returns (uint256[] memory);
 
     /**
      * @dev Returns the DIVA address that the oracle is linked to

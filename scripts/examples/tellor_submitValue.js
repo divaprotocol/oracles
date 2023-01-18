@@ -43,7 +43,7 @@ const checkConditions = (
 
 const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
   // Get tips
-  const tippingTokens = await divaOracleTellor.getTippingTokens(poolId);
+  const tippingTokens = (await divaOracleTellor.getTippingTokens([poolId]))[0];
   if (tippingTokens.length) {
     await Promise.all(
       tippingTokens.map(async (tippingToken) =>
@@ -78,7 +78,8 @@ async function main() {
 
   const divaAddress = DIVA_ADDRESS[network];
   const tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
-  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress =
+    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
   const poolId = 62;
