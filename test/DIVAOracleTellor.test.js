@@ -73,7 +73,14 @@ const getQueryDataAndId = (latestPoolId, divaAddress, chainId) => {
 
 describe("DIVAOracleTellor", () => {
   let collateralTokenInstance;
-  let user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2;
+  let user1,
+    user2,
+    user3,
+    divaOracleTellorOwner,
+    reporter,
+    excessFeeRecipient,
+    tipper1,
+    tipper2;
 
   let divaOracleTellor;
   let tellorPlayground;
@@ -104,8 +111,16 @@ describe("DIVAOracleTellor", () => {
   let maxFeeAmountUSDInfo;
 
   before(async () => {
-    [user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2] =
-      await ethers.getSigners();
+    [
+      user1,
+      user2,
+      user3,
+      divaOracleTellorOwner,
+      reporter,
+      excessFeeRecipient,
+      tipper1,
+      tipper2,
+    ] = await ethers.getSigners();
 
     // Reset block
     await hre.network.provider.request({
@@ -2637,7 +2652,6 @@ describe("DIVAOracleTellor", () => {
 
     it("Should update max fee amount USD info after deployment", async () => {
       // ---------
-      // Arrange: Set `newMaxFeeAmountUSD` and check max fee amount USD info before updating
       // ---------
       newMaxFeeAmountUSD = parseUnits("20");
 
@@ -2961,10 +2975,14 @@ describe("DIVAOracleTellor", () => {
       // Confirm that new excess fee recipient is not equal to the current one
       excessFeeRecipientInfo =
         await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.not.eq(newExcessFeeRecipient.address);
+      expect(excessFeeRecipientInfo.excessFeeRecipient).to.not.eq(
+        newExcessFeeRecipient.address
+      );
 
       // Call `updateExcessFeeRecipient` function
-      await divaOracleTellor.updateExcessFeeRecipient(newExcessFeeRecipient.address);
+      await divaOracleTellor.updateExcessFeeRecipient(
+        newExcessFeeRecipient.address
+      );
     });
 
     it("Should revoke pending excees fee recipient update", async () => {
@@ -2976,7 +2994,9 @@ describe("DIVAOracleTellor", () => {
       expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(newExcessFeeRecipient.address);
+      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(
+        newExcessFeeRecipient.address
+      );
 
       // ---------
       // Act: Call `revokePendingExcessFeeRecipientUpdate` function
@@ -3008,7 +3028,9 @@ describe("DIVAOracleTellor", () => {
       const currentOwner = await diva.getOwner();
       expect(caller).to.not.eq(currentOwner);
       await expect(
-        divaOracleTellor.connect(caller).revokePendingExcessFeeRecipientUpdate()
+        divaOracleTellor
+          .connect(caller)
+          .revokePendingExcessFeeRecipientUpdate()
       ).to.be.revertedWith(
         `NotContractOwner("${caller.address}", "${currentOwner}")`
       );
@@ -3045,8 +3067,9 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Act: Call `revokePendingExcessFeeRecipientUpdate` function
       // ---------
-      const tx =
-        await divaOracleTellor.connect(user1).revokePendingExcessFeeRecipientUpdate();
+      const tx = await divaOracleTellor
+        .connect(user1)
+        .revokePendingExcessFeeRecipientUpdate();
       const receipt = await tx.wait();
 
       // ---------
@@ -3075,11 +3098,12 @@ describe("DIVAOracleTellor", () => {
       newMaxFeeAmountUSD = parseUnits("20");
 
       // Confirm that new max USD fee amount is not equal to the current one
-      maxFeeAmountUSDInfo =
-        await divaOracleTellor.getMaxFeeAmountUSDInfo();
-      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.not.eq(newMaxFeeAmountUSD);
+      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
+      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.not.eq(
+        newMaxFeeAmountUSD
+      );
 
-      // Call `updateMaxFeeAmountUSD` function      
+      // Call `updateMaxFeeAmountUSD` function
       await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD);
     });
 
