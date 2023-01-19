@@ -11,6 +11,7 @@ This documentation outlines the functionality of the Tellor adapter for DIVA Pro
 1.  [System overview](#system-overview)
 2.  [Function overview](#function-overview)
 3.  [Getter functions](#getter-functions)
+4.  [Setter functions](#setter-functions)
 
 # System overview
 
@@ -142,38 +143,38 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 
 # Function overview
 
-| Function                                                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                              |     |
-| :---------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| **Core functions**                                                                              |                                                                                                                                                                                                                                                                                                                                                                                                          |
-| [`addTip`](#addTip)                                                                             | Function to run a single tip.                                                                                                                                                                                                                                                                                                                                                                            |
-| [`claimTips`](#claimTips)                                                                       | Function to claim tips.                                                                                                                                                                                                                                                                                                                                                                                  |
-| [`claimDIVAFee`](#claimDIVAFee)                                                                 | Function to claim fee from DIVA.                                                                                                                                                                                                                                                                                                                                                                         |
-| [`claimTipsAndDIVAFee`](#claimTipsAndDIVAFee)                                                   | Function to claim tips from DIVAOracleTellor and claim fee from DIVA.                                                                                                                                                                                                                                                                                                                                    |
-| [`setFinalReferenceValue`](#setFinalReferenceValue)                                             | Function to set the final reference value for a given `_poolId`.                                                                                                                                                                                                                                                                                                                                         |
-| [`setFinalReferenceValueAndClaimTips`](#setFinalReferenceValueAndClaimTips)                     | Function to set the final reference value and claim tips for a given `_poolId` with given tipping tokens.                                                                                                                                                                                                                                                                                                |
-| [`setFinalReferenceValueAndClaimDIVAFee`](#setFinalReferenceValueAndClaimDIVAFee)               | Function to set the final reference value and claim DIVA fee for a given `_poolId` with given tipping tokens.                                                                                                                                                                                                                                                                                            |
-| [`setFinalReferenceValueAndClaimTipsAndDIVAFee`](#setFinalReferenceValueAndClaimTipsAndDIVAFee) | Function to set the final reference value and claim tips and DIVA fee for a given `_poolId` with given tipping tokens.                                                                                                                                                                                                                                                                                   |
-| **Getter functions**                                                                            |                                                                                                                                                                                                                                                                                                                                                                                                          |
-| [`getChallengeable`](#getChallengeable)                                                         | Function to return whether the oracle's data feed is challengeable or not. Will return `false` in that implementation.                                                                                                                                                                                                                                                                                   |
-| [`getExcessFeeRecipient`](#getExcessFeeRecipient)                                               | Function to return the excess fee recipient address.                                                                                                                                                                                                                                                                                                                                                     |
-| [`getMinPeriodUndisputed`](#getMinPeriodUndisputed)                                             | Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid.                                                                                                                                                                                                                                                                            |
-| [`getMaxFeeAmountUSD`](#getMaxFeeAmountUSD)                                                     | Function to return the max fee amount usd value with 18 decimals.                                                                                                                                                                                                                                                                                                                                        |
-| [`getDIVAAddress`](#getDIVAAddress)                                                             | Function to return the DIVA address that the oracle is linked to.                                                                                                                                                                                                                                                                                                                                        |
-| [`getTipAmounts`](#getTipAmounts)                                                               | Function to return the array of tipping amounts for the given array of `ArgsBatchInput` struct.                                                                                                                                                                                                                                                                                                          |
-| [`getReporters`](#getReporters)                                                                 | Function to return the array of reporter addresses for the given `_poolIds`. Note that it returns the zero address if a value has been reported to the Tellor contract but it hasn't been pulled into DIVA Protocol by calling any one of `setFinalReferenceValue`, `setFinalReferenceValueAndClaimTips`, `setFinalReferenceValueAndClaimDIVAFee` or `setFinalReferenceValueAndClaimTipsAndDIVAFee` yet. |
-| [`getTippingTokens`](#getTippingTokens)                                                         | Function to return the array of tipping tokens for the given array of `ArgsGetTippingTokens` struct.                                                                                                                                                                                                                                                                                                     |
-| [`getTippingTokensLengthForPoolIds`](#getTippingTokensLengthForPoolIds)                         | Function to return the lengths of tipping tokens for the given `_poolIds`.                                                                                                                                                                                                                                                                                                                               |
-| [`getPoolIdsForReporters`](#getPoolIdsForReporters)                                             | Function to return the array of pool ids reported by reporters for the given array of `ArgsGetPoolIdsForReporters` struct.                                                                                                                                                                                                                                                                               |
-| [`getPoolIdsLengthForReporters`](#getPoolIdsLengthForReporters)                                 | Function to return the lengths of pool ids reported by reporters for the given `_reporters`.                                                                                                                                                                                                                                                                                                             |
-| [`getQueryId`](#getQueryId)                                                                     | Function to return the query id for a given `_poolId`.                                                                                                                                                                                                                                                                                                                                                   |
-| **Setter functions** (execution is reserved for contract owner only)                            |                                                                                                                                                                                                                                                                                                                                                                                                          |
-| [`setExcessFeeRecipient`](#setExcessFeeRecipient)                                               | Function to update `_excessFeeRecipient`. Only callable by contract owner.                                                                                                                                                                                                                                                                                                                               |     |
-| [`setMinPeriodUndisputed`](#setMinPeriodUndisputed)                                             | Function to update `_minPeriodUndisputed` with minimum value of 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds). Only callable by contract owner.                                                                                                                                                                                                                                    |
-| [`setMaxFeeAmountUSD`](#setMaxFeeAmountUSD)                                                     | Function to update `_maxFeeAmountUSD`. Only callable by contract owner.                                                                                                                                                                                                                                                                                                                                  |
+| Function                                                                                        | Description                                                                                                                          |     |
+| :---------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- | --- |
+| **Core functions**                                                                              |                                                                                                                                      |
+| [`addTip`](#addTip)                                                                             | Function to run a single tip.                                                                                                        |
+| [`claimTips`](#claimTips)                                                                       | Function to claim tips.                                                                                                              |
+| [`claimDIVAFee`](#claimDIVAFee)                                                                 | Function to claim fee from DIVA.                                                                                                     |
+| [`claimTipsAndDIVAFee`](#claimTipsAndDIVAFee)                                                   | Function to claim tips from DIVAOracleTellor and claim fee from DIVA.                                                                |
+| [`setFinalReferenceValue`](#setFinalReferenceValue)                                             | Function to set the final reference value for a given `_poolId`.                                                                     |
+| [`setFinalReferenceValueAndClaimTips`](#setFinalReferenceValueAndClaimTips)                     | Function to set the final reference value and claim tips for a given `_poolId` with given tipping tokens.                            |
+| [`setFinalReferenceValueAndClaimDIVAFee`](#setFinalReferenceValueAndClaimDIVAFee)               | Function to set the final reference value and claim DIVA fee for a given `_poolId` with given tipping tokens.                        |
+| [`setFinalReferenceValueAndClaimTipsAndDIVAFee`](#setFinalReferenceValueAndClaimTipsAndDIVAFee) | Function to set the final reference value and claim tips and DIVA fee for a given `_poolId` with given tipping tokens.               |
+| **Getter functions**                                                                            |                                                                                                                                      |
+| [`getChallengeable`](#getChallengeable)                                                         | Function to return whether the oracle's data feed is challengeable or not.                                                           |
+| [`getExcessFeeRecipient`](#getExcessFeeRecipient)                                               | Function to return the excess fee recipient address.                                                                                 |
+| [`getMinPeriodUndisputed`](#getMinPeriodUndisputed)                                             | Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid.        |
+| [`getMaxFeeAmountUSD`](#getMaxFeeAmountUSD)                                                     | Function to return the max fee amount usd value with 18 decimals.                                                                    |
+| [`getDIVAAddress`](#getDIVAAddress)                                                             | Function to return the DIVA address that the oracle is linked to.                                                                    |
+| [`getTipAmounts`](#getTipAmounts)                                                               | Function to return the array of tipping amounts for the given array of `ArgsBatchInput` struct.                                      |
+| [`getReporters`](#getReporters)                                                                 | Function to return the array of reporter addresses for the given `_poolIds`.                                                         |
+| [`getTippingTokens`](#getTippingTokens)                                                         | Function to return the array of tipping tokens for the given array of `ArgsGetTippingTokens` struct.                                 |
+| [`getTippingTokensLengthForPoolIds`](#getTippingTokensLengthForPoolIds)                         | Function to return the lengths of tipping tokens for the given `_poolIds`.                                                           |
+| [`getPoolIdsForReporters`](#getPoolIdsForReporters)                                             | Function to return the array of pool ids reported by reporters for the given array of `ArgsGetPoolIdsForReporters` struct.           |
+| [`getPoolIdsLengthForReporters`](#getPoolIdsLengthForReporters)                                 | Function to return the lengths of pool ids reported by reporters for the given `_reporters`.                                         |
+| [`getQueryId`](#getQueryId)                                                                     | Function to return the query id for a given `_poolId`.                                                                               |
+| **Setter functions** (execution is reserved for contract owner only)                            |                                                                                                                                      |
+| [`setExcessFeeRecipient`](#setExcessFeeRecipient)                                               | Function to update `_excessFeeRecipient`.                                                                                            |     |
+| [`setMinPeriodUndisputed`](#setMinPeriodUndisputed)                                             | Function to update `_minPeriodUndisputed` with minimum value of 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds). |
+| [`setMaxFeeAmountUSD`](#setMaxFeeAmountUSD)                                                     | Function to update `_maxFeeAmountUSD`.                                                                                               |
 | **Batch functions**                                                                             |
-| [`batchClaimTips`](#batchClaimTips)                                                             | Batch version of `claimTips`.                                                                                                                                                                                                                                                                                                                                                                            |
-| [`batchClaimDIVAFee`](#batchClaimDIVAFee)                                                       | Batch version of `claimDIVAFee`.                                                                                                                                                                                                                                                                                                                                                                         |
-| [`batchClaimTipsAndDIVAFee`](#batchClaimTipsAndDIVAFee)                                         | Batch version of `claimTipsAndDIVAFee`.                                                                                                                                                                                                                                                                                                                                                                  |
+| [`batchClaimTips`](#batchClaimTips)                                                             | Batch version of `claimTips`.                                                                                                        |
+| [`batchClaimDIVAFee`](#batchClaimDIVAFee)                                                       | Batch version of `claimDIVAFee`.                                                                                                     |
+| [`batchClaimTipsAndDIVAFee`](#batchClaimTipsAndDIVAFee)                                         | Batch version of `claimTipsAndDIVAFee`.                                                                                              |
 
 # Getter functions
 
@@ -262,8 +263,6 @@ struct ArgsBatchInput {
 
 Function to return the array of reporter addresses for the given `_poolIds`.
 
-Note that it returns the zero address if a value has been reported to the Tellor contract but it hasn't been pulled into DIVA Protocol by calling any one of [`setFinalReferenceValue`](#setFinalReferenceValue), [`setFinalReferenceValueAndClaimTips`](#setFinalReferenceValueAndClaimTips), [`setFinalReferenceValueAndClaimDIVAFee`](#setFinalReferenceValueAndClaimDIVAFee) or [`setFinalReferenceValueAndClaimTipsAndDIVAFee`](#setFinalReferenceValueAndClaimTipsAndDIVAFee) yet.
-
 ```js
 function getReporters(
     uint256[] calldata _poolIds
@@ -272,6 +271,8 @@ function getReporters(
     view
     returns (address[] memory);
 ```
+
+> **Note:** it returns the zero address if a value has been reported to the Tellor contract but it hasn't been pulled into DIVA Protocol by calling any one of [`setFinalReferenceValue`](#setFinalReferenceValue), [`setFinalReferenceValueAndClaimTips`](#setFinalReferenceValueAndClaimTips), [`setFinalReferenceValueAndClaimDIVAFee`](#setFinalReferenceValueAndClaimDIVAFee) or [`setFinalReferenceValueAndClaimTipsAndDIVAFee`](#setFinalReferenceValueAndClaimTipsAndDIVAFee) yet.
 
 ## getTippingTokens
 
@@ -357,3 +358,61 @@ function getQueryId(
     view
     returns (bytes32);
 ```
+
+# Setter functions
+
+The DIVAOracleTellor contract implements the below mentioned setter functions. The execution of all setter functions is reserved to the contract owner only.
+
+## setExcessFeeRecipient
+
+Function to update `_excessFeeRecipient`. On success, emits one [`ExcessFeeRecipientSet`](#ExcessFeeRecipientSet) event including the excess fee recipient address.
+
+Reverts if:
+
+- `msg.sender` is not contract owner.
+- `_newExcessFeeRecipient` is zero address.
+
+```js
+function setExcessFeeRecipient(
+    address _newExcessFeeRecipient
+)
+    external;
+```
+
+To keep an excess fee recipient parameter unchanged, simply pass the current value as function parameter.
+
+## setMinPeriodUndisputed
+
+Function to update `_minPeriodUndisputed` with minimum value of 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds). On success, emits one [`MinPeriodUndisputedSet`](#MinPeriodUndisputedSet) event including the undisputed minimum period value.
+
+Reverts if:
+
+- `msg.sender` is not contract owner.
+- `_newMinPeriodUndisputed` is smaller than 3600.
+- `_newMinPeriodUndisputed` is bigger than 64800.
+
+```js
+function setMinPeriodUndisputed(
+    uint32 _newMinPeriodUndisputed
+)
+    external;
+```
+
+To keep a undisputed minimum period parameter unchanged, simply pass the current value as function parameter.
+
+## setMaxFeeAmountUSD
+
+Function to update `_maxFeeAmountUSD`. On success, emits one [`MaxFeeAmountUSDSet`](#MaxFeeAmountUSDSet) event including the max fee amount usd value.
+
+Reverts if:
+
+- `msg.sender` is not contract owner.
+
+```js
+function setMaxFeeAmountUSD(
+    uint256 _newMaxFeeAmountUSD
+)
+    external;
+```
+
+To keep a max fee amount usd parameter unchanged, simply pass the current value as function parameter.
