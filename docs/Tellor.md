@@ -10,10 +10,11 @@ This documentation outlines the functionality of the Tellor adapter for DIVA Pro
 
 1.  [System overview](#system-overview)
 2.  [Function overview](#function-overview)
-3.  [Getter functions](#getter-functions)
-4.  [Setter functions](#setter-functions)
-5.  [Events](#events)
-6.  [Errors](#errors)
+3.  [Core functions](#core-functions)
+4.  [Getter functions](#getter-functions)
+5.  [Setter functions](#setter-functions)
+6.  [Events](#events)
+7.  [Errors](#errors)
 
 # System overview
 
@@ -151,7 +152,7 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 | [`addTip`](#addTip)                                                                             | Function to run a single tip.                                                                                                        |
 | [`claimTips`](#claimTips)                                                                       | Function to claim tips.                                                                                                              |
 | [`claimDIVAFee`](#claimDIVAFee)                                                                 | Function to claim fee from DIVA.                                                                                                     |
-| [`claimTipsAndDIVAFee`](#claimTipsAndDIVAFee)                                                   | Function to claim tips from DIVAOracleTellor and claim fee from DIVA.                                                                |
+| [`claimTipsAndDIVAFee`](#claimTipsAndDIVAFee)                                                   | Function to claim tips from `DIVAOracleTellor` and claim fee from DIVA.                                                              |
 | [`setFinalReferenceValue`](#setFinalReferenceValue)                                             | Function to set the final reference value for a given `_poolId`.                                                                     |
 | [`setFinalReferenceValueAndClaimTips`](#setFinalReferenceValueAndClaimTips)                     | Function to set the final reference value and claim tips for a given `_poolId` with given tipping tokens.                            |
 | [`setFinalReferenceValueAndClaimDIVAFee`](#setFinalReferenceValueAndClaimDIVAFee)               | Function to set the final reference value and claim DIVA fee for a given `_poolId` with given tipping tokens.                        |
@@ -177,6 +178,137 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 | [`batchClaimTips`](#batchClaimTips)                                                             | Batch version of `claimTips`.                                                                                                        |
 | [`batchClaimDIVAFee`](#batchClaimDIVAFee)                                                       | Batch version of `claimDIVAFee`.                                                                                                     |
 | [`batchClaimTipsAndDIVAFee`](#batchClaimTipsAndDIVAFee)                                         | Batch version of `claimTipsAndDIVAFee`.                                                                                              |
+
+# Core functions
+
+DIVAOracleTellor implements the following core functions.
+
+## addTip
+
+Function to run a single tip.
+
+```js
+function addTip(
+    uint256 _poolId,        // The unique identifier of the pool
+    uint256 _amount,        // The amount to tip
+    address _tippingToken   // Tipping token address
+)
+    external;
+```
+
+## claimTips
+
+Function to claim tips.
+
+```js
+function claimTips(
+    uint256 _poolId,                // The unique identifier of the pool
+    address[] memory _tippingTokens // Array of tipping tokens to claim tip
+)
+    external;
+```
+
+## batchClaimTips
+
+Batch version of `claimTips`.
+
+```js
+function batchClaimTips(
+    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing pool ids and tipping tokens
+)
+    external;
+```
+
+## claimDIVAFee
+
+Function to claim fee from DIVA.
+
+```js
+function claimDIVAFee(
+    uint256 _poolId // The unique identifier of the pool
+)
+    external;
+```
+
+## batchClaimDIVAFee
+
+Batch version of `claimDIVAFee`.
+
+```js
+function batchClaimDIVAFee(
+    uint256[] calldata _poolIds // Array of pool ids
+)
+    external;
+```
+
+## claimTipsAndDIVAFee
+
+Function to claim tips from `DIVAOracleTellor` and claim fee from DIVA.
+
+```js
+function claimTipsAndDIVAFee(
+    uint256 _poolId,                // The unique identifier of the pool
+    address[] memory _tippingTokens // Array of tipping tokens to claim tip
+)
+    external;
+```
+
+## batchClaimTipsAndDIVAFee
+
+Batch version of `claimTipsAndDIVAFee`.
+
+```js
+function batchClaimTipsAndDIVAFee(
+    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing pool ids and tipping tokens
+)
+    external;
+```
+
+## setFinalReferenceValue
+
+Function to set the final reference value for a given `_poolId`.
+
+```js
+function setFinalReferenceValue(
+    uint256 _poolId // The unique identifier of the pool
+)
+    external;
+```
+
+## setFinalReferenceValueAndClaimTips
+
+Function to set the final reference value and claim tips for a given `_poolId` with given tipping tokens.
+
+```js
+function setFinalReferenceValueAndClaimTips(
+    uint256 _poolId,                // The unique identifier of the pool
+    address[] memory _tippingTokens // Array of tipping tokens to claim tip
+)
+    external;
+```
+
+## setFinalReferenceValueAndClaimDIVAFee
+
+Function to set the final reference value and claim DIVA fee for a given `_poolId` with given tipping tokens.
+
+```js
+function setFinalReferenceValueAndClaimDIVAFee(
+    uint256 _poolId // The unique identifier of the pool
+)
+    external;
+```
+
+## setFinalReferenceValueAndClaimTipsAndDIVAFee
+
+Function to set the final reference value and claim tips and DIVA fee for a given `_poolId` with given tipping tokens.
+
+```js
+function setFinalReferenceValueAndClaimTipsAndDIVAFee(
+    uint256 _poolId,                // The unique identifier of the pool
+    address[] memory _tippingTokens // Array of tipping tokens to claim tip
+)
+    external;
+```
 
 # Getter functions
 
@@ -245,7 +377,7 @@ Function to return the array of tipping amounts for the given array of `ArgsBatc
 
 ```js
 function getTipAmounts(
-    ArgsBatchInput[] calldata _argsBatchInputs
+    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing pool ids and tipping tokens
 )
     external
     view
@@ -267,7 +399,7 @@ Function to return the array of reporter addresses for the given `_poolIds`.
 
 ```js
 function getReporters(
-    uint256[] calldata _poolIds
+    uint256[] calldata _poolIds // Array of pool ids
 )
     external
     view
@@ -282,7 +414,7 @@ Function to return the array of tipping tokens for the given array of `ArgsGetTi
 
 ```js
 function getTippingTokens(
-    ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+    ArgsGetTippingTokens[] calldata _argsGetTippingTokens // Struct array containing pool id, start index and end index
 )
     external
     view
@@ -305,7 +437,7 @@ Function to return the lengths of tipping tokens for the given `_poolIds`.
 
 ```js
 function getTippingTokensLengthForPoolIds(
-    uint256[] calldata _poolIds
+    uint256[] calldata _poolIds // Array of pool ids
 )
     external
     view
@@ -318,7 +450,7 @@ Function to return the array of pool ids reported by reporters for the given arr
 
 ```js
 function getPoolIdsForReporters(
-    ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
+    ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters // Struct array containing reporter address, start index and end index
 )
     external
     view
@@ -341,7 +473,7 @@ Function to return the lengths of pool ids reported by reporters for the given `
 
 ```js
 function getPoolIdsLengthForReporters(
-    address[] calldata _reporters
+    address[] calldata _reporters // Array of reporter address
 )
     external
     view
@@ -354,7 +486,7 @@ Function to return the query id for a given `_poolId`.
 
 ```js
 function getQueryId(
-    uint256 _poolId
+    uint256 _poolId // The unique identifier of the pool
 )
     external
     view
@@ -376,7 +508,7 @@ Reverts if:
 
 ```js
 function setExcessFeeRecipient(
-    address _newExcessFeeRecipient
+    address _newExcessFeeRecipient // New `_excessFeeRecipient`
 )
     external;
 ```
@@ -395,7 +527,7 @@ Reverts if:
 
 ```js
 function setMinPeriodUndisputed(
-    uint32 _newMinPeriodUndisputed
+    uint32 _newMinPeriodUndisputed // New `_minPeriodUndisputed` in seconds
 )
     external;
 ```
@@ -412,7 +544,7 @@ Reverts if:
 
 ```js
 function setMaxFeeAmountUSD(
-    uint256 _newMaxFeeAmountUSD
+    uint256 _newMaxFeeAmountUSD // New amount expressed as an integer with 18 decimals
 )
     external;
 ```
