@@ -56,7 +56,7 @@ module.exports = {
       },
     },
     ethereum: {
-      url: process.env.RPC_URL_ROPSTEN,
+      url: process.env.RPC_URL_MAINNET,
       accounts: {
         mnemonic: MNEMONIC,
       },
