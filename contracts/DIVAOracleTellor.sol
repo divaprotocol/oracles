@@ -594,7 +594,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         ) = abi.decode(_valueRetrieved, (uint256, uint256));
 
         // Get address of reporter who will receive
-        address _reporter = tellor.getReporterByTimestamp(
+        address _reporter = getReporterByTimestamp(
             _queryId,
             _timestampRetrieved
         );
