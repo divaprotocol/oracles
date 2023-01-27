@@ -29,7 +29,12 @@ const BOND_FACTORY = {
 
 // Tellor contract INCLUDING the requirement to stake prior to reporting
 const TELLOR_ADDRESS = {
-  goerli: "0xB3B662644F8d3138df63D2F43068ea621e2981f9",
+  ethereum: "0xB3B662644F8d3138df63D2F43068ea621e2981f9",
+  polygon: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
+  gnosis: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
+  goerli: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
+  mumbai: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
+  chiado: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
 };
 
 // Tellor playground contract EXCLUDING the requirement to stake prior to reporting
