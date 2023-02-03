@@ -34,7 +34,7 @@ const TELLOR_ADDRESS = {
   gnosis: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   goerli: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   mumbai: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
-  chiado: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0"
+  chiado: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
 };
 
 // Tellor playground contract EXCLUDING the requirement to stake prior to reporting
@@ -49,6 +49,7 @@ const TELLOR_PLAYGROUND_ADDRESS = {
 const DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS = {
   ropsten: "0x331F055a7c38E2e0361312c3D1A0621016aa7BFf", // Deployed on 16 Aug 2022
   goerli: "0x3679E62e63C0C46760dA1E841bE3c8465E8513bA", // Deployed on 10 Feb 2023 (Playground version)
+  // goerli: "0x63098cC6EDa33B0FbD07472B1a8dD54D4a5C2153",
 };
 
 // DIVAOracleTellor contract using actual Tellor system
