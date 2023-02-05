@@ -56,7 +56,7 @@ The usage of the Tellor adapter contract is outlined below:
 1. **Pool creation:** A user creates a contingent pool on DIVA Protocol, designating the Tellor adapter contract address as the data provider. This represents a request to report the outcome of the underlying event/metric at the specified expiry time after expiration.
 2. **Monitoring:** Tellor reporters monitor expired pools requiring reporting by running special software, known as "DIVA Tellor clients". There are two available implementations, one by the [DIVA team](https://github.com/divaprotocol/diva-monorepo/tree/main/packages/diva-oracle) and one by the [Tellor team](https://github.com/tellor-io/telliot-feeds). If you're planning to build your own reporter software, please refer to the [README](https://github.com/divaprotocol/oracles/blob/main/README.md) for guidance.
 3. **Reporting to Tellor Protocol:** If a pool expires, reporters submit their values to the Tellor smart contract. Valid submissions must be made during the 7-day (subject to change) submission period, starting at the time of pool expiration.
-4. **Reporting to DIVA Protocol:** The first value submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final one. This value is submitted to DIVA Protocol by calling the [`setFinalReferenceValue`](#setfinalreferencevalue) (or a variant of it) function on the Tellor adapter contract. This sets the final reference value to "Confirmed" and determines the payouts for each counterparty involved in the derivative contract. No further submissions to DIVA Protocol are permitted thereafter.
+4. **Reporting to DIVA Protocol:** The first value submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final one. This value is submitted to DIVA Protocol by calling the [`setFinalReferenceValue`](#setfinalreferencevalue) (or a variant of it) function on the Tellor adapter contract. This sets the final reference value to "Confirmed" and determines the payouts for each counterparty involved in the derivative contract. No further submissions to DIVA Protocol are permitted thereafter. Disputed values will be disregarded and are handled in a separate process on the Tellor side.
 
 >**Note:** Submissions to Tellor Protocol made before pool expiration or for already confirmed pools will not be considered. To reduce gas costs, it is recommended to verify the timestamps of the Tellor submissions and the status of the final reference value before calling the [`setFinalReferenceValue`](#setfinalreferencevalue) (or a variant of it) function on the Tellor adapter contract.
 
@@ -93,10 +93,13 @@ At 100 Gwei/gas, the gas fee is 41m Gwei (0.041 ETH, 0.041 MATIC, etc.).
 
 ## Relevant addresses
 
-Relevant addresses on Goerli:
-
 | Name                       |                                                                             |                                                                                                                                                                                                                    |
 | :------------------------- | :-------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ethereum**                                                               |
+| **Polygon**                                                               |
+| **Gnosis**                                                               |
+| **Arbitrum**                                                               |
+| **Goerli**                                                               |
 | Tellor adapter contract    | `0x9959f7f8eFa6B77069e817c1Af97094A9CC830FD`                                | Contract that connects the Tellor system with DIVA Protocol. To be used as the data provider address when creating a pool                                                                                          |
 | TRB token                  | `0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2`                                | Token that needs to be staked in order to be able to report values to the Tellor system. One stake corresponds to 100 TRB allows and allows to report one value every 12 hours.                                    |
 | Tellor system              | `0xB3B662644F8d3138df63D2F43068ea621e2981f9`                                | Tellor contract where values are reported to and TRB staked.                                                                                                                                                       |
@@ -108,15 +111,11 @@ Note that depositing a stake or or disputing a value requires prior approval for
 
 ## Supported data feeds
 
-The Tellor client implementations for DIVA Protocol support any data feed. BTC/USD and ETH/USD prices are pulled automatically. Any other data would have to be submitted manually by the provided scripts.
-
-## Tellor Disputes
-
-- Disputed values will be disregarded and are handled in a separate process managed by Tellor.
+The Tellor protocol has the capability to handle any data that is submitted to it. This universality extends to the Tellor adapter, which can be utilized with any data feed. To ensure high coverage by reporters, it's suggested to check with the Tellor community which data feeds are well-established and which may need extra support.
 
 ## DIVA Disputes
 
-The Tellor adapter deactivates the possibility to challenge within DIVA Protocol as the Tellor system comes with an embedded dispute mechanism. That is, the value that is reported to DIVA Protocol via the Tellor adapter is considered the final one.
+The Tellor adapter deactivates the possibility to challenge within DIVA Protocol as the Tellor system comes with its own dispute mechanism. In other words, the value that is reported to DIVA Protocol via the Tellor adapter is immediately confirmed and considered the final one.
 
 # Risks and mitigants
 
