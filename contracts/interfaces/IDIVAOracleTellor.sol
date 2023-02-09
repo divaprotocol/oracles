@@ -147,12 +147,12 @@ interface IDIVAOracleTellor {
      * @dev Function to set the final reference value for a given `_poolId`.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
-     * @param _shouldClaimDIVAFee Flag showing whether to claim DIVA fee.
+     * @param claimDIVAFee_ Flag showing whether to claim DIVA fee.
      */
     function setFinalReferenceValue(
         uint256 _poolId,
         address[] calldata _tippingTokens,
-        bool _shouldClaimDIVAFee
+        bool claimDIVAFee_
     ) external;
 
     /**

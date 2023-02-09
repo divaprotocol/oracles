@@ -146,7 +146,7 @@ contract DIVAOracleTellor is
     function setFinalReferenceValue(
         uint256 _poolId,
         address[] calldata _tippingTokens,
-        bool _shouldClaimDIVAFee
+        bool claimDIVAFee_
     ) external override nonReentrant {
         _setFinalReferenceValue(_poolId);
 
@@ -154,7 +154,7 @@ contract DIVAOracleTellor is
             _claimTips(_poolId, _tippingTokens);
         }
 
-        if (_shouldClaimDIVAFee) {
+        if (claimDIVAFee_) {
             _claimDIVAFee(_poolId);
         }
     }
