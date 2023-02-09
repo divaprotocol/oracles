@@ -143,38 +143,20 @@ contract DIVAOracleTellor is
         }
     }
 
-    function setFinalReferenceValue(uint256 _poolId)
-        external
-        override
-        nonReentrant
-    {
-        _setFinalReferenceValue(_poolId);
-    }
-
-    function setFinalReferenceValueAndClaimTips(
+    function setFinalReferenceValue(
         uint256 _poolId,
-        address[] calldata _tippingTokens
+        address[] calldata _tippingTokens,
+        bool claimDIVAFee_
     ) external override nonReentrant {
         _setFinalReferenceValue(_poolId);
-        _claimTips(_poolId, _tippingTokens);
-    }
 
-    function setFinalReferenceValueAndClaimDIVAFee(uint256 _poolId)
-        external
-        override
-        nonReentrant
-    {
-        _setFinalReferenceValue(_poolId);
-        _claimDIVAFee(_poolId);
-    }
+        if (_tippingTokens.length > 0) {
+            _claimTips(_poolId, _tippingTokens);
+        }
 
-    function setFinalReferenceValueAndClaimTipsAndDIVAFee(
-        uint256 _poolId,
-        address[] calldata _tippingTokens
-    ) external override nonReentrant {
-        _setFinalReferenceValue(_poolId);
-        _claimTips(_poolId, _tippingTokens);
-        _claimDIVAFee(_poolId);
+        if (claimDIVAFee_) {
+            _claimDIVAFee(_poolId);
+        }
     }
 
     function setExcessFeeRecipient(address _newExcessFeeRecipient)
