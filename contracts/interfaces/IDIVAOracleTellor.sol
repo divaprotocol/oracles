@@ -66,7 +66,7 @@ interface IDIVAOracleTellor {
     );
 
     // Struct for `batchClaim` function input
-    struct ArgsBatchClaim {
+    struct ArgsBatchClaimReward {
         uint256 poolId;
         address[] tippingTokens;
         bool claimDIVAFee;
@@ -110,7 +110,7 @@ interface IDIVAOracleTellor {
      * @param _tippingTokens Array of tipping tokens to claim tip.
      * @param claimDIVAFee_ Flag showing whether to claim DIVA fee.
      */
-    function claim(
+    function claimReward(
         uint256 _poolId,
         address[] memory _tippingTokens,
         bool claimDIVAFee_
@@ -118,10 +118,12 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Batch version of `claimTips`
-     * @param _argsBatchClaim Struct array containing pool ids, tipping
+     * @param _argsBatchClaimReward Struct array containing pool ids, tipping
      * tokens, and `claimDIVAFee` flag
      */
-    function batchClaim(ArgsBatchClaim[] calldata _argsBatchClaim) external;
+    function batchClaimReward(
+        ArgsBatchClaimReward[] calldata _argsBatchClaimReward
+    ) external;
 
     /**
      * @dev Function to set the final reference value for a given `_poolId`.
