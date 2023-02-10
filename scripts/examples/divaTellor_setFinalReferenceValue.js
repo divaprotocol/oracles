@@ -18,11 +18,12 @@ async function main() {
   // INPUT: network
   const network = "goerli";
 
-  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+  const divaOracleTellorAddress =
+    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
   const divaAddress = DIVA_ADDRESS[network];
 
   // INPUT: id of existing pool
-  const poolId = 62;
+  const poolId = 180;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -34,14 +35,14 @@ async function main() {
   );
 
   // Set final reference value
-  const tx = await divaOracleTellor.setFinalReferenceValue(poolId);
+  const tx = await divaOracleTellor.setFinalReferenceValue(poolId, [], false);
   const receipt = await tx.wait();
 
   // Get newly created pool Id from event
   const finalReferenceValueSetEvent = receipt.events.find(
     (item) => item.event === "FinalReferenceValueSet"
   );
-  console.log('finalReferenceValueSetEvent', finalReferenceValueSetEvent)
+  console.log("finalReferenceValueSetEvent", finalReferenceValueSetEvent);
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);

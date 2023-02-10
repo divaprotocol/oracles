@@ -1,6 +1,6 @@
 /**
  * Script to claim tips. Make sure you run this script after set finial reference value.
- * Run `yarn divaTellor:claimTips`
+ * Run `yarn divaTellor:claimReward`
  */
 
 const { ethers } = require("hardhat");
@@ -32,7 +32,7 @@ async function main() {
     DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of existing pool
-  const poolId = 4;
+  const poolId = 180;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -48,7 +48,9 @@ async function main() {
   const reporter = (await divaOracleTellor.getReporters([poolId]))[0];
 
   // Get tipping tokens
-  const tippingTokens = (await divaOracleTellor.getTippingTokens([poolId]))[0];
+  const tippingTokens = await divaOracleTellor.getTippingTokens([
+    { poolId, startIndex: 0, endIndex: 1 },
+  ]);
 
   // Check conditions
   checkConditions(reporter, tippingTokens);
@@ -72,7 +74,11 @@ async function main() {
   console.log("Tips on DIVAOracleTellor contract before claim tips");
   await Promise.all(
     tippingTokens.map(async (tippingToken, index) => {
-      const tips = await divaOracleTellor.getTip(poolId, tippingToken);
+      const tips = (
+        await divaOracleTellor.getTipAmounts([
+          { poolId, tippingTokens: [tippingToken] },
+        ])
+      )[0][0];
       console.log(
         `Token address: ${tippingToken} Balance: ${formatUnits(
           tips,
@@ -99,8 +105,31 @@ async function main() {
     })
   );
 
+  // Get pool parameters
+  const poolParams = await diva.getPoolParameters(poolId);
+
+  // Connect to collateral token contract
+  const collateralToken = await ethers.getContractAt(
+    "MockERC20",
+    poolParams.collateralToken
+  );
+
+  // Get decimals of collateral token
+  const decimals = await collateralToken.decimals();
+
+  // Get collateral token balance of reporter before claiming the fee
+  const collateralTokenBalanceReporterBefore = formatUnits(
+    await collateralToken.balanceOf(reporter),
+    decimals
+  );
+
+  // Get fee claim before claiming the fee
+  const divaFeeBefore = formatUnits(
+    await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
+  );
+
   // Claim tips
-  const tx = await divaOracleTellor.claimTips(poolId, tippingTokens);
+  const tx = await divaOracleTellor.claimReward(poolId, tippingTokens, true);
   await tx.wait();
 
   // Check tips on DIVAOracleTellor contract after claim tips
@@ -108,7 +137,11 @@ async function main() {
   console.log("Tips on DIVAOracleTellor contract after claim tips");
   await Promise.all(
     tippingTokens.map(async (tippingToken, index) => {
-      const tips = await divaOracleTellor.getTip(poolId, tippingToken);
+      const tips = (
+        await divaOracleTellor.getTipAmounts([
+          { poolId, tippingTokens: [tippingToken] },
+        ])
+      )[0][0];
       console.log(
         `Token address: ${tippingToken} Balance: ${formatUnits(
           tips,
@@ -135,9 +168,31 @@ async function main() {
     })
   );
 
+  // Get collateral token balance of reporter after claiming the fee
+  const collateralTokenBalanceReporterAfter = formatUnits(
+    await collateralToken.balanceOf(reporter),
+    decimals
+  );
+
+  // Get fee claim after claiming the fee
+  const divaFeeAfter = formatUnits(
+    await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
+  );
+
   // Log relevant information
   console.log("DIVA address: ", diva.address);
   console.log("PoolId: ", poolId);
+  console.log("Reporter address: ", reporter);
+  console.log("Get fee claim BEFORE claiming DIVA fee: ", divaFeeBefore);
+  console.log("Get fee claim AFTER claiming DIVA fee: ", divaFeeAfter);
+  console.log(
+    "Collateral token balance of reporter BEFORE claim DIVA fee: ",
+    collateralTokenBalanceReporterBefore
+  );
+  console.log(
+    "Collateral token balance of reporter AFTER claim DIVA fee: ",
+    collateralTokenBalanceReporterAfter
+  );
 }
 
 main()

@@ -43,13 +43,21 @@ const checkConditions = (
 
 const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
   // Get tips
-  const tippingTokens = (await divaOracleTellor.getTippingTokens([poolId]))[0];
+  const tippingTokens = (
+    await divaOracleTellor.getTippingTokens([
+      { poolId, startIndex: 0, endIndex: 1 },
+    ])
+  )[0];
   if (tippingTokens.length) {
     await Promise.all(
       tippingTokens.map(async (tippingToken) =>
         console.log(
           `Tips for ${tippingToken} is: `,
-          (await divaOracleTellor.getTip(poolId, tippingToken)).toString()
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId, tippingTokens: [tippingToken] },
+            ])
+          )[0][0].toString()
         )
       )
     );
@@ -82,7 +90,7 @@ async function main() {
     DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
-  const poolId = 62;
+  const poolId = 180;
 
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;
