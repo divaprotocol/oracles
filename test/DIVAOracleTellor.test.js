@@ -1774,7 +1774,7 @@ describe("DIVAOracleTellor", () => {
       ).to.eq(0);
     });
 
-    it("Should not change anything if calls the `claimReward` function with an empty `_tippingTokens` array and `false` as `_claimDIVAFee` value", async function () {
+    it("Should not change anything if `claimReward` function is called with an empty `_tippingTokens` array and `false` as `_claimDIVAFee` value", async function () {
       // ---------
       // Arrange: Set final reference value and check tips and DIVA fee
       // ---------
@@ -1856,7 +1856,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Confirm that DIVA fee hans't been changed
+      // Confirm that DIVA fee hasn't been changed
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         0
       );
