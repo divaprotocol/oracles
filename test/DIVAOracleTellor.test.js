@@ -1466,7 +1466,7 @@ describe("DIVAOracleTellor", () => {
     });
   });
 
-  describe("claim", async () => {
+  describe("claimReward", async () => {
     beforeEach(async () => {
       // Add tips
       await divaOracleTellor
@@ -1505,7 +1505,7 @@ describe("DIVAOracleTellor", () => {
         .connect(user2)
         .setFinalReferenceValue(latestPoolId, [], false);
 
-      // Check tips and balances for tippingToken1 before calling `claim`
+      // Check tips and balances for tippingToken1 before calling `claimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -1518,7 +1518,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
 
-      // Check tips and balances for tippingToken2 before calling `claim`
+      // Check tips and balances for tippingToken2 before calling `claimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -1545,9 +1545,9 @@ describe("DIVAOracleTellor", () => {
       ).to.eq(settlementFeeAmount);
 
       // ---------
-      // Act: Call `claim` function
+      // Act: Call `claimReward` function
       // ---------
-      await divaOracleTellor.claim(
+      await divaOracleTellor.claimReward(
         latestPoolId,
         [tippingToken1.address, tippingToken2.address],
         false
@@ -1597,7 +1597,7 @@ describe("DIVAOracleTellor", () => {
         .connect(user2)
         .setFinalReferenceValue(latestPoolId, [], false);
 
-      // Check tips and balances for tippingToken1 before calling `claim`
+      // Check tips and balances for tippingToken1 before calling `claimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -1610,7 +1610,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
 
-      // Check tips and balances for tippingToken2 before calling `claim`
+      // Check tips and balances for tippingToken2 before calling `claimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -1637,9 +1637,9 @@ describe("DIVAOracleTellor", () => {
       ).to.eq(settlementFeeAmount);
 
       // ---------
-      // Act: Call `claim` function
+      // Act: Call `claimReward` function
       // ---------
-      await divaOracleTellor.claim(latestPoolId, [], true);
+      await divaOracleTellor.claimReward(latestPoolId, [], true);
 
       // ---------
       // Assert: Check that DIVA fee was claimed but tips remain untouched
@@ -1690,7 +1690,7 @@ describe("DIVAOracleTellor", () => {
         .connect(user2)
         .setFinalReferenceValue(latestPoolId, [], false);
 
-      // Check tips and balances for tippingToken1 before calling `claim`
+      // Check tips and balances for tippingToken1 before calling `claimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -1703,7 +1703,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
 
-      // Check tips and balances for tippingToken2 before calling `claim`
+      // Check tips and balances for tippingToken2 before calling `claimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -1730,9 +1730,9 @@ describe("DIVAOracleTellor", () => {
       ).to.eq(settlementFeeAmount);
 
       // ---------
-      // Act: Call `claim` function
+      // Act: Call `claimReward` function
       // ---------
-      await divaOracleTellor.claim(
+      await divaOracleTellor.claimReward(
         latestPoolId,
         [tippingToken1.address, tippingToken2.address],
         true
@@ -1780,10 +1780,10 @@ describe("DIVAOracleTellor", () => {
 
     it("Should revert if users try to claim tips and DIVA fee for not confirmed pool", async () => {
       // ---------
-      // Act & Assert: Confirm that `claim` function will fail if called before `setFinalReferenceValue` function is called
+      // Act & Assert: Confirm that `claimReward` function will fail if called before `setFinalReferenceValue` function is called
       // ---------
       await expect(
-        divaOracleTellor.claim(
+        divaOracleTellor.claimReward(
           latestPoolId,
           [tippingToken1.address, tippingToken2.address],
           true
@@ -1806,9 +1806,9 @@ describe("DIVAOracleTellor", () => {
         .setFinalReferenceValue(latestPoolId, [], false);
 
       // ---------
-      // Act: Call `claim` function
+      // Act: Call `claimReward` function
       // ---------
-      const tx = await divaOracleTellor.claim(
+      const tx = await divaOracleTellor.claimReward(
         latestPoolId,
         [tippingToken1.address, tippingToken2.address],
         true
@@ -1837,7 +1837,7 @@ describe("DIVAOracleTellor", () => {
     });
   });
 
-  describe("batchClaim", async () => {
+  describe("batchClaimReward", async () => {
     let poolId1, poolId2;
     let tippingAmount1ForPoolId1, tippingAmount2ForPoolId1;
     let tippingAmount1ForPoolId2, tippingAmount2ForPoolId2;
@@ -1932,7 +1932,7 @@ describe("DIVAOracleTellor", () => {
         .connect(user2)
         .setFinalReferenceValue(poolId2, [], false);
 
-      // Check tips and balances for tippingToken1 before calling `batchClaim`
+      // Check tips and balances for tippingToken1 before calling `batchClaimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -1952,7 +1952,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
 
-      // Check tips and balances for tippingToken2 before calling `batchClaim`
+      // Check tips and balances for tippingToken2 before calling `batchClaimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -1973,9 +1973,9 @@ describe("DIVAOracleTellor", () => {
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
       // ---------
-      // Act: Call `batchClaim` function
+      // Act: Call `batchClaimReward` function
       // ---------
-      await divaOracleTellor.batchClaim([
+      await divaOracleTellor.batchClaimReward([
         {
           poolId: poolId1,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
@@ -2043,7 +2043,7 @@ describe("DIVAOracleTellor", () => {
         .connect(user2)
         .setFinalReferenceValue(poolId2, [], false);
 
-      // Check tips and balances for tippingToken1 before calling `claim`
+      // Check tips and balances for tippingToken1 before calling `batchClaimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -2063,7 +2063,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
 
-      // Check tips and balances for tippingToken2 before calling `claim`
+      // Check tips and balances for tippingToken2 before calling `batchClaimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -2103,9 +2103,9 @@ describe("DIVAOracleTellor", () => {
       ).to.eq(settlementFeeAmount1.add(settlementFeeAmount2));
 
       // ---------
-      // Act: Call `batchClaim` function
+      // Act: Call `batchClaimReward` function
       // ---------
-      await divaOracleTellor.batchClaim([
+      await divaOracleTellor.batchClaimReward([
         {
           poolId: poolId1,
           tippingTokens: [],
@@ -2184,7 +2184,7 @@ describe("DIVAOracleTellor", () => {
         .connect(user2)
         .setFinalReferenceValue(poolId2, [], false);
 
-      // Check tips and balances for tippingToken1 before calling `batchClaim`
+      // Check tips and balances for tippingToken1 before calling `batchClaimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -2204,7 +2204,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
 
-      // Check tips and balances for tippingToken2 before calling `batchClaim`
+      // Check tips and balances for tippingToken2 before calling `batchClaimReward`
       expect(
         (
           await divaOracleTellor.getTipAmounts([
@@ -2244,9 +2244,9 @@ describe("DIVAOracleTellor", () => {
       ).to.eq(settlementFeeAmount1.add(settlementFeeAmount2));
 
       // ---------
-      // Act: Call `batchClaim` function
+      // Act: Call `batchClaimReward` function
       // ---------
-      await divaOracleTellor.batchClaim([
+      await divaOracleTellor.batchClaimReward([
         {
           poolId: poolId1,
           tippingTokens: [tippingToken1.address, tippingToken2.address],

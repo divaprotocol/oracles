@@ -386,5 +386,100 @@ contract DIVAOracleTellor is
         }
     }
 
-    function _setFinalReferenceValue(uint256 _poolId) private {}
+    function _setFinalReferenceValue(uint256 _poolId) private {
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
+
+        // Get queryId from poolId
+        bytes32 _queryId = getQueryId(_poolId);
+
+        // Find first oracle submission after or at expiryTime, if it exists
+        (
+            bytes memory _valueRetrieved,
+            uint256 _timestampRetrieved
+        ) = getDataAfter(_queryId, _params.expiryTime - 1);
+
+        // Check that data exists (_timestampRetrieved = 0 if it doesn't)
+        if (_timestampRetrieved == 0) {
+            revert NoOracleSubmissionAfterExpiryTime();
+        }
+
+        // Check that _minPeriodUndisputed has passed after _timestampRetrieved
+        if (block.timestamp - _timestampRetrieved < _minPeriodUndisputed) {
+            revert MinPeriodUndisputedNotPassed();
+        }
+
+        // Format values (18 decimals)
+        (
+            uint256 _formattedFinalReferenceValue,
+            uint256 _formattedCollateralToUSDRate
+        ) = abi.decode(_valueRetrieved, (uint256, uint256));
+
+        // Get address of reporter who will receive
+        address _reporter = tellor.getReporterByTimestamp(
+            _queryId,
+            _timestampRetrieved
+        );
+
+        // Set reporter with pool id
+        _poolIdToReporter[_poolId] = _reporter;
+        _reporterToPoolIds[_reporter].push(_poolId);
+
+        // Forward final value to DIVA contract. Allocates the fee as part of that process.
+        _diva.setFinalReferenceValue(
+            _poolId,
+            _formattedFinalReferenceValue,
+            _challengeable
+        );
+
+        uint256 _SCALING = uint256(
+            10**(18 - IERC20Metadata(_params.collateralToken).decimals())
+        );
+        // Get the current fee claim allocated to this contract address (msg.sender)
+        uint256 feeClaim = _diva.getClaim(
+            _params.collateralToken,
+            address(this)
+        ); // denominated in collateral token; integer with collateral token decimals
+
+        uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(
+            _formattedCollateralToUSDRate
+        ); // denominated in USD; integer with 18 decimals
+        uint256 feeToReporter;
+        uint256 feeToExcessRecipient;
+
+        if (feeClaimUSD > _maxFeeAmountUSD) {
+            // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in which case it will
+            // go into the else part, hence division by zero is not a problem
+            feeToReporter =
+                _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) /
+                _SCALING; // integer with collateral token decimals
+        } else {
+            feeToReporter = feeClaim;
+        }
+
+        feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
+
+        // Transfer fee claim to reporter and excessFeeRecipient
+        IDIVA.ArgsBatchTransferFeeClaim[]
+            memory _feeClaimTransfers = new IDIVA.ArgsBatchTransferFeeClaim[](
+                2
+            );
+        _feeClaimTransfers[0] = IDIVA.ArgsBatchTransferFeeClaim(
+            _reporter,
+            _params.collateralToken,
+            feeToReporter
+        );
+        _feeClaimTransfers[1] = IDIVA.ArgsBatchTransferFeeClaim(
+            _excessFeeRecipient,
+            _params.collateralToken,
+            feeToExcessRecipient
+        );
+        _diva.batchTransferFeeClaim(_feeClaimTransfers);
+
+        emit FinalReferenceValueSet(
+            _poolId,
+            _formattedFinalReferenceValue,
+            _params.expiryTime,
+            _timestampRetrieved
+        );
+    }
 }

@@ -105,19 +105,19 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @dev Function to claim tips
+     * @dev Function to claim tips and/or DIVA fee
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
-     * @param claimDIVAFee_ Flag showing whether to claim DIVA fee.
+     * @param _claimDIVAFee Flag showing whether to claim DIVA fee.
      */
     function claimReward(
         uint256 _poolId,
         address[] memory _tippingTokens,
-        bool claimDIVAFee_
+        bool _claimDIVAFee
     ) external;
 
     /**
-     * @dev Batch version of `claimTips`
+     * @dev Batch version of `claimReward`
      * @param _argsBatchClaimReward Struct array containing pool ids, tipping
      * tokens, and `claimDIVAFee` flag
      */
@@ -129,12 +129,12 @@ interface IDIVAOracleTellor {
      * @dev Function to set the final reference value for a given `_poolId`.
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
-     * @param claimDIVAFee_ Flag showing whether to claim DIVA fee.
+     * @param _claimDIVAFee Flag showing whether to claim DIVA fee.
      */
     function setFinalReferenceValue(
         uint256 _poolId,
         address[] calldata _tippingTokens,
-        bool claimDIVAFee_
+        bool _claimDIVAFee
     ) external;
 
     /**
