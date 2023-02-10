@@ -65,8 +65,15 @@ interface IDIVAOracleTellor {
         uint256 timestamp
     );
 
-    // Struct for `batchClaimTips`, `batchClaimTipsAndDIVAFee`, `getTipAmount` function input
-    struct ArgsBatchInput {
+    // Struct for `batchClaim` function input
+    struct ArgsBatchClaim {
+        uint256 poolId;
+        address[] tippingTokens;
+        bool claimDIVAFee;
+    }
+
+    // Struct for `getTipAmounts` function input
+    struct ArgsGetTipAmounts {
         uint256 poolId;
         address[] tippingTokens;
     }
@@ -101,47 +108,20 @@ interface IDIVAOracleTellor {
      * @dev Function to claim tips
      * @param _poolId The unique identifier of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
+     * @param claimDIVAFee_ Flag showing whether to claim DIVA fee.
      */
-    function claimTips(uint256 _poolId, address[] memory _tippingTokens)
-        external;
+    function claim(
+        uint256 _poolId,
+        address[] memory _tippingTokens,
+        bool claimDIVAFee_
+    ) external;
 
     /**
      * @dev Batch version of `claimTips`
-     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
+     * @param _argsBatchClaim Struct array containing pool ids, tipping
+     * tokens, and `claimDIVAFee` flag
      */
-    function batchClaimTips(ArgsBatchInput[] calldata _argsBatchInputs)
-        external;
-
-    /**
-     * @dev Function to claim fee from DIVA
-     * @param _poolId The unique identifier of the pool.
-     */
-    function claimDIVAFee(uint256 _poolId) external;
-
-    /**
-     * @dev Batch version of `claimDIVAFee`
-     * @param _poolIds Array of pool id.
-     */
-    function batchClaimDIVAFee(uint256[] calldata _poolIds) external;
-
-    /**
-     * @dev Function to claim tips from DIVAOracleTellor and claim fee
-     * from DIVA
-     * @param _poolId The unique identifier of the pool.
-     * @param _tippingTokens Array of tipping tokens to claim tip.
-     */
-    function claimTipsAndDIVAFee(
-        uint256 _poolId,
-        address[] memory _tippingTokens
-    ) external;
-
-    /**
-     * @dev Batch version of `claimTipsAndDIVAFee`
-     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
-     */
-    function batchClaimTipsAndDIVAFee(
-        ArgsBatchInput[] calldata _argsBatchInputs
-    ) external;
+    function batchClaim(ArgsBatchClaim[] calldata _argsBatchClaim) external;
 
     /**
      * @dev Function to set the final reference value for a given `_poolId`.
@@ -220,9 +200,10 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Returns the tipping amount
-     * @param _argsBatchInputs Struct array containing pool ids and tipping tokens
+     * @param _argsGetTipAmounts Struct array containing pool ids
+     * and tipping tokens
      */
-    function getTipAmounts(ArgsBatchInput[] calldata _argsBatchInputs)
+    function getTipAmounts(ArgsGetTipAmounts[] calldata _argsGetTipAmounts)
         external
         view
         returns (uint256[][] memory);
