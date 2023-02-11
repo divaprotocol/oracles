@@ -32,7 +32,7 @@ async function main() {
     DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of existing pool
-  const poolId = 180;
+  const poolId = 186;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -48,9 +48,11 @@ async function main() {
   const reporter = (await divaOracleTellor.getReporters([poolId]))[0];
 
   // Get tipping tokens
-  const tippingTokens = await divaOracleTellor.getTippingTokens([
-    { poolId, startIndex: 0, endIndex: 1 },
-  ]);
+  const tippingTokens = (
+    await divaOracleTellor.getTippingTokens([
+      { poolId, startIndex: 0, endIndex: 1 },
+    ])
+  )[0];
 
   // Check conditions
   checkConditions(reporter, tippingTokens);
