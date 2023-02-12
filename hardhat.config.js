@@ -40,25 +40,6 @@ module.exports = {
         mnemonic: MNEMONIC,
       },
     },
-    ropsten: {
-      url: process.env.RPC_URL_ROPSTEN,
-      accounts: {
-        mnemonic: MNEMONIC,
-      },
-      gasPrice: 8000000000,
-    },
-    rinkeby: {
-      url: process.env.RPC_URL_RINKEBY,
-      accounts: {
-        mnemonic: MNEMONIC,
-      },
-    },
-    kovan: {
-      url: process.env.RPC_URL_KOVAN,
-      accounts: {
-        mnemonic: MNEMONIC,
-      },
-    },
     polygon_mumbai: {
       url: process.env.RPC_URL_POLYGON_MUMBAI,
       accounts: {

@@ -10,9 +10,12 @@ const { parseUnits, formatUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const TELLOR_PLAYGROUND_ABI = require("../../contracts/abi/TellorPlayground.json");
+const TELLOR_ABI = require("../../contracts/abi/Tellor.json");
 
 const {
   DIVA_ADDRESS,
+  TELLOR_VERSION,
+  TELLOR_ADDRESS,
   TELLOR_PLAYGROUND_ADDRESS,
   DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
 } = require("../../utils/constants");
@@ -43,13 +46,21 @@ const checkConditions = (
 
 const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
   // Get tips
-  const tippingTokens = (await divaOracleTellor.getTippingTokens([poolId]))[0];
+  const tippingTokens = (
+    await divaOracleTellor.getTippingTokens([
+      { poolId, startIndex: 0, endIndex: 1 },
+    ])
+  )[0];
   if (tippingTokens.length) {
     await Promise.all(
       tippingTokens.map(async (tippingToken) =>
         console.log(
           `Tips for ${tippingToken} is: `,
-          (await divaOracleTellor.getTip(poolId, tippingToken)).toString()
+          (
+            await divaOracleTellor.getTipAmounts([
+              { poolId, tippingTokens: [tippingToken] },
+            ])
+          )[0][0].toString()
         )
       )
     );
@@ -75,14 +86,22 @@ const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
 async function main() {
   // INPUT: network
   const network = "goerli";
+  const tellorVersion = TELLOR_VERSION.ACTUAL;
 
+  let tellorAddress;
+  if (tellorVersion == TELLOR_VERSION.PLAYGROUND) {
+    tellorAddress = TELLOR_PLAYGROUND_ADDRESS[network];
+  } else if (tellorVersion == TELLOR_VERSION.ACTUAL) {
+    tellorAddress = TELLOR_ADDRESS[network];
+  } else {
+    throw Error("Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL");
+  }
   const divaAddress = DIVA_ADDRESS[network];
-  const tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
   const divaOracleTellorAddress =
     DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
-  const poolId = 62;
+  const poolId = 186;
 
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -100,9 +119,11 @@ async function main() {
   );
 
   // Connect to tellor contract
-  const tellorPlayground = await ethers.getContractAt(
-    TELLOR_PLAYGROUND_ABI,
-    tellorPlaygroundAddress
+  const tellor = await ethers.getContractAt(
+    tellorVersion == TELLOR_VERSION.PLAYGROUND
+      ? TELLOR_PLAYGROUND_ABI
+      : TELLOR_ABI,
+    tellorAddress
   );
 
   // Get pool parameters for the specified poolId
@@ -124,7 +145,7 @@ async function main() {
   // Prepare Tellor value submission
   const [queryData, queryId] = getQueryDataAndId(poolId, divaAddress, chainId);
 
-  // Prepare values and submit to tellorPlayground
+  // Prepare values and submit to tellor contract
   const finalReferenceValue = parseUnits("25000");
   const collateralToUSDRate = parseUnits("1.00");
   const oracleValue = encodeToOracleValue(
@@ -132,24 +153,27 @@ async function main() {
     collateralToUSDRate
   );
 
-  // Submit value to tellorPlayground
-  const tx = await tellorPlayground
+  // Submit value to tellor contract
+  const tx = await tellor
     .connect(reporter)
     .submitValue(queryId, oracleValue, 0, queryData);
   await tx.wait();
 
-  // Check that timestamp and values have been set in tellorPlayground contract
-  const tellorDataTimestamp = await tellorPlayground.timestamps(queryId, 0);
-  const tellorValue = await tellorPlayground.values(
-    queryId,
-    tellorDataTimestamp
-  );
+  // Check that timestamp and values have been set in tellor contract
+  const tellorDataTimestamp =
+    tellorVersion == TELLOR_VERSION.PLAYGROUND
+      ? await tellor.timestamps(queryId, 0)
+      : await tellor.getTimestampbyQueryIdandIndex(queryId, 0);
+  const tellorValue =
+    tellorVersion == TELLOR_VERSION.PLAYGROUND
+      ? await tellor.values(queryId, tellorDataTimestamp)
+      : await tellor.getCurrentValue(queryId);
   const formattedTellorValue = decodeTellorValue(tellorValue);
 
   // Log relevant information
   console.log("DIVA address: ", diva.address);
   console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
-  console.log("Tellor playground address: ", tellorPlayground.address);
+  console.log("Tellor playground address: ", tellor.address);
   console.log("PoolId: ", poolId);
   console.log("Reporter address: " + reporter.address);
   console.log("queryId", queryId);

@@ -34,7 +34,7 @@ async function main() {
     DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
 
   // INPUT: id of pool
-  const poolId = 59;
+  const poolId = 180;
 
   // Get signer of tipper
   const [tipper] = await ethers.getSigners();
@@ -71,7 +71,11 @@ async function main() {
 
   // Get tips before add tip
   const tipsBefore = formatUnits(
-    await divaOracleTellor.getTip(poolId, tippingTokenContract.address),
+    (
+      await divaOracleTellor.getTipAmounts([
+        { poolId, tippingTokens: [tippingTokenContract.address] },
+      ])
+    )[0][0],
     decimals
   );
 
@@ -83,7 +87,11 @@ async function main() {
 
   // Get tips after add tip
   const tipsAfter = formatUnits(
-    await divaOracleTellor.getTip(poolId, tippingTokenContract.address),
+    (
+      await divaOracleTellor.getTipAmounts([
+        { poolId, tippingTokens: [tippingTokenContract.address] },
+      ])
+    )[0][0],
     decimals
   );
 
