@@ -14,7 +14,7 @@ const {
 } = require("../../utils/constants"); //  DIVA Protocol v0.9.0
 const { checkPeriodMinPeriodUndisputed } = require("../../utils/utils");
 
-// Load relevant variables from `.env` file
+// Load relevant variable from `.env` file
 const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
 
 async function main() {

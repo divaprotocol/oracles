@@ -1,25 +1,18 @@
 /**
- * Script to deploy the DIVA Protocol system on multiple EVM chains with
+ * Script to deploy the DIVAOracleTellor constract on multiple EVM chains with
  * a deterministic address. This script makes use of the xdeployer plug-in:
  * https://www.npmjs.com/package/xdeployer
  * To better understand the steps involved, it is recommended to
- * get familiar with the deployment process on a single chain (see `deploySecondary.ts`)
+ * get familiar with the deployment process on a single chain (see `deployTellor.js`)
  *
  * PREPARATION: In order to run the script successfully, a few preparatory steps are necessary:
- * - Copy `xdeploy-config.example.ts` and rename it to `xdeploy-config.ts`. This file is required as
+ * - Copy `xdeploy-config.example.js` and rename it to `xdeploy-config.js`. This file is required as
  * it represents part of the xdeployer configuration.
- * - Specify the chain names that you want to deploy under `XDEPLOY_CHAINS` in `../../constants`.
+ * - Specify the chain names that you want to deploy under `XDEPLOY_CHAINS` in `../../utils/constants`.
  * - Make sure that the RPC endpoints for the corresponding chains are set in the `.env` file and
  * follow the pattern `RPC_URL_*` where `*` is to be replaced with the network name in upper case.
  * - Make sure that the `SALT`, which is specified in the `.env`, hasn't been used yet.
  * If you have already used it, you will be notified in the deployment failure message.
- *
- * IMPORTANT:
- * - Run main chain deployment first.
- * - Update OWNERSHIP_CONTRACT_MAIN_CHAIN in `.env` file afterwards.
- * - Make sure the main chain is not listed in XDEPLOY_CHAINS, otherwise you will waste money for gas.
- * - Only deploy on chains where the Tellor address is the same. If the Tellor address deviates, run
- * the multi-chain deployment process twice using two different sets of chains.
  *
  * Run: `yarn xdeploy:secondary:diva`
  */
@@ -62,7 +55,7 @@ const main = async () => {
   }
 
   const periodMinPeriodUndisputed = 10; // IMPORTANT to set correctly!; input in seconds
-  // checkPeriodMinPeriodUndisputed(periodMinPeriodUndisputed);
+  checkPeriodMinPeriodUndisputed(periodMinPeriodUndisputed);
   const maxFeeAmountUSD = parseEther("10").toString(); // $10
   const divaAddress = DIVA_ADDRESS[defaultChain];
 

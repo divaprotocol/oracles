@@ -17,7 +17,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 
 const MNEMONIC = process.env.MNEMONIC;
 
-// Need to update the XDEPLOY_CHAINS to the chains you want to deploy DIVA on when you deploy it using xdeployer
+// Need to update the XDEPLOY_CHAINS to the chains you want to deploy contract on when you deploy it using xdeployer
 const generalXdeployConfig = {
   salt: process.env.SALT,
   signer: process.env.PRIVATE_KEY,
