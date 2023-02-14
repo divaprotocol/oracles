@@ -56,7 +56,7 @@ module.exports = {
       },
     },
     polygon_mumbai: {
-      url: process.env.RPC_URL_POLYGON_MUMBAI,
+      url: process.env.RPC_URL_MUMBAI,
       accounts: {
         mnemonic: MNEMONIC,
       },
