@@ -12,6 +12,10 @@ const {
   TELLOR_VERSION,
   DIVA_ADDRESS,
 } = require("../../utils/constants"); //  DIVA Protocol v0.9.0
+const { checkPeriodMinPeriodUndisputed } = require("../../utils/utils");
+
+// Load relevant variables from `.env` file
+const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
 
 async function main() {
   const network = "goerli";
@@ -25,13 +29,10 @@ async function main() {
   } else {
     throw Error("Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL");
   }
-  
+
   const divaAddress = DIVA_ADDRESS[network];
-  const excessFeeRecipient = "0x1EE5730C710cF06dFA7952D61A321eC8e16b9d3A"; // temporary address
   const periodMinPeriodUndisputed = 10; // IMPORTANT to set correctly!; input in seconds
-  if (periodMinPeriodUndisputed < 3600 || periodMinPeriodUndisputed > 64800) {
-    throw Error("Min period undisputed is too small or too large")
-  }
+  checkPeriodMinPeriodUndisputed(periodMinPeriodUndisputed);
   const maxFeeAmountUSD = parseEther("10"); // $10
 
   const divaOracleTellorFactory = await ethers.getContractFactory(
@@ -39,7 +40,7 @@ async function main() {
   );
   const divaOracleTellor = await divaOracleTellorFactory.deploy(
     tellorAddress,
-    excessFeeRecipient,
+    EXCESS_FEE_RECIPIENT,
     periodMinPeriodUndisputed,
     maxFeeAmountUSD,
     divaAddress

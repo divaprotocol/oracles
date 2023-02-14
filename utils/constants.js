@@ -73,6 +73,8 @@ const STATUS = {
 const ONE_HOUR = 3600;
 const TEN_MINS = 600;
 
+const XDEPLOY_CHAINS = ["goerli", "mumbai"];
+
 exports.DIVA_ADDRESS = DIVA_ADDRESS;
 exports.BOND_FACTORY = BOND_FACTORY;
 exports.STATUS = STATUS;
@@ -85,3 +87,4 @@ exports.COLLATERAL_TOKENS = COLLATERAL_TOKENS;
 exports.ONE_HOUR = ONE_HOUR;
 exports.TEN_MINS = TEN_MINS;
 exports.TELLOR_VERSION = TELLOR_VERSION;
+exports.XDEPLOY_CHAINS = XDEPLOY_CHAINS;
