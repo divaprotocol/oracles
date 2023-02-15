@@ -23,6 +23,12 @@ interface IDIVAOracleTellor {
     // before the minimum period undisputed period has passed
     error MinPeriodUndisputedNotPassed();
 
+    // Thrown if zero address is provided as ownershipContract
+    error ZeroOwnershipContractAddress();
+
+    // Thrown if `msg.sender` is not contract owner
+    error NotContractOwner(address _user, address _contractOwner);
+
     /**
      * @notice Emitted when the tip is added.
      * @param poolId The Id of an existing derivatives pool

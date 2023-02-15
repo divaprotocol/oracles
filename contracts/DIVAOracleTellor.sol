@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./UsingTellor.sol";
 import "./interfaces/IDIVAOracleTellor.sol";
 import "./interfaces/IDIVA.sol";
+import "./interfaces/IDIVAOwnershipShared.sol";
 import "./libraries/SafeDecimalMath.sol";
 
-contract DIVAOracleTellor is
-    UsingTellor,
-    IDIVAOracleTellor,
-    Ownable,
-    ReentrancyGuard
-{
+contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
     using SafeDecimalMath for uint256;
 
@@ -25,6 +20,7 @@ contract DIVAOracleTellor is
     mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
     mapping(address => uint256[]) private _reporterToPoolIds; // mapping reporter to poolIds
 
+    address private _ownershipContract;
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
     address private _excessFeeRecipient;
     uint32 private _minPeriodUndisputed;
@@ -38,13 +34,27 @@ contract DIVAOracleTellor is
         _;
     }
 
+    modifier onlyOwner() {
+        address _owner = _contractOwner();
+        if (msg.sender != _owner) {
+            revert NotContractOwner(msg.sender, _owner);
+        }
+        _;
+    }
+
     constructor(
+        address ownershipContract_,
         address payable tellorAddress_,
         address excessFeeRecipient_,
         uint32 minPeriodUndisputed_,
         uint256 maxFeeAmountUSD_,
         address diva_
     ) UsingTellor(tellorAddress_) {
+        if (ownershipContract_ == address(0)) {
+            revert ZeroOwnershipContractAddress();
+        }
+
+        _ownershipContract = ownershipContract_;
         _challengeable = false;
         _excessFeeRecipient = excessFeeRecipient_;
         _minPeriodUndisputed = minPeriodUndisputed_;
@@ -349,6 +359,10 @@ contract DIVAOracleTellor is
                     abi.encode(_poolId, address(_diva), block.chainid)
                 )
             );
+    }
+
+    function _contractOwner() internal view returns (address) {
+        return IDIVAOwnershipShared(_ownershipContract).getCurrentOwner();
     }
 
     function _claimReward(
