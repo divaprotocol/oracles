@@ -409,6 +409,16 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             );
     }
 
+    function _getCurrentExcessFeeRecipient() internal view returns (address) {
+        // Return the new excess fee recipient if `block.timestamp` is at or
+        // past the activation time, else return the current excess fee
+        // recipient
+        return
+            block.timestamp < _startTimeExcessFeeRecipient
+                ? _previousExcessFeeRecipient
+                : _excessFeeRecipient;
+    }
+
     function _contractOwner() internal view returns (address) {
         return IDIVAOwnershipShared(_ownershipContract).getCurrentOwner();
     }
@@ -531,7 +541,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             feeToReporter
         );
         _feeClaimTransfers[1] = IDIVA.ArgsBatchTransferFeeClaim(
-            _excessFeeRecipient,
+            _getCurrentExcessFeeRecipient(),
             _params.collateralToken,
             feeToExcessRecipient
         );
