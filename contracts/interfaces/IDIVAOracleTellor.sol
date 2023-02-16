@@ -29,6 +29,13 @@ interface IDIVAOracleTellor {
     // Thrown if `msg.sender` is not contract owner
     error NotContractOwner(address _user, address _contractOwner);
 
+    // Thrown in `updateExcessFeeRecipient` if there is already a
+    // pending excess fee recipient update
+    error PendingExcessFeeRecipientUpdate(
+        uint256 _timestampBlock,
+        uint256 _startTimeFallbackDataProvider
+    );
+
     /**
      * @notice Emitted when the tip is added.
      * @param poolId The Id of an existing derivatives pool
@@ -69,6 +76,12 @@ interface IDIVAOracleTellor {
         uint256 finalValue,
         uint256 expiryTime,
         uint256 timestamp
+    );
+
+    event ExcessFeeRecipientUpdated(
+        address indexed from,
+        address indexed excessFeeRecipient,
+        uint256 startTimeExcessFeeRecipient
     );
 
     // Struct for `batchClaim` function input
@@ -148,7 +161,7 @@ interface IDIVAOracleTellor {
      * Only callable by contract owner.
      * @param _newExcessFeeRecipient New `_excessFeeRecipient`.
      */
-    function setExcessFeeRecipient(address _newExcessFeeRecipient) external;
+    function updateExcessFeeRecipient(address _newExcessFeeRecipient) external;
 
     /**
      * @dev Function to update `_minPeriodUndisputed` with minimum value of
@@ -175,7 +188,14 @@ interface IDIVAOracleTellor {
     /**
      * @dev Returns the excess fee recipient address
      */
-    function getExcessFeeRecipient() external view returns (address);
+    function getExcessFeeRecipientInfo()
+        external
+        view
+        returns (
+            address previousExcessFeeRecipient,
+            address excessFeeRecipient,
+            uint256 startTimeExcessFeeRecipient
+        );
 
     /**
      * @dev Returns the minimum period (in seconds) a reported value has

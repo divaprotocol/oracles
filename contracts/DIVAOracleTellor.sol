@@ -22,7 +22,11 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
 
     address private _ownershipContract;
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
+
+    address private _previousExcessFeeRecipient;
     address private _excessFeeRecipient;
+    uint256 private _startTimeExcessFeeRecipient;
+
     uint32 private _minPeriodUndisputed;
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
@@ -117,7 +121,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _claimReward(_poolId, _tippingTokens, _claimDIVAFee);
     }
 
-    function setExcessFeeRecipient(address _newExcessFeeRecipient)
+    function updateExcessFeeRecipient(address _newExcessFeeRecipient)
         external
         override
         onlyOwner
@@ -125,7 +129,34 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         if (_newExcessFeeRecipient == address(0)) {
             revert ZeroExcessFeeRecipient();
         }
+
+        // Confirm that there is no pending fallback data provider update.
+        // Revoke to update pending value.
+        if (_startTimeExcessFeeRecipient > block.timestamp) {
+            revert PendingExcessFeeRecipientUpdate(
+                block.timestamp,
+                _startTimeExcessFeeRecipient
+            );
+        }
+
+        // Store current excess fee recipient in `_previousExcessFeeRecipient`
+        // variable
+        _previousExcessFeeRecipient = _excessFeeRecipient;
+
+        // Set time at which the new excess fee recipient will become applicable
+        uint256 _startTimeNewExcessFeeRecipient = block.timestamp + 2 days;
+
+        // Store start time and new excess fee recipient
+        _startTimeExcessFeeRecipient = _startTimeNewExcessFeeRecipient;
         _excessFeeRecipient = _newExcessFeeRecipient;
+
+        // Log the new fallback data provider as well as the address that
+        // initiated the change
+        emit ExcessFeeRecipientUpdated(
+            msg.sender,
+            _newExcessFeeRecipient,
+            _startTimeNewExcessFeeRecipient
+        );
     }
 
     function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed)
@@ -151,8 +182,25 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return _challengeable;
     }
 
-    function getExcessFeeRecipient() external view override returns (address) {
-        return _excessFeeRecipient;
+    function getExcessFeeRecipientInfo()
+        external
+        view
+        override
+        returns (
+            address previousExcessFeeRecipient,
+            address excessFeeRecipient,
+            uint256 startTimeExcessFeeRecipient
+        )
+    {
+        (
+            previousExcessFeeRecipient,
+            excessFeeRecipient,
+            startTimeExcessFeeRecipient
+        ) = (
+            _previousExcessFeeRecipient,
+            _excessFeeRecipient,
+            _startTimeExcessFeeRecipient
+        );
     }
 
     function getMaxFeeAmountUSD() external view override returns (uint256) {
