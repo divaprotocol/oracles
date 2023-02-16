@@ -437,6 +437,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return _poolIdsLength;
     }
 
+    function getOwnershipContract() external view override returns (address) {
+        return _ownershipContract;
+    }
+
     function getQueryId(uint256 _poolId)
         public
         view

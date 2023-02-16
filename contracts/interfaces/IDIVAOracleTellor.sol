@@ -256,6 +256,8 @@ interface IDIVAOracleTellor {
         view
         returns (uint256[][] memory);
 
+    function getOwnershipContract() external view returns (address);
+
     /**
      * @dev Returns query id
      * @param _poolId The unique identifier of the pool.
