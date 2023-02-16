@@ -36,6 +36,13 @@ interface IDIVAOracleTellor {
         uint256 _startTimeFallbackDataProvider
     );
 
+    // Thrown in `updateExcessFeeRecipient` if there is already a
+    // pending excess fee recipient update
+    error PendingMaxFeeAmountUSDUpdate(
+        uint256 _timestampBlock,
+        uint256 _startTimeMaxFeeAmountUSD
+    );
+
     /**
      * @notice Emitted when the tip is added.
      * @param poolId The Id of an existing derivatives pool
@@ -82,6 +89,12 @@ interface IDIVAOracleTellor {
         address indexed from,
         address indexed excessFeeRecipient,
         uint256 startTimeExcessFeeRecipient
+    );
+
+    event MaxFeeAmountUSDUpdated(
+        address indexed from,
+        uint256 maxFeeAmountUSD,
+        uint256 startTimeMaxFeeAmountUSD
     );
 
     // Struct for `batchClaim` function input
@@ -177,7 +190,7 @@ interface IDIVAOracleTellor {
      * @param _newMaxFeeAmountUSD New amount expressed as an integer with
      * 18 decimals.
      */
-    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
+    function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
 
     /**
      * @dev Returns whether the oracle's data feed is challengeable or not.
@@ -206,7 +219,14 @@ interface IDIVAOracleTellor {
     /**
      * @dev Returns the max fee amount usd value with 18 decimals
      */
-    function getMaxFeeAmountUSD() external view returns (uint256);
+    function getMaxFeeAmountUSDInfo()
+        external
+        view
+        returns (
+            uint256 previousMaxFeeAmountUSD,
+            uint256 maxFeeAmountUSD,
+            uint256 startTimeMaxFeeAmountUSD
+        );
 
     /**
      * @dev Returns the array of tippingTokens for poolIds

@@ -21,7 +21,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     mapping(address => uint256[]) private _reporterToPoolIds; // mapping reporter to poolIds
 
     address private _ownershipContract;
+
+    uint256 private _previousMaxFeeAmountUSD; // expressed as an integer with 18 decimals
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
+    uint256 private _startTimeMaxFeeAmountUSD;
 
     address private _previousExcessFeeRecipient;
     address private _excessFeeRecipient;
@@ -56,6 +59,9 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     ) UsingTellor(tellorAddress_) {
         if (ownershipContract_ == address(0)) {
             revert ZeroOwnershipContractAddress();
+        }
+        if (_excessFeeRecipient == address(0)) {
+            revert ZeroExcessFeeRecipient();
         }
 
         _ownershipContract = ownershipContract_;
@@ -130,7 +136,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             revert ZeroExcessFeeRecipient();
         }
 
-        // Confirm that there is no pending fallback data provider update.
+        // Confirm that there is no pending excess fee recipient update.
         // Revoke to update pending value.
         if (_startTimeExcessFeeRecipient > block.timestamp) {
             revert PendingExcessFeeRecipientUpdate(
@@ -150,7 +156,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _startTimeExcessFeeRecipient = _startTimeNewExcessFeeRecipient;
         _excessFeeRecipient = _newExcessFeeRecipient;
 
-        // Log the new fallback data provider as well as the address that
+        // Log the new excess fee recipient as well as the address that
         // initiated the change
         emit ExcessFeeRecipientUpdated(
             msg.sender,
@@ -170,12 +176,38 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _minPeriodUndisputed = _newMinPeriodUndisputed;
     }
 
-    function setMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD)
+    function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD)
         external
         override
         onlyOwner
     {
+        // Confirm that there is no pending max fee amount USD update.
+        // Revoke to update pending value.
+        if (_startTimeMaxFeeAmountUSD > block.timestamp) {
+            revert PendingMaxFeeAmountUSDUpdate(
+                block.timestamp,
+                _startTimeMaxFeeAmountUSD
+            );
+        }
+
+        // Store current excess fee recipient in `_previousMaxFeeAmountUSD`
+        // variable
+        _previousMaxFeeAmountUSD = _maxFeeAmountUSD;
+
+        // Set time at which the new excess fee recipient will become applicable
+        uint256 _startTimeNewMaxFeeAmountUSD = block.timestamp + 2 days;
+
+        // Store start time and new excess fee recipient
+        _startTimeMaxFeeAmountUSD = _startTimeNewMaxFeeAmountUSD;
         _maxFeeAmountUSD = _newMaxFeeAmountUSD;
+
+        // Log the new max fee amount USD as well as the address that
+        // initiated the change
+        emit MaxFeeAmountUSDUpdated(
+            msg.sender,
+            _newMaxFeeAmountUSD,
+            _startTimeNewMaxFeeAmountUSD
+        );
     }
 
     function challengeable() external view override returns (bool) {
@@ -203,8 +235,21 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function getMaxFeeAmountUSD() external view override returns (uint256) {
-        return _maxFeeAmountUSD;
+    function getMaxFeeAmountUSDInfo()
+        external
+        view
+        override
+        returns (
+            uint256 previousMaxFeeAmountUSD,
+            uint256 maxFeeAmountUSD,
+            uint256 startTimeMaxFeeAmountUSD
+        )
+    {
+        (previousMaxFeeAmountUSD, maxFeeAmountUSD, startTimeMaxFeeAmountUSD) = (
+            _previousMaxFeeAmountUSD,
+            _maxFeeAmountUSD,
+            _startTimeMaxFeeAmountUSD
+        );
     }
 
     function getMinPeriodUndisputed() external view override returns (uint32) {
@@ -419,6 +464,15 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
                 : _excessFeeRecipient;
     }
 
+    function _getCurrentMaxFeeAmountUSD() internal view returns (uint256) {
+        // Return the new max fee amount USD if `block.timestamp` is at or past
+        // the activation time, else return the current max fee amount USD
+        return
+            block.timestamp < _startTimeMaxFeeAmountUSD
+                ? _previousMaxFeeAmountUSD
+                : _maxFeeAmountUSD;
+    }
+
     function _contractOwner() internal view returns (address) {
         return IDIVAOwnershipShared(_ownershipContract).getCurrentOwner();
     }
@@ -516,19 +570,20 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _formattedCollateralToUSDRate
         ); // denominated in USD; integer with 18 decimals
         uint256 feeToReporter;
-        uint256 feeToExcessRecipient;
 
-        if (feeClaimUSD > _maxFeeAmountUSD) {
-            // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in which case it will
-            // go into the else part, hence division by zero is not a problem
+        uint256 _currentMaxFeeAmountUSD = _getCurrentMaxFeeAmountUSD();
+        if (feeClaimUSD > _currentMaxFeeAmountUSD) {
+            // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in
+            // which case it will go into the else part, hence division by zero
+            // is not a problem
             feeToReporter =
-                _maxFeeAmountUSD.divideDecimal(_formattedCollateralToUSDRate) /
+                _currentMaxFeeAmountUSD.divideDecimal(
+                    _formattedCollateralToUSDRate
+                ) /
                 _SCALING; // integer with collateral token decimals
         } else {
             feeToReporter = feeClaim;
         }
-
-        feeToExcessRecipient = feeClaim - feeToReporter; // integer with collateral token decimals
 
         // Transfer fee claim to reporter and excessFeeRecipient
         IDIVA.ArgsBatchTransferFeeClaim[]
@@ -543,7 +598,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _feeClaimTransfers[1] = IDIVA.ArgsBatchTransferFeeClaim(
             _getCurrentExcessFeeRecipient(),
             _params.collateralToken,
-            feeToExcessRecipient
+            feeClaim - feeToReporter // integer with collateral token decimals
         );
         _diva.batchTransferFeeClaim(_feeClaimTransfers);
 
