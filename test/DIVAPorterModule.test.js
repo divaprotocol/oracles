@@ -10,7 +10,10 @@ const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const BOND_ABI = require("../contracts/abi/Bond.json");
 const BOND_FACTORY_ABI = require("../contracts/abi/BondFactory.json");
 const { DIVA_ADDRESS, BOND_FACTORY } = require("../utils/constants");
-const { setNextTimestamp, getLastTimestamp } = require("../utils/utils");
+const {
+  setNextBlockTimestamp,
+  getLastBlockTimestamp,
+} = require("../utils/utils");
 
 const network = "goerli"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
@@ -119,7 +122,7 @@ describe("DIVAPorterModule", () => {
       );
 
     // Create Bond contract using BondFactory contract
-    const currentBlockTimestamp = await getLastTimestamp();
+    const currentBlockTimestamp = await getLastBlockTimestamp();
     const tx = await bondFactory.connect(issuer).createBond(
       "DummyBond", // name
       "DBD", // symbol
@@ -220,7 +223,7 @@ describe("DIVAPorterModule", () => {
       );
 
       // Wait till the pool end
-      await setNextTimestamp(ethers.provider, gracePeriodEnd.toNumber());
+      await setNextBlockTimestamp(gracePeriodEnd.toNumber());
     });
 
     it("Should set an unpaid amount from Bond as the final reference value in DIVA Protocol", async () => {

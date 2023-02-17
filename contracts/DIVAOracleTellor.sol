@@ -61,7 +61,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         if (ownershipContract_ == address(0)) {
             revert ZeroOwnershipContractAddress();
         }
-        if (_excessFeeRecipient == address(0)) {
+        if (excessFeeRecipient_ == address(0)) {
             revert ZeroExcessFeeRecipient();
         }
 
