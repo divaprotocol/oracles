@@ -98,8 +98,8 @@ const execCommand = async (command) => {
 
 const exec = util.promisify(child_process.exec);
 
-const checkPeriodMinPeriodUndisputed = (periodMinPeriodUndisputed) => {
-  if (periodMinPeriodUndisputed < 3600 || periodMinPeriodUndisputed > 64800) {
+const checkMinPeriodUndisputed = (minPeriodUndisputed) => {
+  if (minPeriodUndisputed < 3600 || minPeriodUndisputed > 64800) {
     throw Error("Min period undisputed is too small or too large");
   }
 };
@@ -121,5 +121,5 @@ exports.getLastTimestamp = getLastTimestamp;
 exports.setNextTimestamp = setNextTimestamp;
 exports.generateXdeployConfig = generateXdeployConfig;
 exports.execCommand = execCommand;
-exports.checkPeriodMinPeriodUndisputed = checkPeriodMinPeriodUndisputed;
+exports.checkMinPeriodUndisputed = checkMinPeriodUndisputed;
 exports.writeFile = writeFile;
