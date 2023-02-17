@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { parseEther, parseUnits } = require("@ethersproject/units");
+const { parseUnits } = require("@ethersproject/units");
 const util = require("util");
 const fs = require("fs");
 const child_process = require("child_process");
@@ -39,7 +39,7 @@ const calcFee = (
   collateralTokenDecimals
 ) => {
   const SCALING = parseUnits("1", 18 - collateralTokenDecimals);
-  const UNIT = parseEther("1");
+  const UNIT = parseUnits("1");
 
   return fee.mul(collateralBalance).mul(SCALING).div(UNIT).div(SCALING);
 };
@@ -111,7 +111,7 @@ const writeFile = (fileName, content) => {
   });
 };
 
-const getTimestampInSeconds = () => {
+const getCurrentTimestampInSeconds = () => {
   return Math.floor(Date.now() / 1000);
 };
 
@@ -127,4 +127,4 @@ exports.generateXdeployConfig = generateXdeployConfig;
 exports.execCommand = execCommand;
 exports.checkMinPeriodUndisputed = checkMinPeriodUndisputed;
 exports.writeFile = writeFile;
-exports.getTimestampInSeconds = getTimestampInSeconds;
+exports.getCurrentTimestampInSeconds = getCurrentTimestampInSeconds;

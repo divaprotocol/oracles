@@ -4,7 +4,7 @@
  */
 
 const { ethers } = require("hardhat");
-const { parseEther } = require("ethers/lib/utils");
+const { parseUnits } = require("ethers/lib/utils");
 
 const {
   TELLOR_PLAYGROUND_ADDRESS,
@@ -29,13 +29,15 @@ async function main() {
   } else if (tellorVersion == TELLOR_VERSION.ACTUAL) {
     tellorAddress = TELLOR_ADDRESS[network];
   } else {
-    throw Error("Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL");
+    throw Error(
+      "Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL"
+    );
   }
 
   const divaAddress = DIVA_ADDRESS[network];
   const minPeriodUndisputed = Number(MIN_PERIOD_UNDISPUTED); // IMPORTANT to set correctly!; input in seconds
   checkMinPeriodUndisputed(minPeriodUndisputed);
-  const maxFeeAmountUSD = parseEther(MAX_FEE_AMOUNT_USD); // $10
+  const maxFeeAmountUSD = parseUnits(MAX_FEE_AMOUNT_USD); // $10
 
   const divaOracleTellorFactory = await ethers.getContractFactory(
     "DIVAOracleTellor"

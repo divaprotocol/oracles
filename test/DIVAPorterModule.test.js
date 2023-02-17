@@ -4,7 +4,7 @@ const {
   erc20DeployFixture,
   erc20AttachFixture,
 } = require("./fixtures/MockERC20Fixture");
-const { parseEther, parseUnits } = require("@ethersproject/units");
+const { parseUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const BOND_ABI = require("../contracts/abi/Bond.json");

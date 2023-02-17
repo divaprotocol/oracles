@@ -16,7 +16,7 @@
  *
  * Run: `yarn xdeploy:divaTellor`
  */
-const { parseEther } = require("ethers/lib/utils");
+const { parseUnits } = require("ethers/lib/utils");
 
 const {
   generateXdeployConfig,
@@ -55,13 +55,15 @@ const main = async () => {
   } else if (tellorVersion == TELLOR_VERSION.ACTUAL) {
     tellorAddress = TELLOR_ADDRESS[defaultChain];
   } else {
-    throw Error("Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL");
+    throw Error(
+      "Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL"
+    );
   }
 
   const divaAddress = DIVA_ADDRESS[defaultChain];
   const minPeriodUndisputed = Number(MIN_PERIOD_UNDISPUTED); // IMPORTANT to set correctly!; input in seconds
   checkMinPeriodUndisputed(minPeriodUndisputed);
-  const maxFeeAmountUSD = parseEther(MAX_FEE_AMOUNT_USD).toString();
+  const maxFeeAmountUSD = parseUnits(MAX_FEE_AMOUNT_USD).toString();
 
   // Generate the content of the xdeploy-args.js file used for the deployment of
   // the `DIVAOracleTellor` contract

@@ -6,7 +6,7 @@ const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const {
   getLastBlockTimestamp,
   setNextBlockTimestamp,
-  getTimestampInSeconds,
+  getCurrentTimestampInSeconds,
 } = require("../utils/utils");
 const {
   ONE_HOUR,
@@ -80,8 +80,8 @@ describe("DIVAOracleTellor", () => {
   let divaAddress = DIVA_ADDRESS[network];
   let mockDIVAOwnershipAddress;
 
+  let activationDelay;
   let maxFeeAmountUSD = parseUnits("10");
-  let newMaxFeeAmountUSD;
 
   let minPeriodUndisputed = ONE_HOUR;
   let newMinPeriodUndisputed;
@@ -151,6 +151,9 @@ describe("DIVAOracleTellor", () => {
     );
     // Check challengeable
     expect(await divaOracleTellor.challengeable()).to.eq(false);
+
+    // Get activation delay
+    activationDelay = await divaOracleTellor.getActivationDelay();
 
     // Set user start token balance
     const userStartTokenBalance = parseUnits("1000000");
@@ -2671,34 +2674,165 @@ describe("DIVAOracleTellor", () => {
     });
   });
 
-  // describe("setMaxFeeAmountUSD", async () => {
-  //   it("Should set maxFeeAmountUSD", async () => {
-  //     // ---------
-  //     // Arrange: Set newMaxFeeAmountUSD
-  //     // ---------
-  //     newMaxFeeAmountUSD = parseUnits("20");
+  describe("updateMaxFeeAmountUSD", async () => {
+    let newMaxFeeAmountUSD;
+    let maxFeeAmountUSDInfo;
 
-  //     // ---------
-  //     // Act: Call setMaxFeeAmountUSD function
-  //     // ---------
-  //     await divaOracleTellor.setMaxFeeAmountUSD(newMaxFeeAmountUSD);
+    it("Should update max fee amount USD info after deployment", async () => {
+      // ---------
+      // Arrange: Set `newMaxFeeAmountUSD` and check max fee amount USD info before updating
+      // ---------
+      newMaxFeeAmountUSD = parseUnits("20");
 
-  //     // ---------
-  //     // Assert: Check that maxFeeAmountUSD is updated on divaOracleTellor correctly
-  //     // ---------
-  //     expect(await divaOracleTellor.getMaxFeeAmountUSD()).to.eq(
-  //       newMaxFeeAmountUSD
-  //     );
-  //   });
-  // });
+      // Get max fee amount USD info
+      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
+      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(0);
+      expect(maxFeeAmountUSDInfo.previousMaxFeeAmountUSD).to.eq(0);
+      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(maxFeeAmountUSD);
+
+      // ---------
+      // Act: Call `updateMaxFeeAmountUSD` function
+      // ---------
+      await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD);
+
+      // ---------
+      // Assert: Check that maxFeeAmountUSD is updated on `divaOracleTellor` correctly
+      // ---------
+      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
+      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
+        (await getLastBlockTimestamp()) + activationDelay.toNumber()
+      );
+      expect(maxFeeAmountUSDInfo.previousMaxFeeAmountUSD).to.eq(
+        maxFeeAmountUSD
+      );
+      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(newMaxFeeAmountUSD);
+    });
+
+    it("Should be able to update max fee amount USD info after pending period passes", async () => {
+      // ---------
+      // Arrange: Update max fee amount USD
+      // ---------
+      // Call `updateMaxFeeAmountUSD` function (first update)
+      const newMaxFeeAmountUSD1 = parseUnits("20");
+      await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD1);
+
+      // Get the max fee amount USD info before second updating
+      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
+      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.gt(
+        getCurrentTimestampInSeconds()
+      );
+      expect(maxFeeAmountUSDInfo.previousMaxFeeAmountUSD).to.eq(
+        maxFeeAmountUSD
+      );
+      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(newMaxFeeAmountUSD1);
+
+      // Set next block timestamp as after of `startTimeMaxFeeAmountUSD`
+      await setNextBlockTimestamp(
+        maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD.toNumber() + 1
+      );
+
+      // Set max fee amount USD for second update
+      const newMaxFeeAmountUSD2 = parseUnits("30");
+
+      // ---------
+      // Act: Call `updateMaxFeeAmountUSD` function (second update)
+      // ---------
+      await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD2);
+
+      // ---------
+      // Assert: Check that the max fee amount USD info is updated on `divaOracleTellor` correctly
+      // ---------
+      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
+      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
+        (await getLastBlockTimestamp()) + activationDelay.toNumber()
+      );
+      expect(maxFeeAmountUSDInfo.previousMaxFeeAmountUSD).to.eq(
+        newMaxFeeAmountUSD1
+      );
+      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(newMaxFeeAmountUSD2);
+    });
+
+    // -------------------------------------------
+    // Reverts
+    // -------------------------------------------
+
+    it("Should revert if triggered by an account other than the contract owner", async () => {
+      // ---------
+      // Act & Assert: Confirm that function call reverts if called by an account other than the contract owner
+      // ---------
+      await expect(
+        divaOracleTellor.connect(user2).updateMaxFeeAmountUSD(parseUnits("20"))
+      ).to.be.revertedWith(
+        `NotContractOwner("${user2.address}", "${user1.address}")`
+      );
+    });
+
+    it("Should revert if there is pending max fee amount USD update", async () => {
+      // ---------
+      // Arrange: Update max fee amount USD
+      // ---------
+      // Call `updateMaxFeeAmountUSD` function
+      const tx = await divaOracleTellor.updateMaxFeeAmountUSD(
+        parseUnits("20")
+      );
+      const receipt = await tx.wait();
+      const startTimeMaxFeeAmountUSD = receipt.events.find(
+        (item) => item.event === "MaxFeeAmountUSDUpdated"
+      ).args.startTimeMaxFeeAmountUSD;
+
+      // Set next block timestamp as before of `startTimeMaxFeeAmountUSD`
+      nextBlockTimestamp = (await getLastBlockTimestamp()) + 1;
+      await setNextBlockTimestamp(nextBlockTimestamp);
+      expect(nextBlockTimestamp).to.lt(startTimeMaxFeeAmountUSD);
+
+      // ---------
+      // Act & Assert: Confirm that `updateMaxFeeAmountUSD` function will fail
+      // ---------
+      await expect(
+        divaOracleTellor.updateMaxFeeAmountUSD(parseUnits("30"))
+      ).to.be.revertedWith(
+        `PendingMaxFeeAmountUSDUpdate(${nextBlockTimestamp}, ${startTimeMaxFeeAmountUSD.toNumber()})`
+      );
+    });
+
+    // ---------
+    // Events
+    // ---------
+
+    it("Should emit an `MaxFeeAmountUSDUpdated` event", async () => {
+      // ---------
+      // Arrange: Set next block timestamp and new max fee amount USD
+      // ---------
+      newMaxFeeAmountUSD = parseUnits("20");
+      nextBlockTimestamp = (await getLastBlockTimestamp()) + 1;
+      await setNextBlockTimestamp(nextBlockTimestamp);
+
+      // ---------
+      // Act: Call `updateMaxFeeAmountUSD` function
+      // ---------
+      const tx = await divaOracleTellor.updateMaxFeeAmountUSD(
+        newMaxFeeAmountUSD
+      );
+      const receipt = await tx.wait();
+
+      // ---------
+      // Assert: Confirm that an `MaxFeeAmountUSDUpdated` event is emitted with the correct values
+      // ---------
+      const maxFeeAmountUSDUpdatedEvent = receipt.events.find(
+        (item) => item.event === "MaxFeeAmountUSDUpdated"
+      ).args;
+      expect(maxFeeAmountUSDUpdatedEvent.from).to.eq(user1.address);
+      expect(maxFeeAmountUSDUpdatedEvent.maxFeeAmountUSD).to.eq(
+        newMaxFeeAmountUSD
+      );
+      expect(maxFeeAmountUSDUpdatedEvent.startTimeMaxFeeAmountUSD).to.eq(
+        nextBlockTimestamp + activationDelay.toNumber()
+      );
+    });
+  });
 
   describe("updateExcessFeeRecipient", async () => {
     let excessFeeRecipientInfo;
-    let activationDelay;
-
-    beforeEach(async () => {
-      activationDelay = await divaOracleTellor.getActivationDelay();
-    });
 
     it("Should update excess fee recipient info after deployment", async () => {
       // ---------
@@ -2706,9 +2840,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       excessFeeRecipientInfo =
         await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.lt(
-        getTimestampInSeconds()
-      );
+      expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(0);
       expect(excessFeeRecipientInfo.previousExcessFeeRecipient).to.eq(
         ethers.constants.AddressZero
       );
@@ -2722,7 +2854,7 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor.updateExcessFeeRecipient(user2.address);
 
       // ---------
-      // Assert: Check that the excess fee recipient info is updated on divaOracleTellor correctly
+      // Assert: Check that the excess fee recipient info is updated on `divaOracleTellor` correctly
       // ---------
       excessFeeRecipientInfo =
         await divaOracleTellor.getExcessFeeRecipientInfo();
@@ -2737,7 +2869,7 @@ describe("DIVAOracleTellor", () => {
 
     it("Should be able to update excess fee recipient info after pending period passes", async () => {
       // ---------
-      // Arrange: Update excess fee recipient first
+      // Arrange: Update excess fee recipient
       // ---------
       // Call `updateExcessFeeRecipient` function (first update)
       await divaOracleTellor.updateExcessFeeRecipient(user2.address);
@@ -2746,7 +2878,7 @@ describe("DIVAOracleTellor", () => {
       excessFeeRecipientInfo =
         await divaOracleTellor.getExcessFeeRecipientInfo();
       expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.gt(
-        getTimestampInSeconds()
+        getCurrentTimestampInSeconds()
       );
       expect(excessFeeRecipientInfo.previousExcessFeeRecipient).to.eq(
         excessFeeRecipient.address
@@ -2764,7 +2896,7 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor.updateExcessFeeRecipient(user3.address);
 
       // ---------
-      // Assert: Check that the excess fee recipient info is updated on divaOracleTellor correctly
+      // Assert: Check that the excess fee recipient info is updated on `divaOracleTellor` correctly
       // ---------
       excessFeeRecipientInfo =
         await divaOracleTellor.getExcessFeeRecipientInfo();
