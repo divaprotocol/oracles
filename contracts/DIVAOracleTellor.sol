@@ -20,8 +20,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
     mapping(address => uint256[]) private _reporterToPoolIds; // mapping reporter to poolIds
 
-    address private _ownershipContract;
-
     uint256 private _previousMaxFeeAmountUSD; // expressed as an integer with 18 decimals
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
     uint256 private _startTimeMaxFeeAmountUSD;
@@ -30,9 +28,12 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     address private _excessFeeRecipient;
     uint256 private _startTimeExcessFeeRecipient;
 
+    address private _ownershipContract;
     uint32 private _minPeriodUndisputed;
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
+
+    uint256 private constant _activationDelay = 2 days;
 
     modifier onlyConfirmedPool(uint256 _poolId) {
         if (_poolIdToReporter[_poolId] == address(0)) {
@@ -150,7 +151,8 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _previousExcessFeeRecipient = _excessFeeRecipient;
 
         // Set time at which the new excess fee recipient will become applicable
-        uint256 _startTimeNewExcessFeeRecipient = block.timestamp + 2 days;
+        uint256 _startTimeNewExcessFeeRecipient = block.timestamp +
+            _activationDelay;
 
         // Store start time and new excess fee recipient
         _startTimeExcessFeeRecipient = _startTimeNewExcessFeeRecipient;
@@ -194,8 +196,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         // variable
         _previousMaxFeeAmountUSD = _maxFeeAmountUSD;
 
-        // Set time at which the new excess fee recipient will become applicable
-        uint256 _startTimeNewMaxFeeAmountUSD = block.timestamp + 2 days;
+        // Set time at which the new excess fee recipient will become
+        // applicable
+        uint256 _startTimeNewMaxFeeAmountUSD = block.timestamp +
+            _activationDelay;
 
         // Store start time and new excess fee recipient
         _startTimeMaxFeeAmountUSD = _startTimeNewMaxFeeAmountUSD;
@@ -207,6 +211,54 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             msg.sender,
             _newMaxFeeAmountUSD,
             _startTimeNewMaxFeeAmountUSD
+        );
+    }
+
+    function revokePendingExcessFeeRecipientUpdate()
+        external
+        override
+        onlyOwner
+    {
+        // Confirm that new excess fee recipient is not active yet
+        if (_startTimeExcessFeeRecipient <= block.timestamp) {
+            revert ExcessFeeRecipientAlreadyActive(
+                block.timestamp,
+                _startTimeExcessFeeRecipient
+            );
+        }
+
+        // Reset excess fee recipient related variables
+        _startTimeExcessFeeRecipient = block.timestamp;
+        _excessFeeRecipient = _previousExcessFeeRecipient;
+
+        // Log the excess fee recipient revoked, the previous one that now
+        // applies as well as the address that initiated the change
+        emit PendingExcessFeeRecipientUpdateRevoked(
+            msg.sender,
+            _excessFeeRecipient,
+            _previousExcessFeeRecipient
+        );
+    }
+
+    function revokePendingMaxFeeAmountUSDUpdate() external override onlyOwner {
+        // Confirm that new max fee amount USD is not active yet
+        if (_startTimeMaxFeeAmountUSD <= block.timestamp) {
+            revert MaxFeeAmountUSDAlreadyActive(
+                block.timestamp,
+                _startTimeMaxFeeAmountUSD
+            );
+        }
+
+        // Reset max fee amount USD related variables
+        _startTimeMaxFeeAmountUSD = block.timestamp;
+        _maxFeeAmountUSD = _previousMaxFeeAmountUSD;
+
+        // Log the max fee amount USD revoked, the previous one that now
+        // applies as well as the address that initiated the change
+        emit PendingMaxFeeAmountUSDUpdateRevoked(
+            msg.sender,
+            _maxFeeAmountUSD,
+            _previousMaxFeeAmountUSD
         );
     }
 
@@ -439,6 +491,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
 
     function getOwnershipContract() external view override returns (address) {
         return _ownershipContract;
+    }
+
+    function getActivationDelay() external pure override returns (uint256) {
+        return _activationDelay;
     }
 
     function getQueryId(uint256 _poolId)

@@ -33,12 +33,26 @@ interface IDIVAOracleTellor {
     // pending excess fee recipient update
     error PendingExcessFeeRecipientUpdate(
         uint256 _timestampBlock,
-        uint256 _startTimeFallbackDataProvider
+        uint256 _startTimeExcessFeeRecipient
     );
 
     // Thrown in `updateExcessFeeRecipient` if there is already a
     // pending excess fee recipient update
     error PendingMaxFeeAmountUSDUpdate(
+        uint256 _timestampBlock,
+        uint256 _startTimeMaxFeeAmountUSD
+    );
+
+    // Thrown in `revokePendingExcessFeeRecipientUpdate` if the excess fee
+    // recipient update to be revoked is already active
+    error ExcessFeeRecipientAlreadyActive(
+        uint256 _timestampBlock,
+        uint256 _startTimeExcessFeeRecipient
+    );
+
+    // Thrown in `revokePendingMaxFeeAmountUSDUpdate` if the max fee amount USD
+    // update to be revoked is already active
+    error MaxFeeAmountUSDAlreadyActive(
         uint256 _timestampBlock,
         uint256 _startTimeMaxFeeAmountUSD
     );
@@ -95,6 +109,34 @@ interface IDIVAOracleTellor {
         address indexed from,
         uint256 maxFeeAmountUSD,
         uint256 startTimeMaxFeeAmountUSD
+    );
+
+    /**
+     * @notice Emitted when a pending excess fee recipient update is revoked.
+     * @param revokedBy The address that initiated the revocation.
+     * @param revokedExcessFeeRecipient Pending excess fee recipient that was
+     * revoked.
+     * @param restoredExcessFeeRecipient Previous excess fee recipient that was
+     * restored.
+     */
+    event PendingExcessFeeRecipientUpdateRevoked(
+        address indexed revokedBy,
+        address indexed revokedExcessFeeRecipient,
+        address indexed restoredExcessFeeRecipient
+    );
+
+    /**
+     * @notice Emitted when a pending max fee amount USD update is revoked.
+     * @param revokedBy The address that initiated the revocation.
+     * @param revokedMaxFeeAmountUSD Pending max fee amount USD that was
+     * revoked.
+     * @param restoredMaxFeeAmountUSD Previous max fee amount USD that was
+     * restored.
+     */
+    event PendingMaxFeeAmountUSDUpdateRevoked(
+        address indexed revokedBy,
+        uint256 revokedMaxFeeAmountUSD,
+        uint256 restoredMaxFeeAmountUSD
     );
 
     // Struct for `batchClaim` function input
@@ -191,6 +233,10 @@ interface IDIVAOracleTellor {
      * 18 decimals.
      */
     function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
+
+    function revokePendingExcessFeeRecipientUpdate() external;
+
+    function revokePendingMaxFeeAmountUSDUpdate() external;
 
     /**
      * @dev Returns whether the oracle's data feed is challengeable or not.
@@ -298,4 +344,6 @@ interface IDIVAOracleTellor {
      * @dev Returns the DIVA address that the oracle is linked to
      */
     function getDIVAAddress() external view returns (address);
+
+    function getActivationDelay() external view returns (uint256);
 }
