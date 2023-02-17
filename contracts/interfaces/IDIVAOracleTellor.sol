@@ -2,42 +2,46 @@
 pragma solidity 0.8.9;
 
 interface IDIVAOracleTellor {
-    // Thrown if user tries to claim fees/tips for a pool that was not yet confirmed
+    // Thrown in `onlyConfirmedPool` modifier if user tries to claim fees/tips
+    // for a pool that was not yet confirmed
     error NotConfirmedPool();
 
-    // Thrown if user tries to add a tip for an already confirmed pool
+    // Thrown in `addTip` if user tries to add a tip for an already confirmed
+    // pool
     error AlreadyConfirmedPool();
 
-    // Thrown if the zero address is passed as input into `setExcessFeeRecipient`
+    // Thrown in `updateExcessFeeRecipient` or constructor if the zero address
+    // is passed as input into `setExcessFeeRecipient`
     error ZeroExcessFeeRecipient();
 
-    // Thrown if `_minPeriodUndisputed` passed into `setMinPeriodUndisputed` is
-    // not within the expected range (min 1h, max 18h)
+    // Thrown in `setMinPeriodUndisputed` if `_minPeriodUndisputed` passed
+    // into `setMinPeriodUndisputed` is not within the expected range
+    // (min 1h, max 18h)
     error OutOfRange();
 
-    // Thrown when user calls `setFinalReferenceValue` (or a variant of it) but
-    // there is no data reported after the expiry time of the underlying pool
+    // Thrown in `setFinalReferenceValue` if there is no data reported after
+    // the expiry time of the underlying pool
     error NoOracleSubmissionAfterExpiryTime();
 
-    // Thrown if user tries to call `setFinalReferenceValue` (or a variant of it)
+    // Thrown in `setFinalReferenceValue` if user tries to call the function
     // before the minimum period undisputed period has passed
     error MinPeriodUndisputedNotPassed();
 
-    // Thrown if zero address is provided as ownershipContract
+    // Thrown in constructor if zero address is provided as ownershipContract
     error ZeroOwnershipContractAddress();
 
-    // Thrown if `msg.sender` is not contract owner
+    // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner
     error NotContractOwner(address _user, address _contractOwner);
 
-    // Thrown in `updateExcessFeeRecipient` if there is already a
-    // pending excess fee recipient update
+    // Thrown in `updateExcessFeeRecipient` if there is already a pending
+    // excess fee recipient update
     error PendingExcessFeeRecipientUpdate(
         uint256 _timestampBlock,
         uint256 _startTimeExcessFeeRecipient
     );
 
-    // Thrown in `updateExcessFeeRecipient` if there is already a
-    // pending excess fee recipient update
+    // Thrown in `updateMaxFeeAmountUSD` if there is already a pending max fee
+    // amount USD update
     error PendingMaxFeeAmountUSDUpdate(
         uint256 _timestampBlock,
         uint256 _startTimeMaxFeeAmountUSD
@@ -99,12 +103,26 @@ interface IDIVAOracleTellor {
         uint256 timestamp
     );
 
+    /**
+     * @notice Emitted when the excess fee recipient is set.
+     * @param from The address that initiated the change (contract owner).
+     * @param excessFeeRecipient New excess fee recipient.
+     * @param startTimeExcessFeeRecipient Timestamp in seconds since epoch at
+     * which the new excess fee recipient will be activated.
+     */
     event ExcessFeeRecipientUpdated(
         address indexed from,
         address indexed excessFeeRecipient,
         uint256 startTimeExcessFeeRecipient
     );
 
+    /**
+     * @notice Emitted when the max fee amount USD is set.
+     * @param from The address that initiated the change (contract owner).
+     * @param maxFeeAmountUSD New max fee amount USD.
+     * @param startTimeMaxFeeAmountUSD Timestamp in seconds since epoch at
+     * which the new max fee amount USD will be activated.
+     */
     event MaxFeeAmountUSDUpdated(
         address indexed from,
         uint256 maxFeeAmountUSD,
@@ -234,8 +252,18 @@ interface IDIVAOracleTellor {
      */
     function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
 
+    /**
+     * @dev Function to revoke a pending excess fee recipient update
+     * and restore the previous one.
+     * Only callable by contract owner.
+     */
     function revokePendingExcessFeeRecipientUpdate() external;
 
+    /**
+     * @dev Function to revoke a pending max fee amount USD update
+     * and restore the previous one.
+     * Only callable by contract owner.
+     */
     function revokePendingMaxFeeAmountUSDUpdate() external;
 
     /**
@@ -245,7 +273,7 @@ interface IDIVAOracleTellor {
     function challengeable() external view returns (bool);
 
     /**
-     * @dev Returns the excess fee recipient address
+     * @dev Returns the excess fee recipient info
      */
     function getExcessFeeRecipientInfo()
         external
@@ -263,7 +291,7 @@ interface IDIVAOracleTellor {
     function getMinPeriodUndisputed() external view returns (uint32);
 
     /**
-     * @dev Returns the max fee amount usd value with 18 decimals
+     * @dev Returns the max fee amount USD info
      */
     function getMaxFeeAmountUSDInfo()
         external
@@ -301,8 +329,6 @@ interface IDIVAOracleTellor {
         external
         view
         returns (uint256[][] memory);
-
-    function getOwnershipContract() external view returns (address);
 
     /**
      * @dev Returns query id
@@ -345,5 +371,13 @@ interface IDIVAOracleTellor {
      */
     function getDIVAAddress() external view returns (address);
 
+    /**
+     * @dev Returns the ownership contract address
+     */
+    function getOwnershipContract() external view returns (address);
+
+    /**
+     * @dev Returns the activation delay constant value
+     */
     function getActivationDelay() external view returns (uint256);
 }

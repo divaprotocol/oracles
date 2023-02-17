@@ -33,7 +33,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
 
-    uint256 private constant _activationDelay = 2 days;
+    uint256 private constant _activationDelay = 3 days;
 
     modifier onlyConfirmedPool(uint256 _poolId) {
         if (_poolIdToReporter[_poolId] == address(0)) {
@@ -133,6 +133,8 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         override
         onlyOwner
     {
+        // Confirm that provided excess fee recipient address
+        // is not zero address
         if (_newExcessFeeRecipient == address(0)) {
             revert ZeroExcessFeeRecipient();
         }
@@ -192,16 +194,15 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             );
         }
 
-        // Store current excess fee recipient in `_previousMaxFeeAmountUSD`
+        // Store current max fee amount USD in `_previousMaxFeeAmountUSD`
         // variable
         _previousMaxFeeAmountUSD = _maxFeeAmountUSD;
 
-        // Set time at which the new excess fee recipient will become
-        // applicable
+        // Set time at which the new max fee amount USD will become applicable
         uint256 _startTimeNewMaxFeeAmountUSD = block.timestamp +
             _activationDelay;
 
-        // Store start time and new excess fee recipient
+        // Store start time and new max fee amount USD
         _startTimeMaxFeeAmountUSD = _startTimeNewMaxFeeAmountUSD;
         _maxFeeAmountUSD = _newMaxFeeAmountUSD;
 
