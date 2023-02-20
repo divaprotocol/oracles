@@ -3001,9 +3001,19 @@ describe("DIVAOracleTellor", () => {
   });
 
   describe("revokePendingExcessFeeRecipientUpdate", async () => {
+    let newExcessFeeRecipient;
+
     beforeEach(async () => {
+      // Set new excess fee recipient
+      newExcessFeeRecipient = user2;
+
+      // Confirm that new excess fee recipient is not equal to the current one
+      excessFeeRecipientInfo =
+        await divaOracleTellor.getExcessFeeRecipientInfo();
+      expect(excessFeeRecipientInfo.excessFeeRecipient).to.not.eq(newExcessFeeRecipient.address);
+
       // Call `updateExcessFeeRecipient` function
-      await divaOracleTellor.updateExcessFeeRecipient(user2.address);
+      await divaOracleTellor.updateExcessFeeRecipient(newExcessFeeRecipient.address);
     });
 
     it("Should revoke pending excees fee recipient update", async () => {
@@ -3015,7 +3025,7 @@ describe("DIVAOracleTellor", () => {
       expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(user2.address); // @todo question why user2?
+      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(newExcessFeeRecipient.address);
 
       // ---------
       // Act: Call `revokePendingExcessFeeRecipientUpdate` function
@@ -3039,18 +3049,21 @@ describe("DIVAOracleTellor", () => {
     // Reverts
     // -------------------------------------------
 
-    it("Should revert if triggered by an account other than the contract owner", async () => {
+    it("Should revert with `NotContractOwner` if triggered by an account other than the contract owner", async () => {
       // ---------
       // Act & Assert: Confirm that function call reverts if called by an account other than the contract owner
       // ---------
+      const caller = user2;
+      const currentOwner = await diva.getOwner();
+      expect(caller).to.not.eq(currentOwner);
       await expect(
-        divaOracleTellor.connect(user2).revokePendingExcessFeeRecipientUpdate()
+        divaOracleTellor.connect(caller).revokePendingExcessFeeRecipientUpdate()
       ).to.be.revertedWith(
-        `NotContractOwner("${user2.address}", "${user1.address}")`
+        `NotContractOwner("${caller.address}", "${currentOwner}")`
       );
     });
 
-    it("Should revert if new excess fee recipient is activated already", async () => {
+    it("Should revert with `ExcessFeeRecipientAlreadyActive` if new excess fee recipient is already active", async () => {
       // ---------
       // Arrange: Set next block timestamp
       // ---------
@@ -3082,7 +3095,7 @@ describe("DIVAOracleTellor", () => {
       // Act: Call `revokePendingExcessFeeRecipientUpdate` function
       // ---------
       const tx =
-        await divaOracleTellor.revokePendingExcessFeeRecipientUpdate();
+        await divaOracleTellor.connect(user1).revokePendingExcessFeeRecipientUpdate();
       const receipt = await tx.wait();
 
       // ---------
@@ -3107,14 +3120,21 @@ describe("DIVAOracleTellor", () => {
     let newMaxFeeAmountUSD;
 
     beforeEach(async () => {
-      // Call `updateMaxFeeAmountUSD` function
+      // Set new max USD fee amount
       newMaxFeeAmountUSD = parseUnits("20");
+
+      // Confirm that new max USD fee amount is not equal to the current one
+      maxFeeAmountUSDInfo =
+        await divaOracleTellor.getMaxFeeAmountUSDInfo();
+      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.not.eq(newMaxFeeAmountUSD);
+
+      // Call `updateMaxFeeAmountUSD` function      
       await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD);
     });
 
-    it("Should revoke pending max fee amount USD update", async () => {
+    it("Should revoke pending max USD fee amount update", async () => {
       // ---------
-      // Arrange: Check max fee amount USD info before updating
+      // Arrange: Check max USD fee amount info before updating
       // ---------
       maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
       expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
@@ -3128,7 +3148,8 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor.revokePendingMaxFeeAmountUSDUpdate();
 
       // ---------
-      // Assert: Check that max fee amount USD info is updated on `divaOracleTellor` correctly
+      // Assert: Check that max USD fee amount info is updated correctly and returns
+      // the previous one (`maxFeeAmountUSD` is the default value)
       // ---------
       maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
       expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
@@ -3141,18 +3162,20 @@ describe("DIVAOracleTellor", () => {
     // Reverts
     // -------------------------------------------
 
-    it("Should revert if triggered by an account other than the contract owner", async () => {
+    it("Should revert with `NotContractOwner` if triggered by an account other than the contract owner", async () => {
       // ---------
       // Act & Assert: Confirm that function call reverts if called by an account other than the contract owner
       // ---------
+      const caller = user2;
+      const currentOwner = await diva.getOwner();
       await expect(
-        divaOracleTellor.connect(user2).revokePendingMaxFeeAmountUSDUpdate()
+        divaOracleTellor.connect(caller).revokePendingMaxFeeAmountUSDUpdate()
       ).to.be.revertedWith(
-        `NotContractOwner("${user2.address}", "${user1.address}")`
+        `NotContractOwner("${caller.address}", "${currentOwner}")`
       );
     });
 
-    it("Should revert if new max fee amount USD is activated already", async () => {
+    it("Should revert with `MaxFeeAmountUSDAlreadyActive` if new max USD fee amount is already active", async () => {
       // ---------
       // Arrange: Set next block timestamp
       // ---------
