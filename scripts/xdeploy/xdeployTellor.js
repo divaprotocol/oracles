@@ -1,9 +1,7 @@
 /**
- * Script to deploy the DIVAOracleTellor constract on multiple EVM chains with
+ * Script to deploy the DIVAOracleTellor contract on multiple EVM chains with
  * a deterministic address. This script makes use of the xdeployer plug-in:
  * https://www.npmjs.com/package/xdeployer
- * To better understand the steps involved, it is recommended to
- * get familiar with the deployment process on a single chain (see `deployTellor.js`)
  *
  * PREPARATION: In order to run the script successfully, a few preparatory steps are necessary:
  * - Copy `xdeploy-config.example.js` and rename it to `xdeploy-config.js`. This file is required as
@@ -17,6 +15,7 @@
  * IMPORTANT:
  * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasuy address.
  * - Set `tellorVersion` on line 24 of `_generateTellorArgs.js` file to the correct one you want link to.
+ * - Set `MAX_FEE_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
  *
  * Run: `yarn xdeploy:divaTellor`
  */
