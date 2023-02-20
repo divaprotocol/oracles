@@ -253,6 +253,9 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             );
         }
 
+        // Store `_maxFeeAmountUSD` value temporarily
+        uint256 _revokedMaxFeeAmountUSD = _maxFeeAmountUSD;
+
         // Reset max fee amount USD related variables
         _startTimeMaxFeeAmountUSD = block.timestamp;
         _maxFeeAmountUSD = _previousMaxFeeAmountUSD;
@@ -261,7 +264,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         // applies as well as the address that initiated the change
         emit PendingMaxFeeAmountUSDUpdateRevoked(
             msg.sender,
-            _maxFeeAmountUSD,
+            _revokedMaxFeeAmountUSD,
             _previousMaxFeeAmountUSD
         );
     }

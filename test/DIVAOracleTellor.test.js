@@ -101,6 +101,7 @@ describe("DIVAOracleTellor", () => {
 
   let nextBlockTimestamp;
   let excessFeeRecipientInfo;
+  let maxFeeAmountUSDInfo;
 
   before(async () => {
     [user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2] =
@@ -152,6 +153,9 @@ describe("DIVAOracleTellor", () => {
     );
     // Check challengeable
     expect(await divaOracleTellor.challengeable()).to.eq(false);
+    expect(await divaOracleTellor.getOwnershipContract()).to.eq(
+      mockDIVAOwnershipAddress
+    );
 
     // Get activation delay
     activationDelay = await divaOracleTellor.getActivationDelay();
@@ -2677,7 +2681,6 @@ describe("DIVAOracleTellor", () => {
 
   describe("updateMaxFeeAmountUSD", async () => {
     let newMaxFeeAmountUSD;
-    let maxFeeAmountUSDInfo;
 
     it("Should update max fee amount USD info after deployment", async () => {
       // ---------
@@ -2697,7 +2700,7 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD);
 
       // ---------
-      // Assert: Check that maxFeeAmountUSD is updated on `divaOracleTellor` correctly
+      // Assert: Check that max fee amount USD info is updated on `divaOracleTellor` correctly
       // ---------
       maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
       expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
@@ -3095,6 +3098,107 @@ describe("DIVAOracleTellor", () => {
       expect(
         pendingExcessFeeRecipientUpdateRevokedEvent.restoredExcessFeeRecipient
       ).to.eq(excessFeeRecipient.address);
+    });
+  });
+
+  describe("revokePendingMaxFeeAmountUSDUpdate", async () => {
+    let newMaxFeeAmountUSD;
+
+    beforeEach(async () => {
+      // Call `updateMaxFeeAmountUSD` function
+      newMaxFeeAmountUSD = parseUnits("20");
+      await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD);
+    });
+
+    it("Should revoke pending max fee amount USD update", async () => {
+      // ---------
+      // Arrange: Check max fee amount USD info before updating
+      // ---------
+      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
+      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
+        (await getLastBlockTimestamp()) + activationDelay.toNumber()
+      );
+      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(newMaxFeeAmountUSD);
+
+      // ---------
+      // Act: Call `revokePendingMaxFeeAmountUSDUpdate` function
+      // ---------
+      await divaOracleTellor.revokePendingMaxFeeAmountUSDUpdate();
+
+      // ---------
+      // Assert: Check that max fee amount USD info is updated on `divaOracleTellor` correctly
+      // ---------
+      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
+      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
+        await getLastBlockTimestamp()
+      );
+      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(maxFeeAmountUSD);
+    });
+
+    // -------------------------------------------
+    // Reverts
+    // -------------------------------------------
+
+    it("Should revert if triggered by an account other than the contract owner", async () => {
+      // ---------
+      // Act & Assert: Confirm that function call reverts if called by an account other than the contract owner
+      // ---------
+      await expect(
+        divaOracleTellor.connect(user2).revokePendingMaxFeeAmountUSDUpdate()
+      ).to.be.revertedWith(
+        `NotContractOwner("${user2.address}", "${user1.address}")`
+      );
+    });
+
+    it("Should revert if new max fee amount USD is activated already", async () => {
+      // ---------
+      // Arrange: Set next block timestamp
+      // ---------
+      // Get start time for max fee amount USD
+      const startTimeMaxFeeAmountUSD = (
+        await divaOracleTellor.getMaxFeeAmountUSDInfo()
+      ).startTimeMaxFeeAmountUSD.toNumber();
+
+      // Set next block timestamp as after of `startTimeMaxFeeAmountUSD`
+      nextBlockTimestamp = startTimeMaxFeeAmountUSD + 1;
+      await setNextBlockTimestamp(nextBlockTimestamp);
+
+      // ---------
+      // Act & Assert: Confirm that `revokePendingMaxFeeAmountUSDUpdate` function will fail
+      // ---------
+      await expect(
+        divaOracleTellor.revokePendingMaxFeeAmountUSDUpdate()
+      ).to.be.revertedWith(
+        `MaxFeeAmountUSDAlreadyActive(${nextBlockTimestamp}, ${startTimeMaxFeeAmountUSD})`
+      );
+    });
+
+    // ---------
+    // Events
+    // ---------
+
+    it("Should emit a `PendingMaxFeeAmountUSDUpdateRevoked` event", async () => {
+      // ---------
+      // Act: Call `revokePendingMaxFeeAmountUSDUpdate` function
+      // ---------
+      const tx = await divaOracleTellor.revokePendingMaxFeeAmountUSDUpdate();
+      const receipt = await tx.wait();
+
+      // ---------
+      // Assert: Confirm that a `PendingMaxFeeAmountUSDUpdateRevoked` event is emitted with the correct values
+      // ---------
+      const pendingMaxFeeAmountUSDUpdateRevokedEvent = receipt.events.find(
+        (item) => item.event === "PendingMaxFeeAmountUSDUpdateRevoked"
+      ).args;
+      expect(pendingMaxFeeAmountUSDUpdateRevokedEvent.revokedBy).to.eq(
+        user1.address
+      );
+      expect(
+        pendingMaxFeeAmountUSDUpdateRevokedEvent.revokedMaxFeeAmountUSD
+      ).to.eq(newMaxFeeAmountUSD);
+      expect(
+        pendingMaxFeeAmountUSDUpdateRevokedEvent.restoredMaxFeeAmountUSD
+      ).to.eq(maxFeeAmountUSD);
     });
   });
 });
