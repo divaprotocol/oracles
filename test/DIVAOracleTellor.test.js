@@ -10,6 +10,7 @@ const {
 } = require("../utils/utils");
 const {
   ONE_HOUR,
+  ONE_DAY,
   TEN_MINS,
   DIVA_ADDRESS,
   TELLOR_PLAYGROUND_ADDRESS,
@@ -159,6 +160,7 @@ describe("DIVAOracleTellor", () => {
 
     // Get activation delay
     activationDelay = await divaOracleTellor.getActivationDelay();
+    expect(activationDelay).to.eq(3 * ONE_DAY);
 
     // Set user start token balance
     const userStartTokenBalance = parseUnits("1000000");
@@ -3013,7 +3015,7 @@ describe("DIVAOracleTellor", () => {
       expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(user2.address);
+      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(user2.address); // @todo question why user2?
 
       // ---------
       // Act: Call `revokePendingExcessFeeRecipientUpdate` function

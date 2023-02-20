@@ -245,7 +245,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function revokePendingMaxFeeAmountUSDUpdate() external override onlyOwner {
-        // Confirm that new max fee amount USD is not active yet
+        // Confirm that new max USD fee amount is not active yet
         if (_startTimeMaxFeeAmountUSD <= block.timestamp) {
             revert MaxFeeAmountUSDAlreadyActive(
                 block.timestamp,
