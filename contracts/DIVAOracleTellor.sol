@@ -228,6 +228,9 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             );
         }
 
+        // Store `_excessFeeRecipient` value temporarily
+        address _revokedExcessFeeRecipient = _excessFeeRecipient;
+
         // Reset excess fee recipient related variables
         _startTimeExcessFeeRecipient = block.timestamp;
         _excessFeeRecipient = _previousExcessFeeRecipient;
@@ -236,7 +239,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         // applies as well as the address that initiated the change
         emit PendingExcessFeeRecipientUpdateRevoked(
             msg.sender,
-            _excessFeeRecipient,
+            _revokedExcessFeeRecipient,
             _previousExcessFeeRecipient
         );
     }

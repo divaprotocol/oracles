@@ -2799,7 +2799,7 @@ describe("DIVAOracleTellor", () => {
     // Events
     // ---------
 
-    it("Should emit an `MaxFeeAmountUSDUpdated` event", async () => {
+    it("Should emit a `MaxFeeAmountUSDUpdated` event", async () => {
       // ---------
       // Arrange: Set next block timestamp and new max fee amount USD
       // ---------
@@ -2816,7 +2816,7 @@ describe("DIVAOracleTellor", () => {
       const receipt = await tx.wait();
 
       // ---------
-      // Assert: Confirm that an `MaxFeeAmountUSDUpdated` event is emitted with the correct values
+      // Assert: Confirm that a `MaxFeeAmountUSDUpdated` event is emitted with the correct values
       // ---------
       const maxFeeAmountUSDUpdatedEvent = receipt.events.find(
         (item) => item.event === "MaxFeeAmountUSDUpdated"
@@ -2993,6 +2993,115 @@ describe("DIVAOracleTellor", () => {
       expect(excessFeeRecipientUpdatedEvent.startTimeExcessFeeRecipient).to.eq(
         nextBlockTimestamp + activationDelay.toNumber()
       );
+    });
+  });
+
+  describe("revokePendingExcessFeeRecipientUpdate", async () => {
+    let excessFeeRecipientInfo;
+
+    beforeEach(async () => {
+      // Call `updateExcessFeeRecipient` function
+      await divaOracleTellor.updateExcessFeeRecipient(user2.address);
+    });
+
+    // it("Should update excess fee recipient info after deployment", async () => {
+    //   // ---------
+    //   // Arrange: Check the excess fee recipient info before updating
+    //   // ---------
+    //   excessFeeRecipientInfo =
+    //     await divaOracleTellor.getExcessFeeRecipientInfo();
+    //   expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(0);
+    //   expect(excessFeeRecipientInfo.previousExcessFeeRecipient).to.eq(
+    //     ethers.constants.AddressZero
+    //   );
+    //   expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(
+    //     excessFeeRecipient.address
+    //   );
+
+    //   // ---------
+    //   // Act: Call `updateExcessFeeRecipient` function
+    //   // ---------
+    //   await divaOracleTellor.updateExcessFeeRecipient(user2.address);
+
+    //   // ---------
+    //   // Assert: Check that the excess fee recipient info is updated on `divaOracleTellor` correctly
+    //   // ---------
+    //   excessFeeRecipientInfo =
+    //     await divaOracleTellor.getExcessFeeRecipientInfo();
+    //   expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(
+    //     (await getLastBlockTimestamp()) + activationDelay.toNumber()
+    //   );
+    //   expect(excessFeeRecipientInfo.previousExcessFeeRecipient).to.eq(
+    //     excessFeeRecipient.address
+    //   );
+    //   expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(user2.address);
+    // });
+
+    // -------------------------------------------
+    // Reverts
+    // -------------------------------------------
+
+    it("Should revert if triggered by an account other than the contract owner", async () => {
+      // ---------
+      // Act & Assert: Confirm that function call reverts if called by an account other than the contract owner
+      // ---------
+      await expect(
+        divaOracleTellor.connect(user2).revokePendingExcessFeeRecipientUpdate()
+      ).to.be.revertedWith(
+        `NotContractOwner("${user2.address}", "${user1.address}")`
+      );
+    });
+
+    it("Should revert if new excess fee recipient is activated already", async () => {
+      // ---------
+      // Arrange: Set next block timestamp
+      // ---------
+      // Get start time for excess fee recipient
+      const startTimeExcessFeeRecipient = (
+        await divaOracleTellor.getExcessFeeRecipientInfo()
+      ).startTimeExcessFeeRecipient.toNumber();
+
+      // Set next block timestamp as after of `startTimeExcessFeeRecipient`
+      nextBlockTimestamp = startTimeExcessFeeRecipient + 1;
+      await setNextBlockTimestamp(nextBlockTimestamp);
+
+      // ---------
+      // Act & Assert: Confirm that `revokePendingExcessFeeRecipientUpdate` function will fail
+      // ---------
+      await expect(
+        divaOracleTellor.revokePendingExcessFeeRecipientUpdate()
+      ).to.be.revertedWith(
+        `ExcessFeeRecipientAlreadyActive(${nextBlockTimestamp}, ${startTimeExcessFeeRecipient})`
+      );
+    });
+
+    // ---------
+    // Events
+    // ---------
+
+    it("Should emit a `PendingExcessFeeRecipientUpdateRevoked` event", async () => {
+      // ---------
+      // Act: Call `revokePendingExcessFeeRecipientUpdate` function
+      // ---------
+      const tx =
+        await divaOracleTellor.revokePendingExcessFeeRecipientUpdate();
+      const receipt = await tx.wait();
+
+      // ---------
+      // Assert: Confirm that a `PendingExcessFeeRecipientUpdateRevoked` event is emitted with the correct values
+      // ---------
+      const pendingExcessFeeRecipientUpdateRevokedEvent = receipt.events.find(
+        (item) => item.event === "PendingExcessFeeRecipientUpdateRevoked"
+      ).args;
+      expect(pendingExcessFeeRecipientUpdateRevokedEvent.revokedBy).to.eq(
+        user1.address
+      );
+      expect(
+        pendingExcessFeeRecipientUpdateRevokedEvent.revokedExcessFeeRecipient
+      ).to.eq(user2.address);
+      expect(
+        pendingExcessFeeRecipientUpdateRevokedEvent.restoredExcessFeeRecipient
+      ).to.eq(excessFeeRecipient.address);
     });
   });
 });
