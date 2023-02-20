@@ -29,11 +29,11 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     uint256 private _startTimeExcessFeeRecipient;
 
     address private _ownershipContract;
-    uint32 private _minPeriodUndisputed;
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
 
     uint256 private constant _activationDelay = 3 days;
+    uint32 private constant _minPeriodUndisputed = 12 hours;
 
     modifier onlyConfirmedPool(uint256 _poolId) {
         if (_poolIdToReporter[_poolId] == address(0)) {
@@ -54,7 +54,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         address ownershipContract_,
         address payable tellorAddress_,
         address excessFeeRecipient_,
-        uint32 minPeriodUndisputed_,
         uint256 maxFeeAmountUSD_,
         address diva_
     ) UsingTellor(tellorAddress_) {
@@ -68,7 +67,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _ownershipContract = ownershipContract_;
         _challengeable = false;
         _excessFeeRecipient = excessFeeRecipient_;
-        _minPeriodUndisputed = minPeriodUndisputed_;
         _maxFeeAmountUSD = maxFeeAmountUSD_;
         _diva = IDIVA(diva_);
     }
@@ -167,17 +165,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _newExcessFeeRecipient,
             _startTimeNewExcessFeeRecipient
         );
-    }
-
-    function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed)
-        external
-        override
-        onlyOwner
-    {
-        if (_newMinPeriodUndisputed < 3600 || _newMinPeriodUndisputed > 64800) {
-            revert OutOfRange();
-        }
-        _minPeriodUndisputed = _newMinPeriodUndisputed;
     }
 
     function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD)
@@ -311,7 +298,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function getMinPeriodUndisputed() external view override returns (uint32) {
+    function getMinPeriodUndisputed() external pure override returns (uint32) {
         return _minPeriodUndisputed;
     }
 

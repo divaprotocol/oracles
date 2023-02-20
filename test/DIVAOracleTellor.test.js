@@ -84,8 +84,7 @@ describe("DIVAOracleTellor", () => {
   let activationDelay;
   let maxFeeAmountUSD = parseUnits("10");
 
-  let minPeriodUndisputed = ONE_HOUR;
-  let newMinPeriodUndisputed;
+  let minPeriodUndisputed;
 
   let latestPoolId;
   let poolParams;
@@ -148,15 +147,20 @@ describe("DIVAOracleTellor", () => {
       divaOwnershipAddress,
       tellorPlaygroundAddress,
       excessFeeRecipient.address,
-      minPeriodUndisputed,
       maxFeeAmountUSD,
       divaAddress
     );
     // Check challengeable
     expect(await divaOracleTellor.challengeable()).to.eq(false);
+
+    // Check ownership contract address
     expect(await divaOracleTellor.getOwnershipContract()).to.eq(
       divaOwnershipAddress
     );
+
+    // Get `minPeriodUndisputed`
+    minPeriodUndisputed = await divaOracleTellor.getMinPeriodUndisputed();
+    expect(minPeriodUndisputed).to.eq(ONE_HOUR * 12);
 
     // Get activation delay
     activationDelay = await divaOracleTellor.getActivationDelay();
@@ -2625,59 +2629,6 @@ describe("DIVAOracleTellor", () => {
       // Confirm that poolId for reporter is correct
       expect(poolIdsForReporter[0]).to.eq(latestPoolId);
       expect(poolIdsForReporter[1]).to.eq(0);
-    });
-  });
-
-  describe("setMinPeriodUndisputed", async () => {
-    it("Should set minPeriodUndisputed", async () => {
-      // ---------
-      // Arrange: Set newMinPeriodUndisputed
-      // ---------
-      newMinPeriodUndisputed = ONE_HOUR + TEN_MINS;
-
-      // ---------
-      // Act: Call setMinPeriodUndisputed function
-      // ---------
-      await divaOracleTellor.setMinPeriodUndisputed(newMinPeriodUndisputed);
-
-      // ---------
-      // Assert: Check that minPeriodUndisputed is updated on divaOracleTellor correctly
-      // ---------
-      expect(await divaOracleTellor.getMinPeriodUndisputed()).to.eq(
-        newMinPeriodUndisputed
-      );
-    });
-
-    // ---------
-    // Reverts
-    // ---------
-
-    it("Should revert if new minPeriodUndisputed is smaller than 3600", async () => {
-      // ---------
-      // Arrange: Set newMinPeriodUndisputed smaller than 3600
-      // ---------
-      newMinPeriodUndisputed = ONE_HOUR - 1;
-
-      // ---------
-      // Act & Assert: Confirm that setMinPeriodUndisputed function will fail
-      // ---------
-      await expect(
-        divaOracleTellor.setMinPeriodUndisputed(newMinPeriodUndisputed)
-      ).to.be.revertedWith("OutOfRange()");
-    });
-
-    it("Should revert if new minPeriodUndisputed is bigger than 64800", async () => {
-      // ---------
-      // Arrange: Set newMinPeriodUndisputed bigger than 64800
-      // ---------
-      newMinPeriodUndisputed = 18 * ONE_HOUR + 1;
-
-      // ---------
-      // Act & Assert: Confirm that setMinPeriodUndisputed function will fail
-      // ---------
-      await expect(
-        divaOracleTellor.setMinPeriodUndisputed(newMinPeriodUndisputed)
-      ).to.be.revertedWith("OutOfRange()");
     });
   });
 

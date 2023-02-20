@@ -14,11 +14,6 @@ interface IDIVAOracleTellor {
     // is passed as excess fee recipient address.
     error ZeroExcessFeeRecipient();
 
-    // Thrown in `setMinPeriodUndisputed` if `_minPeriodUndisputed` passed
-    // into `setMinPeriodUndisputed` is not within the expected range
-    // (min 1h, max 18h).
-    error OutOfRange();
-
     // Thrown in `setFinalReferenceValue` if there is no data reported after
     // the expiry time of the underlying pool.
     error NoOracleSubmissionAfterExpiryTime();
@@ -237,14 +232,6 @@ interface IDIVAOracleTellor {
     function updateExcessFeeRecipient(address _newExcessFeeRecipient) external;
 
     /**
-     * @dev Function to update `_minPeriodUndisputed` with minimum value of
-     * 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds).
-     * Only callable by contract owner.
-     * @param _newMinPeriodUndisputed New `_minPeriodUndisputed` in seconds.
-     */
-    function setMinPeriodUndisputed(uint32 _newMinPeriodUndisputed) external;
-
-    /**
      * @dev Function to update `_maxFeeAmountUSD`. Only callable by contract owner.
      * @param _newMaxFeeAmountUSD New amount expressed as an integer with
      * 18 decimals.
@@ -285,7 +272,7 @@ interface IDIVAOracleTellor {
      * @dev Returns the minimum period (in seconds) a reported value has
      * to remain undisputed in order to be considered valid.
      */
-    function getMinPeriodUndisputed() external view returns (uint32);
+    function getMinPeriodUndisputed() external pure returns (uint32);
 
     /**
      * @dev Returns the max USD fee amount info.

@@ -3,7 +3,7 @@
  *
  * IMPORTANT:
  * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasuy address.
- * - Set `tellorVersion` on line 30 to the correct one you want link to. Make sure
+ * - Set `tellorVersion` on line 29 to the correct one you want link to. Make sure
  * the Tellor contract addresses in `utils/constants.js` file are correct.
  * - Set `MAX_FEE_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
  *
@@ -19,11 +19,9 @@ const {
   TELLOR_VERSION,
   DIVA_ADDRESS,
 } = require("../../utils/constants");
-const { checkMinPeriodUndisputed } = require("../../utils/utils");
 
 // Load relevant variable from `.env` file
 const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
-const MIN_PERIOD_UNDISPUTED = process.env.MIN_PERIOD_UNDISPUTED || "";
 const MAX_FEE_AMOUNT_USD = process.env.MAX_FEE_AMOUNT_USD || "";
 
 async function main() {
@@ -41,9 +39,6 @@ async function main() {
     );
   }
 
-  const minPeriodUndisputed = Number(MIN_PERIOD_UNDISPUTED);
-  checkMinPeriodUndisputed(minPeriodUndisputed);
-
   // Get DIVA contract deployed on selected network
   const divaAddress = DIVA_ADDRESS[network.name];
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -59,7 +54,6 @@ async function main() {
     divaOwnershipAddress,
     tellorAddress,
     EXCESS_FEE_RECIPIENT,
-    minPeriodUndisputed,
     MAX_FEE_AMOUNT_USD,
     divaAddress
   );
