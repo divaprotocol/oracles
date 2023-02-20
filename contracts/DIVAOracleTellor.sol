@@ -20,11 +20,11 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
     mapping(address => uint256[]) private _reporterToPoolIds; // mapping reporter to poolIds
 
-    uint256 private _previousMaxFeeAmountUSD; // expressed as an integer with 18 decimals
+    uint256 private _previousMaxFeeAmountUSD; // expressed as an integer with 18 decimals, initialized to zero at contract deployment
     uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
     uint256 private _startTimeMaxFeeAmountUSD;
 
-    address private _previousExcessFeeRecipient;
+    address private _previousExcessFeeRecipient; // initialized to zero address at contract deployment
     address private _excessFeeRecipient;
     uint256 private _startTimeExcessFeeRecipient;
 
