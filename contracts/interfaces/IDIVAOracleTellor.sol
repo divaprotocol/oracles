@@ -11,7 +11,7 @@ interface IDIVAOracleTellor {
     error AlreadyConfirmedPool();
 
     // Thrown in `updateExcessFeeRecipient` or constructor if the zero address
-    // is passed as input into `setExcessFeeRecipient`
+    // is passed as excess fee recipient address
     error ZeroExcessFeeRecipient();
 
     // Thrown in `setMinPeriodUndisputed` if `_minPeriodUndisputed` passed

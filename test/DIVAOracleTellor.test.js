@@ -78,7 +78,7 @@ describe("DIVAOracleTellor", () => {
   let tellorPlayground;
   let tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
   let divaAddress = DIVA_ADDRESS[network];
-  let mockDIVAOwnershipAddress;
+  let divaOwnershipAddress;
 
   let activationDelay;
   let maxFeeAmountUSD = parseUnits("10");
@@ -135,7 +135,7 @@ describe("DIVAOracleTellor", () => {
     expect(await diva.getOwner()).to.eq(user1.address);
 
     // Get DIVA ownership contract address
-    mockDIVAOwnershipAddress = await diva.getOwnershipContract();
+    divaOwnershipAddress = await diva.getOwnershipContract();
   });
 
   beforeEach(async () => {
@@ -144,7 +144,7 @@ describe("DIVAOracleTellor", () => {
       "DIVAOracleTellor"
     );
     divaOracleTellor = await divaOracleTellorFactory.deploy(
-      mockDIVAOwnershipAddress,
+      divaOwnershipAddress,
       tellorPlaygroundAddress,
       excessFeeRecipient.address,
       minPeriodUndisputed,
@@ -154,7 +154,7 @@ describe("DIVAOracleTellor", () => {
     // Check challengeable
     expect(await divaOracleTellor.challengeable()).to.eq(false);
     expect(await divaOracleTellor.getOwnershipContract()).to.eq(
-      mockDIVAOwnershipAddress
+      divaOwnershipAddress
     );
 
     // Get activation delay
