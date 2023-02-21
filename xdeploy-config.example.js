@@ -1,2 +1,3 @@
 const xdeployConfig = {};
-export { xdeployConfig };
+exports.xdeployConfig = xdeployConfig;
+  

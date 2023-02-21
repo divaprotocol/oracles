@@ -22,23 +22,25 @@ interface IDIVA {
 
     // Collection of pool related parameters; order was optimized to reduce storage costs
     struct Pool {
-        uint256 floor;
-        uint256 inflection;
-        uint256 cap;
-        uint256 gradient;
-        uint256 collateralBalance;
-        uint256 finalReferenceValue;
-        uint256 capacity;
-        uint256 statusTimestamp;
-        address shortToken;
-        uint96 payoutShort; // max value: 1e18 <= 2^64
-        address longToken;
-        uint96 payoutLong; // max value: 1e18 <= 2^64
-        address collateralToken;
-        uint96 expiryTime;
-        address dataProvider;
-        Status statusFinalReferenceValue;
-        string referenceAsset;
+        uint256 floor; // Reference asset value at or below which the long token pays out 0 and the short token 1 (max payout) (18 decimals)
+        uint256 inflection; // Reference asset value at which the long token pays out `gradient` and the short token `1-gradient` (18 decimals)
+        uint256 cap; // Reference asset value at or above which the long token pays out 1 (max payout) and the short token 0 (18 decimals)
+        uint256 gradient; // Long token payout at inflection (value between 0 and 1) (collateral token decimals)
+        uint256 collateralBalance; // Current collateral balance of pool (collateral token decimals)
+        uint256 finalReferenceValue; // Reference asset value at the time of expiration (18 decimals) - set to 0 at pool creation
+        uint256 capacity; // Maximum collateral that the pool can accept (collateral token decimals)
+        uint256 statusTimestamp; // Timestamp of status change - set to block.timestamp at pool creation
+        address shortToken; // Short position token address
+        uint96 payoutShort; // Payout amount per short position token net of fees (collateral token decimals) - set to 0 at pool creation
+        address longToken; // Long position token address
+        uint96 payoutLong; // Payout amount per long position token net of fees (collateral token decimals) - set to 0 at pool creation
+        address collateralToken; // Address of the ERC20 collateral token
+        uint96 expiryTime; // Expiration time of the pool (expressed as a unix timestamp in seconds)
+        address dataProvider; // Address of data provider
+        uint48 indexFees; // Index pointer to the applicable fees inside the Fees struct array
+        uint48 indexSettlementPeriods; // Index pointer to the applicable periods inside the SettlementPeriods struct array
+        Status statusFinalReferenceValue; // Status of final reference price (0 = Open, 1 = Submitted, 2 = Challenged, 3 = Confirmed) - set to 0 at pool creation
+        string referenceAsset; // Reference asset string
     }
 
     // Argument for `createContingentPool` function
@@ -116,7 +118,7 @@ interface IDIVA {
      * Provided collateral is kept inside the contract until position tokens are 
      * redeemed by calling `redeemPositionToken` or `removeLiquidity`.
      * @dev Position token supply equals `collateralAmount` (minimum 1e6).
-     * Position tokens have the same amount of decimals as the collateral token.
+     * Position tokens have the same number of decimals as the collateral token.
      * Only ERC20 tokens with 6 <= decimals <= 18 are accepted as collateral.
      * Tokens with flexible supply like Ampleforth should not be used. When
      * interest/yield bearing tokens are considered, only use tokens with a
@@ -162,7 +164,11 @@ interface IDIVA {
         returns (uint256);
 
     /**
-     * @notice Returns the pool parameters for a given pool Id.
+     * @notice Returns the pool parameters for a given pool Id. To
+     * obtain the fees and settlement periods applicable for the pool,
+     * use the `getFees` and `getSettlementPeriods` functions
+     * respectively, passing in the returend `indexFees` and
+     * `indexSettlementPeriods` as arguments.
      * @param _poolId Id of the pool.
      * @return Pool struct.
      */
@@ -172,10 +178,10 @@ interface IDIVA {
         returns (Pool memory);
 
     /**
-     * @dev Returns the claims by collateral tokens for a given account.
+     * @notice Returns the claims by collateral tokens for a given account.
      * @param _recipient Recipient address.
      * @param _collateralToken Collateral token address.
-     * @return Array of Claim structs.
+     * @return Fee claim amount.
      */
     function getClaim(address _collateralToken, address _recipient)
         external

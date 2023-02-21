@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const { parseEther, parseUnits } = require("@ethersproject/units");
+const { parseUnits } = require("@ethersproject/units");
 const util = require("util");
 const fs = require("fs");
 const child_process = require("child_process");
@@ -39,7 +39,7 @@ const calcFee = (
   collateralTokenDecimals
 ) => {
   const SCALING = parseUnits("1", 18 - collateralTokenDecimals);
-  const UNIT = parseEther("1");
+  const UNIT = parseUnits("1");
 
   return fee.mul(collateralBalance).mul(SCALING).div(UNIT).div(SCALING);
 };
@@ -53,7 +53,7 @@ const advanceTime = async (time) => {
   await network.provider.send("evm_mine");
 };
 
-const getLastTimestamp = async () => {
+const getLastBlockTimestamp = async () => {
   /**
    * Changed this from ethers.provider.getBlockNumber since if evm_revert is used to return
    * to a snapshot, getBlockNumber will still return the last mined block rather than the
@@ -63,8 +63,8 @@ const getLastTimestamp = async () => {
   return currentBlock.timestamp;
 };
 
-const setNextTimestamp = async (provider, timestamp) => {
-  await provider.send("evm_setNextBlockTimestamp", [timestamp]);
+const setNextBlockTimestamp = async (timestamp) => {
+  await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp]);
 };
 
 // Auxiliary function to generate the `xdeploy-config.js` file which contains the
@@ -111,15 +111,20 @@ const writeFile = (fileName, content) => {
   });
 };
 
+const getCurrentTimestampInSeconds = () => {
+  return Math.floor(Date.now() / 1000);
+};
+
 exports.advanceTime = advanceTime;
 exports.encodeToOracleValue = encodeToOracleValue;
 exports.decodeTellorValue = decodeTellorValue;
 exports.getQueryDataAndId = getQueryDataAndId;
 exports.calcFee = calcFee;
 exports.getExpiryInSeconds = getExpiryInSeconds;
-exports.getLastTimestamp = getLastTimestamp;
-exports.setNextTimestamp = setNextTimestamp;
+exports.getLastBlockTimestamp = getLastBlockTimestamp;
+exports.setNextBlockTimestamp = setNextBlockTimestamp;
 exports.generateXdeployConfig = generateXdeployConfig;
 exports.execCommand = execCommand;
 exports.checkMinPeriodUndisputed = checkMinPeriodUndisputed;
 exports.writeFile = writeFile;
+exports.getCurrentTimestampInSeconds = getCurrentTimestampInSeconds;
