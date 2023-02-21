@@ -33,10 +33,8 @@ const main = async () => {
     );
   }
 
-  const maxFeeAmountUSD = parseUnits(MAX_FEE_AMOUNT_USD).toString();
+  // Get DIVA contract deployed on selected network
   const divaAddress = DIVA_ADDRESS[network.name];
-
-  // Get DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
 
   // Get DIVA ownership contract address
@@ -49,7 +47,7 @@ const main = async () => {
       "${divaOwnershipAddress}",
       "${tellorAddress}",
       "${EXCESS_FEE_RECIPIENT}",
-      "${maxFeeAmountUSD}",
+      "${MAX_FEE_AMOUNT_USD}",
       "${divaAddress}"
     ];
   `;
