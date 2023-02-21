@@ -21,7 +21,8 @@
     "divaTellor:addTip": "yarn hardhat run scripts/examples/divaTellor_addTip.js --network goerli",
     "divaTellor:claimReward": "yarn hardhat run scripts/examples/divaTellor_claimReward.js --network goerli",
     "tellor:submitValue": "yarn hardhat run scripts/examples/tellor_submitValue.js --network goerli",
-    "tellor:queryDataExample": "yarn hardhat run scripts/examples/tellorQueryDataExample.js --network goerli"
+    "tellor:queryDataExample": "yarn hardhat run scripts/examples/tellorQueryDataExample.js --network goerli",
+    "xdeploy:divaTellor": "npx node scripts/xdeploy/xdeployTellor.js"
   },
   "repository": {
     "type": "git",
@@ -47,7 +48,8 @@
     "solhint": "^3.3.6",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "0.7.18",
-    "typescript": "^4.5.4"
+    "typescript": "^4.5.4",
+    "xdeployer": "^1.1.27"
   },
   "dependencies": {
     "@chainlink/contracts": "^0.2.2",

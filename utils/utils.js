@@ -1,5 +1,8 @@
 const { ethers } = require("hardhat");
 const { parseEther, parseUnits } = require("@ethersproject/units");
+const util = require("util");
+const fs = require("fs");
+const child_process = require("child_process");
 
 const encodeToOracleValue = (finalReferenceValue, collateralToUSDRate) => {
   return new ethers.utils.AbiCoder().encode(
@@ -64,6 +67,50 @@ const setNextTimestamp = async (provider, timestamp) => {
   await provider.send("evm_setNextBlockTimestamp", [timestamp]);
 };
 
+// Auxiliary function to generate the `xdeploy-config.js` file which contains the
+// contract name as well as the constructor args which are part of the xdeployer config parameters.
+const generateXdeployConfig = (contract) => {
+  const xdeployConfig = `
+      const xdeployConfig = {
+        contract: "${contract}",
+        constructorArgsPath: "./xdeploy-args.js",
+      };
+      exports.xdeployConfig = xdeployConfig;
+    `;
+  writeFile("xdeploy-config.js", xdeployConfig);
+};
+
+// Auxiliary function to execute command line commands from within the script.
+const execCommand = async (command) => {
+  try {
+    const { stdout, stderr } = await exec(command);
+    if (stderr && !stderr.toLowerCase().includes("warning")) {
+      console.error("stderr:", stderr);
+      throw new Error(stderr);
+    }
+    console.log(stdout);
+    return stdout;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+};
+
+const exec = util.promisify(child_process.exec);
+
+const checkMinPeriodUndisputed = (minPeriodUndisputed) => {
+  if (minPeriodUndisputed < 3600 || minPeriodUndisputed > 64800) {
+    throw Error("Min period undisputed is too small or too large");
+  }
+};
+
+const writeFile = (fileName, content) => {
+  fs.writeFile(fileName, content, "utf8", (err) => {
+    if (err) throw err;
+    console.log(`The ${fileName} has been saved!`);
+  });
+};
+
 exports.advanceTime = advanceTime;
 exports.encodeToOracleValue = encodeToOracleValue;
 exports.decodeTellorValue = decodeTellorValue;
@@ -72,3 +119,7 @@ exports.calcFee = calcFee;
 exports.getExpiryInSeconds = getExpiryInSeconds;
 exports.getLastTimestamp = getLastTimestamp;
 exports.setNextTimestamp = setNextTimestamp;
+exports.generateXdeployConfig = generateXdeployConfig;
+exports.execCommand = execCommand;
+exports.checkMinPeriodUndisputed = checkMinPeriodUndisputed;
+exports.writeFile = writeFile;

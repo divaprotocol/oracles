@@ -1,7 +1,11 @@
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
 require("solidity-coverage");
+require("xdeployer");
 require("dotenv").config();
+
+const { xdeployConfig } = require("./xdeploy-config");
+const { XDEPLOY_CHAINS } = require("./utils/constants");
 
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -12,6 +16,17 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 });
 
 const MNEMONIC = process.env.MNEMONIC;
+
+// Need to update the XDEPLOY_CHAINS to the chains you want to deploy contract on when you deploy it using xdeployer
+const generalXdeployConfig = {
+  salt: process.env.SALT,
+  signer: process.env.PRIVATE_KEY,
+  gasLimit: 12 * 10 ** 6,
+  networks: XDEPLOY_CHAINS,
+  rpcUrls: XDEPLOY_CHAINS.map(
+    (chainName) => process.env[`RPC_URL_${chainName.toUpperCase()}`]
+  ),
+};
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -41,7 +56,7 @@ module.exports = {
       },
     },
     polygon_mumbai: {
-      url: process.env.RPC_URL_POLYGON_MUMBAI,
+      url: process.env.RPC_URL_MUMBAI,
       accounts: {
         mnemonic: MNEMONIC,
       },
@@ -54,6 +69,7 @@ module.exports = {
       },
     },
   },
+  xdeploy: { ...xdeployConfig, ...generalXdeployConfig },
   mocha: {
     timeout: 100000,
   },
