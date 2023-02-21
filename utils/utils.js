@@ -98,12 +98,6 @@ const execCommand = async (command) => {
 
 const exec = util.promisify(child_process.exec);
 
-const checkMinPeriodUndisputed = (minPeriodUndisputed) => {
-  if (minPeriodUndisputed < 3600 || minPeriodUndisputed > 64800) {
-    throw Error("Min period undisputed is too small or too large");
-  }
-};
-
 const writeFile = (fileName, content) => {
   fs.writeFile(fileName, content, "utf8", (err) => {
     if (err) throw err;
@@ -125,6 +119,5 @@ exports.getLastBlockTimestamp = getLastBlockTimestamp;
 exports.setNextBlockTimestamp = setNextBlockTimestamp;
 exports.generateXdeployConfig = generateXdeployConfig;
 exports.execCommand = execCommand;
-exports.checkMinPeriodUndisputed = checkMinPeriodUndisputed;
 exports.writeFile = writeFile;
 exports.getCurrentTimestampInSeconds = getCurrentTimestampInSeconds;

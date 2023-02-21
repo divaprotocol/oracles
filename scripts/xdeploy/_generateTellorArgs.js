@@ -6,7 +6,7 @@ const { parseUnits } = require("ethers/lib/utils");
 
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
-const { checkMinPeriodUndisputed, writeFile } = require("../../utils/utils");
+const { writeFile } = require("../../utils/utils");
 const {
   DIVA_ADDRESS,
   TELLOR_VERSION,
@@ -16,7 +16,6 @@ const {
 
 // Load relevant variables from `.env` file
 const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
-const MIN_PERIOD_UNDISPUTED = process.env.MIN_PERIOD_UNDISPUTED || "";
 const MAX_FEE_AMOUNT_USD = process.env.MAX_FEE_AMOUNT_USD || "";
 
 const main = async () => {
@@ -34,12 +33,8 @@ const main = async () => {
     );
   }
 
-  const minPeriodUndisputed = Number(MIN_PERIOD_UNDISPUTED); // IMPORTANT to set correctly!; input in seconds
-  checkMinPeriodUndisputed(minPeriodUndisputed);
-  const maxFeeAmountUSD = parseUnits(MAX_FEE_AMOUNT_USD).toString();
+  // Get DIVA contract deployed on selected network
   const divaAddress = DIVA_ADDRESS[network.name];
-
-  // Get DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
 
   // Get DIVA ownership contract address
@@ -52,8 +47,7 @@ const main = async () => {
       "${divaOwnershipAddress}",
       "${tellorAddress}",
       "${EXCESS_FEE_RECIPIENT}",
-      "${minPeriodUndisputed}",
-      "${maxFeeAmountUSD}",
+      "${MAX_FEE_AMOUNT_USD}",
       "${divaAddress}"
     ];
   `;
