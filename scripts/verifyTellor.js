@@ -6,7 +6,7 @@ const verifyArgs = require("../verify-args"); // generated inside `deployTellor.
 
 const main = async () => {
   console.log(
-    "<<<<<<<<<<<<<<<<< Start verify DIVAOracleTellor contract <<<<<<<<<<<<<<<<<<"
+    `<<<<<<<<<<<<<<<<< Start verify DIVAOracleTellor contract on ${verifyArgs.network} network <<<<<<<<<<<<<<<<<<`
   );
   if (
     !(await execCommand(
@@ -14,11 +14,11 @@ const main = async () => {
     ))
   ) {
     console.error(
-      ">>>>>>>>>>>>>>>> Failed to verify DIVAOracleTellor contract >>>>>>>>>>>>>>>"
+      `>>>>>>>>>>>>>>>> Failed to verify DIVAOracleTellor contract on ${verifyArgs.network} network >>>>>>>>>>>>>>>`
     );
   } else {
     console.log(
-      ">>>>>>>>>>> DIVAOracleTellor contract was successfully verified >>>>>>>>>>>"
+      `>>>>>>>>>>> DIVAOracleTellor contract was successfully verified on ${verifyArgs.network} network >>>>>>>>>>>`
     );
   }
   console.log();

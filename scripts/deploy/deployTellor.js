@@ -19,7 +19,7 @@ const {
   TELLOR_VERSION,
   DIVA_ADDRESS,
 } = require("../../utils/constants");
-const { writeFile } = require("../../utils/utils");
+const { writeFileSync } = require("../../utils/utils");
 
 // Load relevant variable from `.env` file
 const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
@@ -72,7 +72,7 @@ async function main() {
       "${divaAddress}"
     ];
   `;
-  writeFile("deploy-args.js", divaOracleTellorArgs);
+  writeFileSync("deploy-args.js", divaOracleTellorArgs);
 
   // Generate the content of the `verify-args.js` file used for the verification of
   // the `DIVAOracleTellor` contract
@@ -82,7 +82,7 @@ async function main() {
       address: "${divaOracleTellor.address}",
     };
   `;
-  writeFile("verify-args.js", verifyArgs);
+  writeFileSync("verify-args.js", verifyArgs);
 }
 
 main()

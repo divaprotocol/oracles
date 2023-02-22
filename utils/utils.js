@@ -98,8 +98,15 @@ const execCommand = async (command) => {
 
 const exec = util.promisify(child_process.exec);
 
-const writeFile = (fileName, content) => {
+const writeFileSync = (fileName, content) => {
   fs.writeFileSync(fileName, content, "utf8", (err) => {
+    if (err) throw err;
+    console.log(`The ${fileName} has been saved!`);
+  });
+};
+
+const writeFile = (fileName, content) => {
+  fs.writeFile(fileName, content, "utf8", (err) => {
     if (err) throw err;
     console.log(`The ${fileName} has been saved!`);
   });
@@ -120,4 +127,5 @@ exports.setNextBlockTimestamp = setNextBlockTimestamp;
 exports.generateXdeployConfig = generateXdeployConfig;
 exports.execCommand = execCommand;
 exports.writeFile = writeFile;
+exports.writeFileSync = writeFileSync;
 exports.getCurrentTimestampInSeconds = getCurrentTimestampInSeconds;
