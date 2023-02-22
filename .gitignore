@@ -109,14 +109,17 @@ coverage
 coverage.json
 typechain
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
 
-#VSCode settings
+# VSCode settings
 .vscode
 
-#xdeploy
+# xdeploy
 xdeploy-config.js
-xdeploy-args.js
+deploy-args.js
 deployments
+
+# verify
+verify-args.js

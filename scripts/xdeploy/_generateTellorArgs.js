@@ -2,7 +2,6 @@
 // constructor args file for DIVAOracleTellor contract.
 
 const { ethers, network } = require("hardhat");
-const { parseUnits } = require("ethers/lib/utils");
 
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 
@@ -40,7 +39,7 @@ const main = async () => {
   // Get DIVA ownership contract address
   const divaOwnershipAddress = await diva.getOwnershipContract();
 
-  // Generate the content of the xdeploy-args.js file used for the deployment of
+  // Generate the content of the `deploy-args.js` file used for the deployment of
   // the `DIVAOracleTellor` contract
   const divaOracleTellorArgs = `
     module.exports = [
@@ -51,7 +50,7 @@ const main = async () => {
       "${divaAddress}"
     ];
   `;
-  writeFile("xdeploy-args.js", divaOracleTellorArgs);
+  writeFile("deploy-args.js", divaOracleTellorArgs);
 };
 
 main().catch((error) => {

@@ -14,7 +14,7 @@
  *
  * IMPORTANT:
  * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasuy address.
- * - Set `tellorVersion` on line 23 of `_generateTellorArgs.js` file to the correct one you want link to.
+ * - Set `tellorVersion` on line 22 of `_generateTellorArgs.js` file to the correct one you want link to.
  * - Set `MAX_FEE_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
  *
  * Run: `yarn xdeploy:divaTellor`
@@ -32,7 +32,7 @@ const main = async () => {
   // Choose a default chain to run commands against (doesn't really matter which one to use).
   const defaultChain = XDEPLOY_CHAINS[0];
 
-  // Generate the constructor args file `xdeploy-args.js` for `DIVAOracleTellor` contract required for the xdeployer process.
+  // Generate the constructor args file `deploy-args.js` for `DIVAOracleTellor` contract required for the xdeployer process.
   console.log(
     "<<<<<<<<<<<< Start generate DIVAOracleTellor constructor arguments <<<<<<<<<<<<"
   );
@@ -50,7 +50,7 @@ const main = async () => {
   );
   console.log();
 
-  // Deploy `DIVAOracleTellor` contract with constructor args stored in `xdeploy-args.js` (see step above)
+  // Deploy `DIVAOracleTellor` contract with constructor args stored in `deploy-args.js` (see step above)
   console.log(
     "<<<<<<<<<<<< Start deploy DIVAOracleTellor contract <<<<<<<<<<<<"
   );

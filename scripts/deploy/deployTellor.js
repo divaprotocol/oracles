@@ -19,6 +19,7 @@ const {
   TELLOR_VERSION,
   DIVA_ADDRESS,
 } = require("../../utils/constants");
+const { writeFile } = require("../../utils/utils");
 
 // Load relevant variable from `.env` file
 const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
@@ -59,6 +60,29 @@ async function main() {
   );
   await divaOracleTellor.deployed();
   console.log("DIVAOracleTellor deployed to:", divaOracleTellor.address);
+
+  // Generate the content of the `deploy-args.js` file used for the verification of
+  // the `DIVAOracleTellor` contract
+  const divaOracleTellorArgs = `
+    module.exports = [
+      "${divaOwnershipAddress}",
+      "${tellorAddress}",
+      "${EXCESS_FEE_RECIPIENT}",
+      "${MAX_FEE_AMOUNT_USD}",
+      "${divaAddress}"
+    ];
+  `;
+  writeFile("deploy-args.js", divaOracleTellorArgs);
+
+  // Generate the content of the `verify-args.js` file used for the verification of
+  // the `DIVAOracleTellor` contract
+  const verifyArgs = `
+    module.exports = {
+      network: "${network.name}",
+      address: "${divaOracleTellor.address}",
+    };
+  `;
+  writeFile("verify-args.js", verifyArgs);
 }
 
 main()
