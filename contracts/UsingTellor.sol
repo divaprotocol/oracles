@@ -150,6 +150,20 @@ contract UsingTellor {
     }
 
     /**
+     * @dev Returns the address of the reporter who submitted a value for a data ID at a specific time
+     * @param _queryId is ID of the specific data feed
+     * @param _timestamp is the timestamp to find a corresponding reporter for
+     * @return address of the reporter who reported the value for the data ID at the given timestamp
+     */
+    function getReporterByTimestamp(bytes32 _queryId, uint256 _timestamp)
+        public
+        view
+        returns (address)
+    {
+        return tellor.getReporterByTimestamp(_queryId, _timestamp);
+    }
+
+    /**
      * @dev Gets the timestamp for the value based on their index
      * @param _queryId is the id to look up
      * @param _index is the value index to look up
