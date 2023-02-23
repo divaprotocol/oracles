@@ -2,8 +2,8 @@
  * Script to deploy DIVAOracleTellor contract.
  *
  * IMPORTANT:
- * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasuy address.
- * - Set `tellorVersion` on line 29 to the correct one you want link to. Make sure
+ * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasury address.
+ * - Set `tellorVersion` on line 30 (ACTUAL or PLAYGROUND). Make sure
  * the Tellor contract addresses in `utils/constants.js` file are correct.
  * - Set `MAX_FEE_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
  *

@@ -10,7 +10,7 @@ const main = async () => {
   );
   if (
     !(await execCommand(
-      `npx hardhat verify ${verifyArgs.address} --contract contracts/DIVAOracleTellor.sol:DIVAOracleTellor --network ${verifyArgs.network} "${deployArgs[0]}" "${deployArgs[1]}" ${deployArgs[2]} ${deployArgs[3]} ${deployArgs[4]}`
+      `npx hardhat verify ${verifyArgs.address} --contract contracts/DIVAOracleTellor.sol:DIVAOracleTellor --network ${verifyArgs.network} ${deployArgs[0]} ${deployArgs[1]} ${deployArgs[2]} ${deployArgs[3]} ${deployArgs[4]}`
     ))
   ) {
     console.error(
