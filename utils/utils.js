@@ -73,7 +73,7 @@ const generateXdeployConfig = (contract) => {
   const xdeployConfig = `
       const xdeployConfig = {
         contract: "${contract}",
-        constructorArgsPath: "./xdeploy-args.js",
+        constructorArgsPath: "./deploy-args.js",
       };
       exports.xdeployConfig = xdeployConfig;
     `;
@@ -98,6 +98,13 @@ const execCommand = async (command) => {
 
 const exec = util.promisify(child_process.exec);
 
+const writeFileSync = (fileName, content) => {
+  fs.writeFileSync(fileName, content, "utf8", (err) => {
+    if (err) throw err;
+    console.log(`The ${fileName} has been saved!`);
+  });
+};
+
 const writeFile = (fileName, content) => {
   fs.writeFile(fileName, content, "utf8", (err) => {
     if (err) throw err;
@@ -120,4 +127,5 @@ exports.setNextBlockTimestamp = setNextBlockTimestamp;
 exports.generateXdeployConfig = generateXdeployConfig;
 exports.execCommand = execCommand;
 exports.writeFile = writeFile;
+exports.writeFileSync = writeFileSync;
 exports.getCurrentTimestampInSeconds = getCurrentTimestampInSeconds;

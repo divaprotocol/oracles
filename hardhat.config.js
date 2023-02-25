@@ -43,6 +43,8 @@ module.exports = {
     apiKey: {
       ropsten: process.env.ETHERSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
+      polygon: process.env.POLYGON_API_KEY || "",
+      polygonMumbai: process.env.POLYGON_API_KEY || "",
     },
   },
   networks: {

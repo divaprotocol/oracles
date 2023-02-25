@@ -46,24 +46,6 @@ contract UsingTellor {
     }
 
     /**
-     * @dev Retrieves the latest value for the queryId before the specified timestamp
-     * @param _queryId is the queryId to look up the value for
-     * @param _timestamp before which to search for latest value
-     * @return _value the value retrieved
-     * @return _timestampRetrieved the value's timestamp
-     */
-    function getDataBefore(bytes32 _queryId, uint256 _timestamp)
-        public
-        view
-        returns (bytes memory _value, uint256 _timestampRetrieved)
-    {
-        (, _value, _timestampRetrieved) = tellor.getDataBefore(
-            _queryId,
-            _timestamp
-        );
-    }
-
-    /**
      * @dev Retrieves latest array index of data before the specified timestamp for the queryId
      * @param _queryId is the queryId to look up the index for
      * @param _timestamp is the timestamp before which to search for the latest index
@@ -95,7 +77,10 @@ contract UsingTellor {
         // since the value is within our boundaries, do a binary search
         while (_search) {
             _middle = (_end + _start) / 2;
-            _timestampRetrieved = getTimestampbyQueryIdandIndex(_queryId, _middle);
+            _timestampRetrieved = getTimestampbyQueryIdandIndex(
+                _queryId,
+                _middle
+            );
             if (_timestampRetrieved > _timestamp) {
                 // get immediate previous value
                 uint256 _prevTime = getTimestampbyQueryIdandIndex(
@@ -127,90 +112,28 @@ contract UsingTellor {
             }
         }
         // candidate found, check for disputed values
-        if(!isInDispute(_queryId, _timestampRetrieved)) {
+        if (!isInDispute(_queryId, _timestampRetrieved)) {
             // _timestampRetrieved is correct
             return (true, _middle);
         } else {
             // iterate forward until we find a non-disputed value
-            while(isInDispute(_queryId, _timestampRetrieved) && _middle < _count) {
+            while (
+                isInDispute(_queryId, _timestampRetrieved) && _middle < _count
+            ) {
                 _middle++;
-                _timestampRetrieved = getTimestampbyQueryIdandIndex(_queryId, _middle);
+                _timestampRetrieved = getTimestampbyQueryIdandIndex(
+                    _queryId,
+                    _middle
+                );
             }
-            if(_middle == _count && isInDispute(_queryId, _timestampRetrieved)) {
+            if (
+                _middle == _count && isInDispute(_queryId, _timestampRetrieved)
+            ) {
                 return (false, 0);
             }
             // _timestampRetrieved is correct
             return (true, _middle);
         }
-    }
-
-    /**
-     * @dev Retrieves latest array index of data before the specified timestamp for the queryId
-     * @param _queryId is the queryId to look up the index for
-     * @param _timestamp is the timestamp before which to search for the latest index
-     * @return _found whether the index was found
-     * @return _index the latest index found before the specified timestamp
-     */
-    // slither-disable-next-line calls-loop
-    function getIndexForDataBefore(bytes32 _queryId, uint256 _timestamp)
-        public
-        view
-        returns (bool _found, uint256 _index)
-    {
-        return tellor.getIndexForDataBefore(_queryId, _timestamp);
-    }
-
-    /**
-     * @dev Retrieves multiple uint256 values before the specified timestamp
-     * @param _queryId the unique id of the data query
-     * @param _timestamp the timestamp before which to search for values
-     * @param _maxAge the maximum number of seconds before the _timestamp to search for values
-     * @param _maxCount the maximum number of values to return
-     * @return _values the values retrieved, ordered from oldest to newest
-     * @return _timestamps the timestamps of the values retrieved
-     */
-    function getMultipleValuesBefore(
-        bytes32 _queryId,
-        uint256 _timestamp,
-        uint256 _maxAge,
-        uint256 _maxCount
-    )
-        public
-        view
-        returns (bytes[] memory _values, uint256[] memory _timestamps)
-    {
-        (bool _ifRetrieve, uint256 _startIndex) = getIndexForDataAfter(
-            _queryId,
-            _timestamp - _maxAge
-        );
-        // no value within range
-        if (!_ifRetrieve) {
-            return (new bytes[](0), new uint256[](0));
-        }
-        uint256 _endIndex;
-        (_ifRetrieve, _endIndex) = getIndexForDataBefore(_queryId, _timestamp);
-        // no value before _timestamp
-        if (!_ifRetrieve) {
-            return (new bytes[](0), new uint256[](0));
-        }
-        uint256 _valCount = _endIndex - _startIndex + 1;
-        // more than _maxCount values found within range
-        if (_valCount > _maxCount) {
-            _startIndex = _endIndex - _maxCount + 1;
-            _valCount = _maxCount;
-        }
-        bytes[] memory _valuesArray = new bytes[](_valCount);
-        uint256[] memory _timestampsArray = new uint256[](_valCount);
-        bytes memory _valueRetrieved;
-        for (uint256 _i = 0; _i < _valCount; _i++) {
-            _timestampsArray[_i] = getTimestampbyQueryIdandIndex(
-                _queryId,
-                (_startIndex + _i)
-            );
-            _valueRetrieved = retrieveData(_queryId, _timestampsArray[_i]);
-            _valuesArray[_i] = _valueRetrieved;
-        }
-        return (_valuesArray, _timestampsArray);
     }
 
     /**
