@@ -14,13 +14,17 @@
  *
  * IMPORTANT:
  * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasuy address.
- * - Set `tellorVersion` on line 23 of `_generateTellorArgs.js` file to the correct one you want link to.
+ * - Set `tellorVersion` on line 22 of `_generateTellorArgs.js` file to the correct one you want link to.
  * - Set `MAX_FEE_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
  *
  * Run: `yarn xdeploy:divaTellor`
  */
 
-const { generateXdeployConfig, execCommand } = require("../../utils/utils");
+const {
+  generateXdeployConfig,
+  execCommand,
+  writeFile,
+} = require("../../utils/utils");
 const { XDEPLOY_CHAINS } = require("../../utils/constants");
 
 const main = async () => {
@@ -32,7 +36,7 @@ const main = async () => {
   // Choose a default chain to run commands against (doesn't really matter which one to use).
   const defaultChain = XDEPLOY_CHAINS[0];
 
-  // Generate the constructor args file `xdeploy-args.js` for `DIVAOracleTellor` contract required for the xdeployer process.
+  // Generate the constructor args file `deploy-args.js` for `DIVAOracleTellor` contract required for the xdeployer process.
   console.log(
     "<<<<<<<<<<<< Start generate DIVAOracleTellor constructor arguments <<<<<<<<<<<<"
   );
@@ -50,18 +54,44 @@ const main = async () => {
   );
   console.log();
 
-  // Deploy `DIVAOracleTellor` contract with constructor args stored in `xdeploy-args.js` (see step above)
+  // Deploy `DIVAOracleTellor` contract with constructor args stored in `deploy-args.js` (see step above)
   console.log(
     "<<<<<<<<<<<< Start deploy DIVAOracleTellor contract <<<<<<<<<<<<"
   );
   generateXdeployConfig("DIVAOracleTellor");
-  if (!(await execCommand("npx hardhat xdeploy"))) {
+  const xdeployOutput = await execCommand("npx hardhat xdeploy");
+  if (!xdeployOutput) {
     throw new Error("Failed to deploy DIVAOracleTellor contract");
   }
   console.log(
     ">>>>>>>>>> DIVAOracleTellor contract was successfully deployed >>>>>>>>>>"
   );
   console.log();
+
+  // Get DIVAOracleTellor contract address deployed by xdeployer
+  const addressLine = xdeployOutput
+    .split("\n")
+    .find((line) =>
+      line.startsWith(
+        "Your deployment parameters will lead to the following contract address"
+      )
+    );
+  const divaTellorOracleAddress = addressLine.substring(77, 119);
+
+  // Verify DIVAOracleTellor contracts deployed by xdeployer
+  for (const chainName of XDEPLOY_CHAINS) {
+    // Generate the content of the `verify-args.js` file used for the verification of
+    // the `DIVAOracleTellor` contract
+    const verifyArgs = `
+      module.exports = {
+        network: "${chainName}",
+        address: "${divaTellorOracleAddress}",
+      };
+    `;
+    writeFile("verify-args.js", verifyArgs);
+
+    await execCommand(`npx node scripts/verifyTellor.js`);
+  }
 };
 
 main().catch((error) => {

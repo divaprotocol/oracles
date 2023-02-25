@@ -2,8 +2,8 @@
  * Script to deploy DIVAOracleTellor contract.
  *
  * IMPORTANT:
- * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasuy address.
- * - Set `tellorVersion` on line 29 to the correct one you want link to. Make sure
+ * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasury address.
+ * - Set `tellorVersion` on line 30 (ACTUAL or PLAYGROUND). Make sure
  * the Tellor contract addresses in `utils/constants.js` file are correct.
  * - Set `MAX_FEE_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
  *
@@ -19,6 +19,7 @@ const {
   TELLOR_VERSION,
   DIVA_ADDRESS,
 } = require("../../utils/constants");
+const { writeFileSync } = require("../../utils/utils");
 
 // Load relevant variable from `.env` file
 const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
@@ -59,6 +60,29 @@ async function main() {
   );
   await divaOracleTellor.deployed();
   console.log("DIVAOracleTellor deployed to:", divaOracleTellor.address);
+
+  // Generate the content of the `deploy-args.js` file used for the verification of
+  // the `DIVAOracleTellor` contract
+  const divaOracleTellorArgs = `
+    module.exports = [
+      "${divaOwnershipAddress}",
+      "${tellorAddress}",
+      "${EXCESS_FEE_RECIPIENT}",
+      "${MAX_FEE_AMOUNT_USD}",
+      "${divaAddress}"
+    ];
+  `;
+  writeFileSync("deploy-args.js", divaOracleTellorArgs);
+
+  // Generate the content of the `verify-args.js` file used for the verification of
+  // the `DIVAOracleTellor` contract
+  const verifyArgs = `
+    module.exports = {
+      network: "${network.name}",
+      address: "${divaOracleTellor.address}",
+    };
+  `;
+  writeFileSync("verify-args.js", verifyArgs);
 }
 
 main()
