@@ -13,6 +13,9 @@ interface IDIVAGoplugin {
     // Thrown in constructor if zero address is provided as ownershipContract.
     error ZeroOwnershipContractAddress();
 
+    // Thrown in constructor if zero address is provided as PLI token address.
+    error ZeroPLIAddress();
+
     // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner.
     error NotContractOwner(address _user, address _contractOwner);
 
