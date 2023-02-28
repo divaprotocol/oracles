@@ -52,20 +52,32 @@ interface IDIVAGoplugin {
     function getMinPeriodUndisputed() external pure returns (uint32);
 
     /**
-     * @dev Returns the list of requester addresses that are entitled to receive
-     * the fees/tips for the provided poolIds. Note that it returns
-     * the zero address if a value has been reported to the Tellor contract
-     * but it hasn't been pulled into DIVA Protocol by calling
-     * `setFinalReferenceValue` yet.
-     * @param _poolIds Array of poolIds.
+     * @dev Returns the fee per request.
      */
-    function getRequesters(uint256[] calldata _poolIds)
+    function getFeePerRequest() external pure returns (uint256);
+
+    /**
+     * @dev Returns the requester address.
+     * @param _poolId Array of poolIds.
+     */
+    function getRequester(uint256 _poolId) external view returns (address);
+
+    /**
+     * @dev Returns the last requested blocktimestamp.
+     * @param _poolId Array of poolIds.
+     */
+    function getLastRequestedBlocktimestamp(uint256 _poolId)
         external
         view
-        returns (address[] memory);
+        returns (uint256);
 
     /**
      * @dev Returns the DIVA protocol contract address that the oracle is linked to.
      */
     function getDIVAAddress() external view returns (address);
+
+    /**
+     * @dev Returns the PLI token contract address.
+     */
+    function getPLIAddress() external view returns (address);
 }

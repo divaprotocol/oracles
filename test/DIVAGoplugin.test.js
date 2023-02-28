@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers, network } = require("hardhat");
+const { ethers } = require("hardhat");
 const { parseUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
@@ -16,86 +16,31 @@ const {
   PLI_ADDRESS,
 } = require("../utils/constants"); //  DIVA Protocol v1.0.0
 
-const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture");
+const {
+  erc20AttachFixture,
+  erc20DeployFixture,
+} = require("./fixtures/MockERC20Fixture");
 
+const network = "apothem"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
-const tippingTokenDecimals = 6;
-
-const calcSettlementFee = (
-  collateralBalance, // Basis for fee calcuation
-  fee, // Settlement fee percent expressed as an integer with 18 decimals
-  collateralTokenDecimals,
-  collateralToUSDRate = parseUnits("0") // USD value of one unit of collateral token
-) => {
-  // Fee amount in collateral token decimals
-  feeAmount = collateralBalance.mul(fee).div(parseUnits("1"));
-
-  // Fee amount in USD expressed as integer with 18 decimals
-  feeAmountUSD = feeAmount
-    .mul(parseUnits("1", 18 - collateralTokenDecimals))
-    .mul(collateralToUSDRate)
-    .div(parseUnits("1"));
-
-  return [
-    feeAmount, // expressed as integer with collateral token decimals
-    feeAmountUSD, // expressed as integer with 18 decimals
-  ];
-};
-
-const encodeOracleValue = (finalReferenceValue, collateralToUSDRate) => {
-  return new ethers.utils.AbiCoder().encode(
-    ["uint256", "uint256"],
-    [finalReferenceValue, collateralToUSDRate]
-  );
-};
-
-const decodeOracleValue = (tellorValue) => {
-  return new ethers.utils.AbiCoder().decode(
-    ["uint256", "uint256"],
-    tellorValue
-  );
-};
-
-const getQueryDataAndId = (latestPoolId, divaAddress, chainId) => {
-  const abiCoder = new ethers.utils.AbiCoder();
-  const queryDataArgs = abiCoder.encode(
-    ["uint256", "address", "uint256"],
-    [latestPoolId, divaAddress, chainId]
-  );
-  const queryData = abiCoder.encode(
-    ["string", "bytes"],
-    ["DIVAProtocol", queryDataArgs]
-  );
-  const queryId = ethers.utils.keccak256(queryData);
-  return [queryData, queryId];
-};
 
 describe("DIVAGoplugin", () => {
   let collateralTokenInstance;
-  let user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2;
+  let user1, user2, user3, reporter;
 
   let divaGoplugin;
-  let tellorPlayground;
-  let divaAddress = DIVA_ADDRESS[network.name];
-  let pliAddress = PLI_ADDRESS[network.name];
-
-  let activationDelay;
-  let maxFeeAmountUSD = parseUnits("10");
+  let divaAddress = DIVA_ADDRESS[network];
+  let pliAddress = PLI_ADDRESS[network];
+  let pliToken;
 
   let minPeriodUndisputed;
+  let feePerRequest;
 
-  let latestPoolId;
+  let poolId;
   let poolParams;
   let feesParams;
 
-  let tippingToken1;
-  let tippingToken2;
-  let tippingAmount1;
-  let tippingAmount2;
-
-  let chainId;
-  let finalReferenceValue, collateralToUSDRate;
-  let queryData, queryId, oracleValue;
+  let finalReferenceValue;
 
   let nextBlockTimestamp;
 
@@ -116,10 +61,21 @@ describe("DIVAGoplugin", () => {
     // Check initial params
     expect(await divaGoplugin.getChallengeable()).to.eq(false);
     expect(await divaGoplugin.getDIVAAddress()).to.eq(divaAddress);
-
-    // Get `minPeriodUndisputed`
+    expect(await divaGoplugin.getPLIAddress()).to.eq(pliAddress);
     minPeriodUndisputed = await divaGoplugin.getMinPeriodUndisputed();
     expect(minPeriodUndisputed).to.eq(ONE_HOUR * 12);
+    feePerRequest = await divaGoplugin.getFeePerRequest();
+    expect(feePerRequest).to.eq(parseUnits("0.1"));
+
+    // Get PLI token instance
+    pliToken = await erc20AttachFixture(pliAddress);
+
+    // Transfer PLI token to user1
+    const ownerPLIBalance = await pliToken.balanceOf(owner.address);
+    expect(ownerPLIBalance).to.gt(0);
+    await pliToken
+      .connect(owner)
+      .transfer(user1.address, ownerPLIBalance.div(2));
 
     // Set user start token balance
     const userStartTokenBalance = parseUnits("1000000");
@@ -132,25 +88,24 @@ describe("DIVAGoplugin", () => {
       user1.address,
       collateralTokenDecimals
     );
-    await collateralTokenInstance.approve(diva.address, userStartTokenBalance);
+    await collateralTokenInstance
+      .connect(user1)
+      .approve(diva.address, userStartTokenBalance);
 
     // Create an expired contingent pool that uses Tellor as the data provider
     const tx = await createContingentPool();
     const receipt = await tx.wait();
 
-    latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")?.args
+    poolId = receipt.events?.find((x) => x.event === "PoolIssued")?.args
       ?.poolId;
-    poolParams = await diva.getPoolParameters(latestPoolId);
+    poolParams = await diva.getPoolParameters(poolId);
 
     feesParams = await diva.getFees(poolParams.indexFees);
-
-    // Get chain id
-    chainId = (await ethers.provider.getNetwork()).chainId;
   });
 
   // Function to create contingent pools pre-populated with default values that can be overwritten depending on the test case
   const createContingentPool = async ({
-    referenceAsset = "BTC/USD", // reference asset
+    referenceAsset = "0x21046D8b5B4ad1e95292A8F37626848c0e116aeB", // Goplugin Feed for XDC/USDT
     expireInSeconds = TEN_MINS, // expiryTime
     floor = 40000, // floor
     inflection = 60000, // inflection
@@ -164,7 +119,7 @@ describe("DIVAGoplugin", () => {
     shortRecipient = user1.address, // shortRecipient
     permissionedERC721Token = ethers.constants.AddressZero,
   } = {}) => {
-    return await diva.createContingentPool({
+    return await diva.connect(user1).createContingentPool({
       referenceAsset,
       expiryTime: (await getLastBlockTimestamp()) + expireInSeconds,
       floor: parseUnits(floor.toString()),
@@ -184,42 +139,32 @@ describe("DIVAGoplugin", () => {
     });
   };
 
-  // describe("requestFinalReferenceValue", async () => {
-  //   it("Should request final reference value to DIVAGoplugin", async () => {
-  //     // ---------
-  //     // Arrange: Check that there's no tip added for latestPoolId
-  //     // ---------
-  //     expect(
-  //       (
-  //         await divaGoplugin.getTipAmounts([
-  //           { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
-  //         ])
-  //       )[0][0]
-  //     ).to.eq(0);
-  //     expect(await tippingToken1.balanceOf(divaGoplugin.address)).to.eq(0);
+  describe("requestFinalReferenceValue", async () => {
+    it("Should request final reference value to DIVAGoplugin", async () => {
+      // ---------
+      // Arrange: Check that there's no request for final reference value
+      // ---------
+      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
+        0
+      );
+      await pliToken
+        .connect(user1)
+        .approve(divaGoplugin.address, feePerRequest);
 
-  //     // ---------
-  //     // Act: Add tip
-  //     // ---------
-  //     await divaGoplugin
-  //       .connect(tipper1)
-  //       .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
+      // ---------
+      // Act: Call `requestFinalReferenceValue` function
+      // ---------
+      await divaGoplugin.connect(user1).requestFinalReferenceValue(poolId);
 
-  //     // ---------
-  //     // Assert: Check that tip is added on divaGoplugin correctly
-  //     // ---------
-  //     expect(
-  //       (
-  //         await divaGoplugin.getTipAmounts([
-  //           { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
-  //         ])
-  //       )[0][0]
-  //     ).to.eq(tippingAmount1);
-  //     expect(await tippingToken1.balanceOf(divaGoplugin.address)).to.eq(
-  //       tippingAmount1
-  //     );
-  //   });
-  // });
+      // ---------
+      // Assert: Check that final reference value is requested
+      // ---------
+      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
+        await getLastBlockTimestamp()
+      );
+      expect(await divaGoplugin.getRequester(poolId)).to.eq(user1.address);
+    });
+  });
 
   // describe("setFinalReferenceValue", async () => {
   //   it("Should set a reported Tellor value as the final reference value in DIVA Protocol and leave tips and fee claims in DIVA unclaimed", async () => {
