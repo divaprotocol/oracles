@@ -14,11 +14,11 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
     using SafeDecimalMath for uint256;
 
-    // Ordered to optimize storage
-    mapping(uint256 => uint256) private _lastRequestedBlocktimestamps; // mapping `poolId` to last requested blocktimestamp
-    mapping(uint256 => address) private _poolIdToRequester; // mapping poolId to requester address
+    // mapping `poolId` to last requested blocktimestamp
+    mapping(uint256 => uint256) private _lastRequestedBlocktimestamps;
+    // mapping `poolId` to requester address
+    mapping(uint256 => address) private _poolIdToRequester;
 
-    address private immutable _ownershipContract;
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
     IERC20Metadata private immutable _pli;
@@ -27,26 +27,21 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     uint256 private constant FEE_PER_REQUEST = 0.1 * 10**18;
 
     modifier onlyOwner() {
-        address _owner = _contractOwner();
+        address _owner = _diva.getOwner();
         if (msg.sender != _owner) {
             revert NotContractOwner(msg.sender, _owner);
         }
         _;
     }
 
-    constructor(
-        address ownershipContract_,
-        address diva_,
-        address pli_
-    ) {
-        if (ownershipContract_ == address(0)) {
-            revert ZeroOwnershipContractAddress();
+    constructor(address diva_, address pli_) {
+        if (diva_ == address(0)) {
+            revert ZeroDIVAAddress();
         }
         if (pli_ == address(0)) {
             revert ZeroPLIAddress();
         }
 
-        _ownershipContract = ownershipContract_;
         _challengeable = false;
         _diva = IDIVA(diva_);
         _pli = IERC20Metadata(pli_);
@@ -74,7 +69,53 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         override
         nonReentrant
     {
-        _setFinalReferenceValue(_poolId);
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+
+        uint256 _lastRequestedBlocktimestamp = _lastRequestedBlocktimestamps[
+            _poolId
+        ];
+
+        // Check that data exists (_lastRequestedBlocktimestamp = 0 if it
+        // doesn't)
+        if (_lastRequestedBlocktimestamp == 0) {
+            revert NoOracleSubmissionAfterExpiryTime();
+        }
+
+        // Check that `MIN_PERIOD_UNDISPUTED` has passed after
+        // `_lastRequestedBlocktimestamp`
+        if (
+            block.timestamp - _lastRequestedBlocktimestamp <
+            MIN_PERIOD_UNDISPUTED
+        ) {
+            revert MinPeriodUndisputedNotPassed();
+        }
+
+        // Format values (18 decimals)
+        uint256 _formattedFinalReferenceValue = IInvokeOracle(
+            _stringToAddress(_params.referenceAsset)
+        ).showPrice();
+
+        // Forward final value to DIVA contract.
+        //Allocates the fee as part of that process.
+        _diva.setFinalReferenceValue(
+            _poolId,
+            _formattedFinalReferenceValue,
+            _challengeable
+        );
+
+        // Transfer fee claim to requester
+        _diva.transferFeeClaim(
+            _poolIdToRequester[_poolId],
+            _params.collateralToken,
+            _diva.getClaim(_params.collateralToken, address(this))
+        );
+
+        emit FinalReferenceValueSet(
+            _poolId,
+            _formattedFinalReferenceValue,
+            _params.expiryTime,
+            _lastRequestedBlocktimestamp
+        );
     }
 
     function getChallengeable() external view override returns (bool) {
@@ -103,63 +144,8 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return _requesters;
     }
 
-    function getOwnershipContract() external view override returns (address) {
-        return _ownershipContract;
-    }
-
     function getMinPeriodUndisputed() external pure override returns (uint32) {
         return MIN_PERIOD_UNDISPUTED;
-    }
-
-    function _contractOwner() internal view returns (address) {
-        return IDIVAOwnershipShared(_ownershipContract).getCurrentOwner();
-    }
-
-    function _setFinalReferenceValue(uint256 _poolId) private {
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
-
-        uint256 _lastRequestedBlocktimestamp = _lastRequestedBlocktimestamps[
-            _poolId
-        ];
-
-        // Check that data exists (_lastRequestedBlocktimestamp = 0 if it doesn't)
-        if (_lastRequestedBlocktimestamp == 0) {
-            revert NoOracleSubmissionAfterExpiryTime();
-        }
-
-        // Check that `MIN_PERIOD_UNDISPUTED` has passed after _lastRequestedBlocktimestamp
-        if (
-            block.timestamp - _lastRequestedBlocktimestamp <
-            MIN_PERIOD_UNDISPUTED
-        ) {
-            revert MinPeriodUndisputedNotPassed();
-        }
-
-        // Format values (18 decimals)
-        uint256 _formattedFinalReferenceValue = IInvokeOracle(
-            _stringToAddress(_params.referenceAsset)
-        ).showPrice();
-
-        // Forward final value to DIVA contract. Allocates the fee as part of that process.
-        _diva.setFinalReferenceValue(
-            _poolId,
-            _formattedFinalReferenceValue,
-            _challengeable
-        );
-
-        // Transfer fee claim to requester
-        _diva.transferFeeClaim(
-            _poolIdToRequester[_poolId],
-            _params.collateralToken,
-            _diva.getClaim(_params.collateralToken, address(this))
-        );
-
-        emit FinalReferenceValueSet(
-            _poolId,
-            _formattedFinalReferenceValue,
-            _params.expiryTime,
-            _lastRequestedBlocktimestamp
-        );
     }
 
     /**
@@ -171,7 +157,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         returns (address)
     {
         bytes memory tmp = bytes(_a);
-        require(tmp.length == 42, "DIVAPorterModule: invalid address");
+        require(tmp.length == 42, "DIVAGoplugin: invalid address");
         uint160 iaddr = 0;
         uint160 b1;
         uint160 b2;
