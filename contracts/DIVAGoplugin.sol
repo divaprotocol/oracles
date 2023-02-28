@@ -126,26 +126,34 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return address(_diva);
     }
 
-    function getRequesters(uint256[] calldata _poolIds)
+    function getPLIAddress() external view override returns (address) {
+        return address(_pli);
+    }
+
+    function getRequester(uint256 _poolId)
         external
         view
         override
-        returns (address[] memory)
+        returns (address)
     {
-        uint256 _len = _poolIds.length;
-        address[] memory _requesters = new address[](_len);
-        for (uint256 i = 0; i < _len; ) {
-            _requesters[i] = _poolIdToRequester[_poolIds[i]];
+        return _poolIdToRequester[_poolId];
+    }
 
-            unchecked {
-                ++i;
-            }
-        }
-        return _requesters;
+    function getLastRequestedBlocktimestamp(uint256 _poolId)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return _lastRequestedBlocktimestamps[_poolId];
     }
 
     function getMinPeriodUndisputed() external pure override returns (uint32) {
         return MIN_PERIOD_UNDISPUTED;
+    }
+
+    function getFeePerRequest() external pure override returns (uint256) {
+        return FEE_PER_REQUEST;
     }
 
     /**
@@ -165,10 +173,12 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             iaddr *= 256;
             b1 = uint160(uint8(tmp[i]));
             b2 = uint160(uint8(tmp[i + 1]));
-            if ((b1 >= 97) && (b1 <= 102)) b1 -= 87;
-            else if ((b1 >= 48) && (b1 <= 57)) b1 -= 48;
-            if ((b2 >= 97) && (b2 <= 102)) b2 -= 87;
-            else if ((b2 >= 48) && (b2 <= 57)) b2 -= 48;
+            if (b1 >= 97 && b1 <= 102) b1 -= 87;
+            else if (b1 >= 65 && b1 <= 70) b1 -= 55;
+            else if (b1 >= 48 && b1 <= 57) b1 -= 48;
+            if (b2 >= 97 && b2 <= 102) b2 -= 87;
+            else if (b2 >= 65 && b2 <= 70) b2 -= 55;
+            else if (b2 >= 48 && b2 <= 57) b2 -= 48;
             iaddr += (b1 * 16 + b2);
         }
         return address(iaddr);

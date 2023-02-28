@@ -6,6 +6,7 @@ const DIVA_ADDRESS = {
   kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101",
   polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B",
   goerli: "0x6625011b21D1d9b9dCCACF577Bbb74D0Aa448cbF", // 17.02.2023
+  apothem: "0x93640bd8fEa53919A102ad2EEA4c503E640eDDAd",
 };
 
 const BOND_FACTORY = {
@@ -59,7 +60,7 @@ const COLLATERAL_TOKENS = {
 
 // PLI token addresses
 const PLI_ADDRESS = {
-  apothem: "0x33f4212b027e22af7e6ba21fc572843c0d701cd1",
+  apothem: "0x33f4212b027E22aF7e6BA21Fc572843C0D701CD1",
 };
 
 const TELLOR_VERSION = {

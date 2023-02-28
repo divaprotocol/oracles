@@ -50,8 +50,8 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.RPC_URL_GOERLI,
-        blockNumber: 8508421, // keep it aligned with the one in DIVAOracleTellor.test.js
+        url: process.env.RPC_URL_APOTHEM,
+        // blockNumber: 8508421, // keep it aligned with the one in DIVAOracleTellor.test.js - for goerli
       },
       accounts: {
         mnemonic: MNEMONIC,
@@ -66,6 +66,18 @@ module.exports = {
     },
     goerli: {
       url: process.env.RPC_URL_GOERLI,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    apothem: {
+      url: process.env.RPC_URL_APOTHEM,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    xdc: {
+      url: process.env.RPC_URL_XDC,
       accounts: {
         mnemonic: MNEMONIC,
       },
