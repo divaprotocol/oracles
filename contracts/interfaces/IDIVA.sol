@@ -187,4 +187,10 @@ interface IDIVA {
         external
         view
         returns (uint256);
+
+    /**
+     * @notice Function to return the owner stored in ownership contract.
+     * @return owner_ The address of the owner.
+     */
+    function getOwner() external view returns (address owner_);
 }

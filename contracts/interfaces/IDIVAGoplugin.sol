@@ -10,8 +10,8 @@ interface IDIVAGoplugin {
     // before the minimum period undisputed period has passed.
     error MinPeriodUndisputedNotPassed();
 
-    // Thrown in constructor if zero address is provided as ownershipContract.
-    error ZeroOwnershipContractAddress();
+    // Thrown in constructor if zero address is provided as DIVA protocol address.
+    error ZeroDIVAAddress();
 
     // Thrown in constructor if zero address is provided as PLI token address.
     error ZeroPLIAddress();
@@ -68,9 +68,4 @@ interface IDIVAGoplugin {
      * @dev Returns the DIVA protocol contract address that the oracle is linked to.
      */
     function getDIVAAddress() external view returns (address);
-
-    /**
-     * @dev Returns the DIVA ownership contract address.
-     */
-    function getOwnershipContract() external view returns (address);
 }
