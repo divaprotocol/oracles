@@ -213,8 +213,8 @@ Function to tip a pool. The function executes the following steps in the followi
 * Emit a [`TipAdded`](#tipadded) event on success.
 
 The function reverts under the following conditions:
-
-
+* The final value has already been submitted and confirmed in DIVA Protocol.
+* The `msg.sender` has set insufficient allowance for the `_tippingToken`
 
 ```js
 function addTip(
@@ -225,15 +225,26 @@ function addTip(
     external;
 ```
 
+>**Note:** DIVA Protocol also has an `addTip` function, but it only allows tipping with the tipping token with the collateral token of the pool. When a tip is added through this function, it is credited to the data provider along with the settlement fees once the final value is confirmed.
+
 ## claimReward
 
 Function to claim tips and/or DIVA reward.
+
+The function executes the following steps in the following order when looping through the list of tipping tokens:
+* Get tip amount for pool and tipping token.
+* Set tip amount to zero to prevent multiple payouts in the event that the same tipping token is provided multiple times.
+* Emits a `TipClaimed` event per tipping token claimed. Emits a `FeeClaimed` event in DIVA smart contract when fee is claimed.
+
+
+
+Note that if no tipping tokens are provided and `_claimDIVAReward` is `false`, then 
 
 ```js
 function claimReward(
     uint256 _poolId,                    // The id of the pool
     address[] memory _tippingTokens,    // Array of tipping tokens to claim tip
-    bool _claimDIVAReward                  // Flag showing whether to claim DIVA reward
+    bool _claimDIVAReward               // Flag showing whether to claim DIVA reward
 )
     external;
 ```

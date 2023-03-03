@@ -546,11 +546,18 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         address[] calldata _tippingTokens,
         bool _claimDIVAReward
     ) private onlyConfirmedPool(_poolId) {
+
+        // Iterate over the provided _tippingTokens array. Will skip the for
+        // loop if no tipping tokens have been provided.
         uint256 _len = _tippingTokens.length;
         for (uint256 i = 0; i < _len; ) {
             address _tippingToken = _tippingTokens[i];
 
+            // Get tip amount for pool and tipping token.
             uint256 _tipAmount = _tips[_poolId][_tippingToken];
+
+            // Set tip amount to zero to prevent multiple payouts in the event that 
+            // the same tipping token is provided multiple times.
             _tips[_poolId][_tippingToken] = 0;
 
             IERC20Metadata(_tippingToken).safeTransfer(
@@ -558,6 +565,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
                 _tipAmount
             );
 
+            // Log event for each tipping token claimed
             emit TipClaimed(
                 _poolId,
                 _poolIdToReporter[_poolId],
