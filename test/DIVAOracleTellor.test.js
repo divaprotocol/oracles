@@ -443,7 +443,7 @@ describe("DIVAOracleTellor", () => {
         );
         expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-        // Check that the reporter's collateral token balance is unchanged (as the DIVA fee claim resides inside DIVA Protocol)
+        // Check that the reporter's collateral token balance is unchanged (as the DIVA reward claim resides inside DIVA Protocol)
         expect(
           await collateralTokenInstance.balanceOf(reporter.address)
         ).to.eq(0);
@@ -939,8 +939,8 @@ describe("DIVAOracleTellor", () => {
       });
     });
 
-    describe("Set final reference value and claim tips and DIVA fee", async () => {
-      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim tips and DIVA fee", async () => {
+    describe("Set final reference value and claim tips and DIVA reward", async () => {
+      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim tips and DIVA reward", async () => {
         // ---------
         // Arrange: Confirm params and submit values to tellorPlayground
         // ---------
@@ -1056,7 +1056,7 @@ describe("DIVAOracleTellor", () => {
           tippingAmount2
         );
 
-        // Check that reporter received the DIVA fee
+        // Check that reporter received the DIVA reward
         expect(
           await collateralTokenInstance.balanceOf(reporter.address)
         ).to.eq(settlementFeeAmount);
@@ -1148,8 +1148,8 @@ describe("DIVAOracleTellor", () => {
       });
     });
 
-    describe("Set final reference value and claim DIVA fee", async () => {
-      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim DIVA fee but leave tips unchanged", async () => {
+    describe("Set final reference value and claim DIVA reward", async () => {
+      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim DIVA reward but leave tips unchanged", async () => {
         // ---------
         // Arrange: Confirm params and submit values to tellorPlayground
         // ---------
@@ -1273,7 +1273,7 @@ describe("DIVAOracleTellor", () => {
     });
 
     describe("Set final reference value and claim tips", async () => {
-      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim tips but not DIVA fee", async () => {
+      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim tips but not DIVA reward", async () => {
         // ---------
         // Arrange: Confirm params and submit values to tellorPlayground
         // ---------
@@ -1352,7 +1352,7 @@ describe("DIVAOracleTellor", () => {
 
         // ---------
         // Assert: Confirm that finalReferenceValue and statusFinalReferenceValue are updated accordingly in DIVA Protocol,
-        // claims are transferred to reporter but DIVA fee remains unclaimed in the DIVA Protocol
+        // claims are transferred to reporter but DIVA reward remains unclaimed in the DIVA Protocol
         // ---------
         // Check finalReferenceValue and statusFinalReferenceValue
         poolParams = await diva.getPoolParameters(latestPoolId);
@@ -1632,7 +1632,7 @@ describe("DIVAOracleTellor", () => {
       );
 
       // ---------
-      // Assert: Check tips are paid to reporter but DIVA fee claims remain untouched
+      // Assert: Check tips are paid to reporter but DIVA reward claims remain untouched
       // ---------
       // Check that tips are paid out to reporter
       expect(
@@ -1658,13 +1658,13 @@ describe("DIVAOracleTellor", () => {
         tippingAmount2
       );
 
-      // Confirm that DIVA fee remains unchanged
+      // Confirm that DIVA reward remains unchanged
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
     });
 
-    it("Should claim DIVA fee only after final reference value is set", async () => {
+    it("Should claim DIVA reward only after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value and calc settlementFeeAmount
       // ---------
@@ -1721,9 +1721,9 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor.claimReward(latestPoolId, [], true);
 
       // ---------
-      // Assert: Check that DIVA fee was claimed but tips remain untouched
+      // Assert: Check that DIVA reward was claimed but tips remain untouched
       // ---------
-      // Check that DIVA fee was claimed and sent to reporter
+      // Check that DIVA reward was claimed and sent to reporter
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount
       );
@@ -1758,9 +1758,9 @@ describe("DIVAOracleTellor", () => {
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
     });
 
-    it("Should claim tips and DIVA fee after final reference value is set", async () => {
+    it("Should claim tips and DIVA reward after final reference value is set", async () => {
       // ---------
-      // Arrange: Set final reference value and check tips and DIVA fee
+      // Arrange: Set final reference value and check tips and DIVA reward
       // ---------
       // Call `setFinalReferenceValue` function inside DIVAOracleTellor contract after exactly `minPeriodUndisputed` period has passed
       nextBlockTimestamp =
@@ -1819,7 +1819,7 @@ describe("DIVAOracleTellor", () => {
       );
 
       // ---------
-      // Assert: Check that tips and DIVA fees were paid out to the reporter
+      // Assert: Check that tips and DIVA rewards were paid out to the reporter
       // ---------
       // Confirm that tips were paid out to the reporter
       expect(
@@ -1845,7 +1845,7 @@ describe("DIVAOracleTellor", () => {
         tippingAmount2
       );
 
-      // Confirm that DIVA fee were paid out to the reporter
+      // Confirm that DIVA reward were paid out to the reporter
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount
       );
@@ -1854,9 +1854,9 @@ describe("DIVAOracleTellor", () => {
       ).to.eq(0);
     });
 
-    it("Should not change anything if `claimReward` function is called with an empty `_tippingTokens` array and `false` as `_claimDIVAFee` value", async function () {
+    it("Should not change anything if `claimReward` function is called with an empty `_tippingTokens` array and `false` as `_claimDIVAReward` value", async function () {
       // ---------
-      // Arrange: Set final reference value and check tips and DIVA fee
+      // Arrange: Set final reference value and check tips and DIVA reward
       // ---------
       // Call `setFinalReferenceValue` function inside DIVAOracleTellor contract after exactly `minPeriodUndisputed` period has passed
       nextBlockTimestamp =
@@ -1911,7 +1911,7 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor.claimReward(latestPoolId, [], false);
 
       // ---------
-      // Assert: Confirm that tips, DIVA fee and relevant variables remain unchanged
+      // Assert: Confirm that tips, DIVA reward and relevant variables remain unchanged
       // ---------
       // Confirm that tips hasn't been changed
       expect(
@@ -1937,7 +1937,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Confirm that DIVA fee hasn't been changed
+      // Confirm that DIVA reward hasn't been changed
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         0
       );
@@ -1950,7 +1950,7 @@ describe("DIVAOracleTellor", () => {
     // Revert
     // ---------
 
-    it("Should revert if users try to claim tips and DIVA fee for not confirmed pool", async () => {
+    it("Should revert if users try to claim tips and DIVA reward for not confirmed pool", async () => {
       // ---------
       // Act & Assert: Confirm that `claimReward` function will fail if called before `setFinalReferenceValue` function is called
       // ---------
@@ -2156,12 +2156,12 @@ describe("DIVAOracleTellor", () => {
         {
           poolId: poolId1,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
-          claimDIVAFee: false,
+          claimDIVAReward: false,
         },
         {
           poolId: poolId2,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
-          claimDIVAFee: false,
+          claimDIVAReward: false,
         },
       ]);
 
@@ -2206,7 +2206,7 @@ describe("DIVAOracleTellor", () => {
       );
     });
 
-    it("Should batch claim DIVA fee only after final reference value is set", async () => {
+    it("Should batch claim DIVA reward only after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value and calc settlementFeeAmount
       // ---------
@@ -2287,19 +2287,19 @@ describe("DIVAOracleTellor", () => {
         {
           poolId: poolId1,
           tippingTokens: [],
-          claimDIVAFee: true,
+          claimDIVAReward: true,
         },
         {
           poolId: poolId2,
           tippingTokens: [],
-          claimDIVAFee: true,
+          claimDIVAReward: true,
         },
       ]);
 
       // ---------
-      // Assert: Check that DIVA fee was claimed but tips remain untouched
+      // Assert: Check that DIVA reward was claimed but tips remain untouched
       // ---------
-      // Check that DIVA fee was claimed and sent to reporter
+      // Check that DIVA reward was claimed and sent to reporter
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount1.add(settlementFeeAmount2)
       );
@@ -2348,7 +2348,7 @@ describe("DIVAOracleTellor", () => {
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
     });
 
-    it("Should batch claim tips and DIVA fee after final reference value is set", async () => {
+    it("Should batch claim tips and DIVA reward after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value and check tips
       // ---------
@@ -2429,17 +2429,17 @@ describe("DIVAOracleTellor", () => {
         {
           poolId: poolId1,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
-          claimDIVAFee: true,
+          claimDIVAReward: true,
         },
         {
           poolId: poolId2,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
-          claimDIVAFee: true,
+          claimDIVAReward: true,
         },
       ]);
 
       // ---------
-      // Assert: Check that tips and DIVA fees were paid out to the reporter
+      // Assert: Check that tips and DIVA rewards were paid out to the reporter
       // ---------
       // Confirm that tips were paid out to the reporter
       expect(
@@ -2479,7 +2479,7 @@ describe("DIVAOracleTellor", () => {
         tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
       );
 
-      // Confirm that DIVA fee were paid out to the reporter
+      // Confirm that DIVA reward were paid out to the reporter
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount1.add(settlementFeeAmount2)
       );

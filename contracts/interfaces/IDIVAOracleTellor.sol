@@ -157,7 +157,7 @@ interface IDIVAOracleTellor {
     struct ArgsBatchClaimReward {
         uint256 poolId;
         address[] tippingTokens;
-        bool claimDIVAFee;
+        bool claimDIVAReward;
     }
 
     // Struct for `getTipAmounts` function input.
@@ -182,7 +182,7 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Function to tip a pool.
-     * @param _poolId The unique identifier of the pool.
+     * @param _poolId The id of the pool.
      * @param _amount The amount to tip expressed as an integer
      * with tipping token decimals.
      * @param _tippingToken Tipping token address.
@@ -194,21 +194,21 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @dev Function to claim tips and/or DIVA fee.
-     * @param _poolId The unique identifier of the pool.
+     * @dev Function to claim tips and/or DIVA reward.
+     * @param _poolId The id of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
-     * @param _claimDIVAFee Flag showing whether to claim DIVA fee.
+     * @param _claimDIVAReward Flag showing whether to claim DIVA reward.
      */
     function claimReward(
         uint256 _poolId,
         address[] memory _tippingTokens,
-        bool _claimDIVAFee
+        bool _claimDIVAReward
     ) external;
 
     /**
      * @dev Batch version of `claimReward`.
      * @param _argsBatchClaimReward Struct array containing pool ids, tipping
-     * tokens, and `claimDIVAFee` flag.
+     * tokens, and `claimDIVAReward` flag.
      */
     function batchClaimReward(
         ArgsBatchClaimReward[] calldata _argsBatchClaimReward
@@ -216,14 +216,14 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Function to set the final reference value for a given `_poolId`.
-     * @param _poolId The unique identifier of the pool.
+     * @param _poolId The id of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
-     * @param _claimDIVAFee Flag showing whether to claim DIVA fee.
+     * @param _claimDIVAReward Flag showing whether to claim DIVA reward.
      */
     function setFinalReferenceValue(
         uint256 _poolId,
         address[] calldata _tippingTokens,
-        bool _claimDIVAFee
+        bool _claimDIVAReward
     ) external;
 
     /**
@@ -370,7 +370,7 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Function to return the query id for a given `_poolId`.
-     * @param _poolId The unique identifier of the pool.
+     * @param _poolId The id of the pool.
      */
     function getQueryId(uint256 _poolId) external view returns (bytes32);
 }

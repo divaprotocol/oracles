@@ -99,16 +99,16 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _amount
         );
 
-        // Log event including tipping information and tipper address
+        // Log event including tipped pool, amount and tipper address.
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
     function claimReward(
         uint256 _poolId,
         address[] calldata _tippingTokens,
-        bool _claimDIVAFee
+        bool _claimDIVAReward
     ) external override nonReentrant {
-        _claimReward(_poolId, _tippingTokens, _claimDIVAFee);
+        _claimReward(_poolId, _tippingTokens, _claimDIVAReward);
     }
 
     function batchClaimReward(
@@ -119,7 +119,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _claimReward(
                 _argsBatchClaimReward[i].poolId,
                 _argsBatchClaimReward[i].tippingTokens,
-                _argsBatchClaimReward[i].claimDIVAFee
+                _argsBatchClaimReward[i].claimDIVAReward
             );
 
             unchecked {
@@ -131,10 +131,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     function setFinalReferenceValue(
         uint256 _poolId,
         address[] calldata _tippingTokens,
-        bool _claimDIVAFee
+        bool _claimDIVAReward
     ) external override nonReentrant {
         _setFinalReferenceValue(_poolId);
-        _claimReward(_poolId, _tippingTokens, _claimDIVAFee);
+        _claimReward(_poolId, _tippingTokens, _claimDIVAReward);
     }
 
     function updateExcessFeeRecipient(address _newExcessFeeRecipient)
@@ -544,7 +544,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     function _claimReward(
         uint256 _poolId,
         address[] calldata _tippingTokens,
-        bool _claimDIVAFee
+        bool _claimDIVAReward
     ) private onlyConfirmedPool(_poolId) {
         uint256 _len = _tippingTokens.length;
         for (uint256 i = 0; i < _len; ) {
@@ -570,7 +570,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             }
         }
 
-        if (_claimDIVAFee) {
+        if (_claimDIVAReward) {
             IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
             _diva.claimFee(_params.collateralToken, _poolIdToReporter[_poolId]);
         }

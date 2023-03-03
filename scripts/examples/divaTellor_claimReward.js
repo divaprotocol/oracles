@@ -126,7 +126,7 @@ async function main() {
   );
 
   // Get fee claim before claiming the fee
-  const divaFeeBefore = formatUnits(
+  const divaRewardBefore = formatUnits(
     await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
   );
 
@@ -177,7 +177,7 @@ async function main() {
   );
 
   // Get fee claim after claiming the fee
-  const divaFeeAfter = formatUnits(
+  const divaRewardAfter = formatUnits(
     await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
   );
 
@@ -185,14 +185,14 @@ async function main() {
   console.log("DIVA address: ", diva.address);
   console.log("PoolId: ", poolId);
   console.log("Reporter address: ", reporter);
-  console.log("Get fee claim BEFORE claiming DIVA fee: ", divaFeeBefore);
-  console.log("Get fee claim AFTER claiming DIVA fee: ", divaFeeAfter);
+  console.log("Get fee claim BEFORE claiming DIVA reward: ", divaRewardBefore);
+  console.log("Get fee claim AFTER claiming DIVA reward: ", divaRewardAfter);
   console.log(
-    "Collateral token balance of reporter BEFORE claim DIVA fee: ",
+    "Collateral token balance of reporter BEFORE claim DIVA reward: ",
     collateralTokenBalanceReporterBefore
   );
   console.log(
-    "Collateral token balance of reporter AFTER claim DIVA fee: ",
+    "Collateral token balance of reporter AFTER claim DIVA reward: ",
     collateralTokenBalanceReporterAfter
   );
 }

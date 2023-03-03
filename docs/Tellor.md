@@ -174,7 +174,7 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 | :---------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- | --- |
 | **Core functions**                                                                              |                                                                                                                                      |
 | [`addTip`](#addtip)                                                                             | Function to tip a pool.                                                                                                        |
-| [`claimReward`](#claimreward)                                                                 | Function to claim tips in `DIVAOracleTellor` and settlement fee/tips from DIVA.                                                                                                     |
+| [`claimReward`](#claimreward)                                                                 | Function to claim tips and/or DIVA reward.                                                                                                     |
 | [`setFinalReferenceValue`](#setfinalreferencevalue)                                             | Function to set the final reference value for a given `_poolId` and optionally clam tips and settlement fee in the same call.                                                                     |
 | **Governance functions** (execution is reserved for DIVA owner only)                      |                                                                                                                                                             |
 | [`updateExcessFeeRecipient`](#updateexcessfeerecipient)                                             | Function to update the excess fee recipient address.                                                                     |
@@ -218,21 +218,22 @@ The function reverts under the following conditions:
 
 ```js
 function addTip(
-    uint256 _poolId,        // The unique identifier of the pool
+    uint256 _poolId,        // The id of the pool
     uint256 _amount,        // The amount to tip expressed as an integer with tipping token decimals
     address _tippingToken   // Tipping token address
 )
     external;
 ```
 
-## claimTips
+## claimReward
 
-Function to claim tips.
+Function to claim tips and/or DIVA reward.
 
 ```js
-function claimTips(
-    uint256 _poolId,                // The unique identifier of the pool
-    address[] memory _tippingTokens // Array of tipping tokens to claim tip
+function claimReward(
+    uint256 _poolId,                    // The id of the pool
+    address[] memory _tippingTokens,    // Array of tipping tokens to claim tip
+    bool _claimDIVAReward                  // Flag showing whether to claim DIVA reward
 )
     external;
 ```
@@ -248,46 +249,46 @@ function batchClaimTips(
     external;
 ```
 
-## claimDIVAFee
+## claimDIVAReward
 
 Function to claim fee from DIVA.
 
 ```js
-function claimDIVAFee(
-    uint256 _poolId // The unique identifier of the pool
+function claimDIVAReward(
+    uint256 _poolId // The id of the pool
 )
     external;
 ```
 
-## batchClaimDIVAFee
+## batchClaimDIVAReward
 
-Batch version of `claimDIVAFee`.
+Batch version of `claimDIVAReward`.
 
 ```js
-function batchClaimDIVAFee(
+function batchClaimDIVAReward(
     uint256[] calldata _poolIds // Array of pool ids
 )
     external;
 ```
 
-## claimTipsAndDIVAFee
+## claimTipsAndDIVAReward
 
 Function to claim tips from `DIVAOracleTellor` and claim fee from DIVA.
 
 ```js
-function claimTipsAndDIVAFee(
-    uint256 _poolId,                // The unique identifier of the pool
+function claimTipsAndDIVAReward(
+    uint256 _poolId,                // The id of the pool
     address[] memory _tippingTokens // Array of tipping tokens to claim tip
 )
     external;
 ```
 
-## batchClaimTipsAndDIVAFee
+## batchClaimTipsAndDIVAReward
 
-Batch version of `claimTipsAndDIVAFee`.
+Batch version of `claimTipsAndDIVAReward`.
 
 ```js
-function batchClaimTipsAndDIVAFee(
+function batchClaimTipsAndDIVAReward(
     ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing pool ids and tipping tokens
 )
     external;
@@ -299,7 +300,7 @@ Function to set the final reference value for a given `_poolId`.
 
 ```js
 function setFinalReferenceValue(
-    uint256 _poolId // The unique identifier of the pool
+    uint256 _poolId // The id of the pool
 )
     external;
 ```
@@ -310,30 +311,30 @@ Function to set the final reference value and claim tips for a given `_poolId` w
 
 ```js
 function setFinalReferenceValueAndClaimTips(
-    uint256 _poolId,                // The unique identifier of the pool
+    uint256 _poolId,                // The id of the pool
     address[] memory _tippingTokens // Array of tipping tokens to claim tip
 )
     external;
 ```
 
-## setFinalReferenceValueAndClaimDIVAFee
+## setFinalReferenceValueAndClaimDIVAReward
 
-Function to set the final reference value and claim DIVA fee for a given `_poolId` with given tipping tokens.
+Function to set the final reference value and claim DIVA reward for a given `_poolId` with given tipping tokens.
 
 ```js
-function setFinalReferenceValueAndClaimDIVAFee(
-    uint256 _poolId // The unique identifier of the pool
+function setFinalReferenceValueAndClaimDIVAReward(
+    uint256 _poolId // The id of the pool
 )
     external;
 ```
 
-## setFinalReferenceValueAndClaimTipsAndDIVAFee
+## setFinalReferenceValueAndClaimTipsAndDIVAReward
 
-Function to set the final reference value and claim tips and DIVA fee for a given `_poolId` with given tipping tokens.
+Function to set the final reference value and claim tips and DIVA reward for a given `_poolId` with given tipping tokens.
 
 ```js
-function setFinalReferenceValueAndClaimTipsAndDIVAFee(
-    uint256 _poolId,                // The unique identifier of the pool
+function setFinalReferenceValueAndClaimTipsAndDIVAReward(
+    uint256 _poolId,                // The id of the pool
     address[] memory _tippingTokens // Array of tipping tokens to claim tip
 )
     external;
@@ -515,7 +516,7 @@ Function to return the query id for a given `_poolId`.
 
 ```js
 function getQueryId(
-    uint256 _poolId // The unique identifier of the pool
+    uint256 _poolId // The id of the pool
 )
     external
     view
@@ -664,12 +665,12 @@ The following errors may be emitted during execution:
 
 | Error name                            | Function                                                                                                                                                 | Description                                                                                                                                     |
 | :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NotConfirmedPool()`                  | `claimTips` / `batchClaimTips` / `claimDIVAFee` / `batchClaimDIVAFee` / `claimTipsAndDIVAFee` / `batchClaimTipsAndDIVAFee`                               | Thrown if user tries to claim fees/tips for a pool that was not yet confirmed                                                                   |
+| `NotConfirmedPool()`                  | `claimTips` / `batchClaimTips` / `claimDIVAReward` / `batchClaimDIVAReward` / `claimTipsAndDIVAReward` / `batchClaimTipsAndDIVAReward`                               | Thrown if user tries to claim fees/tips for a pool that was not yet confirmed                                                                   |
 | `AlreadyConfirmedPool()`              | `addTip`                                                                                                                                                 | Thrown if user tries to add a tip for an already confirmed pool                                                                                 |
 | `ZeroExcessFeeRecipient()`            | `setExcessFeeRecipient`                                                                                                                                  | Thrown if the zero address is passed as input into `setExcessFeeRecipient`                                                                      |
 | `OutOfRange()`                        | `setMinPeriodUndisputed`                                                                                                                                 | Thrown if `_minPeriodUndisputed` passed into `setMinPeriodUndisputed` is not within the expected range (min 1h, max 18h)                        |
-| `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` / `setFinalReferenceValueAndClaimTips`/ `setFinalReferenceValueAndClaimDIVAFee`/ `setFinalReferenceValueAndClaimTipsAndDIVAFee` | Thrown when user calls `setFinalReferenceValue` (or a variant of it) but there is no data reported after the expiry time of the underlying pool |
-| `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` / `setFinalReferenceValueAndClaimTips`/ `setFinalReferenceValueAndClaimDIVAFee`/ `setFinalReferenceValueAndClaimTipsAndDIVAFee` | Thrown if user tries to call `setFinalReferenceValue` (or a variant of it) before the minimum period undisputed period has passed               |
+| `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` / `setFinalReferenceValueAndClaimTips`/ `setFinalReferenceValueAndClaimDIVAReward`/ `setFinalReferenceValueAndClaimTipsAndDIVAReward` | Thrown when user calls `setFinalReferenceValue` (or a variant of it) but there is no data reported after the expiry time of the underlying pool |
+| `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` / `setFinalReferenceValueAndClaimTips`/ `setFinalReferenceValueAndClaimDIVAReward`/ `setFinalReferenceValueAndClaimTipsAndDIVAReward` | Thrown if user tries to call `setFinalReferenceValue` (or a variant of it) before the minimum period undisputed period has passed               |
 
 
 

@@ -24,7 +24,7 @@ interface IDIVAPorterModule {
      * @param _divaDiamond Address of the diva smart contract. Used as argument
      * rather than a hard-coded constant to avoid redeploying the oracle contracts
      * when a new version of DIVA Protocol is released.
-     * @param _poolId The unique identifier of the pool.
+     * @param _poolId The id of the pool.
      */
     function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
         external;
