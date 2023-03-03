@@ -57,11 +57,12 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when the tip is added.
-     * @param poolId The Id of an existing derivatives pool.
-     * @param tippingToken Address of tipping token.
-     * @param amount Tipping token amount.
-     * @param tipper Address of user who adds the tip.
+     * @notice Emitted when a tip is added via the `addTip` function.
+     * @param poolId The Id of the tipped pool.
+     * @param tippingToken Tipping token address.
+     * @param amount Tipping token amount expressed as an integer with
+     * tipping token decimals.
+     * @param tipper Tipper address.
      */
     event TipAdded(
         uint256 poolId,
@@ -180,10 +181,11 @@ interface IDIVAOracleTellor {
     }
 
     /**
-     * @dev Function to run a single tip.
-     * @param _poolId The unique identifier of the pool
-     * @param _amount The amount to tip
-     * @param _tippingToken Tipping token address
+     * @dev Function to tip a pool.
+     * @param _poolId The unique identifier of the pool.
+     * @param _amount The amount to tip expressed as an integer
+     * with tipping token decimals.
+     * @param _tippingToken Tipping token address.
      */
     function addTip(
         uint256 _poolId,
@@ -234,7 +236,7 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to update `_maxFeeAmountUSD`. Only callable by contract owner.
      * @param _newMaxFeeAmountUSD New amount expressed as an integer with
-     * 18 decimals
+     * 18 decimals.
      */
     function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
 
@@ -329,7 +331,7 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to return the lengths of tipping tokens for the given
      * `_poolIds`.
-     * @param _poolIds Array of pool ids
+     * @param _poolIds Array of pool ids.
      */
     function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
         external
@@ -340,7 +342,7 @@ interface IDIVAOracleTellor {
      * @dev Function to return the array of pool ids reported by reporters for
      * the given array of `ArgsGetPoolIdsForReporters` struct.
      * @param _argsGetPoolIdsForReporters Struct array containing reporter
-     * address, start index and end index
+     * address, start index and end index.
      */
     function getPoolIdsForReporters(
         ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
@@ -349,7 +351,7 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to return the lengths of pool ids reported by reporters
      * for the given `_reporters`.
-     * @param _reporters Array of reporter address
+     * @param _reporters Array of reporter address.
      */
     function getPoolIdsLengthForReporters(address[] calldata _reporters)
         external
@@ -368,7 +370,7 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Function to return the query id for a given `_poolId`.
-     * @param _poolId The unique identifier of the pool
+     * @param _poolId The unique identifier of the pool.
      */
     function getQueryId(uint256 _poolId) external view returns (bytes32);
 }

@@ -18,18 +18,18 @@ This documentation outlines the functionality of the Tellor adapter for [DIVA Pr
 
 # System overview
 
-Derivative contracts created on DIVA Protocol require one data input after expiration. The Tellor adapter offers DIVA Protocol users a decentralized oracle solution for outcome reporting.
-
->**Terminology:** As funds backing the derivative contracts are held in so-called "contingent pools", the terms "derivative" and "contingent pool" (or simply "pool") are used interchangeably.
+Derivative contracts created on DIVA Protocol require one data input following expiration. The Tellor adapter offers DIVA Protocol users a decentralized oracle solution for outcome reporting.
 
 The key benefits of using the Tellor adapter for outcome reporting include:
 - No single point of failure as outcome reporting is decentralized and permissionless.
 - No interruption in the reporting process following disputes, eliminating the need for additional requests.
 - Option to add tips for additional reporting incentives.
 
-These advantages provide users with a high level of confidence in correct pool settlement. Please refer to the ["Risks and Mitigants"](#risks-and-mitigants) section for a comprehensive understanding of potential risks involved.
+These advantages provide users with a high level of confidence in correct settlement. The following sections provide and overview of the Tellor protocol, how the adapter works, and how it can be used.
 
-The following sections provide and overview of the Tellor protocol, how the adapter works, and how it can be used.
+Please refer to the ["Risks and Mitigants"](#risks-and-mitigants) section for a comprehensive understanding of potential risks involved in using the Tellor adapter.
+
+>**Terminology:** As funds backing the derivative contracts are held in so-called "contingent pools", the terms "derivative" and "contingent pool" (or simply "pool") are used interchangeably.
 
 ## What is Tellor protocol
 
@@ -44,7 +44,7 @@ Assuming that the value of TRB is at least $15 (corresponding to 100 TRB require
 * If a reported value is deemed incorrect, it can be disputed for a maximum of 12 hours from the time of reporting. Disputers pay a dispute fee starting at 10 TRB, which doubles up to a maximum of 100 TRB with each round of dispute for a given queryId.
 * If a value gets disputed, it is removed from the key-value mapping and enters Tellor's [dispute resolution process](#disputes), which takes at least 2 days. The reporting process continues uninterrupted, allowing other reporters to submit valid values.
 
-To ensure the reliability of reported data, only data reports that have remained undisputed for a specified duration (up to 12 hours) should be considered valid. The DIVATellor Oracle Adapter selects a maximum duration of 12 hours and utilizes the earliest value that satisfies this criterion as the settlement value, ignoring any subsequent values that also meet the condition.
+To ensure the reliability of reported data, only data reports that have remained undisputed for a specified duration (up to 12 hours) should be considered valid. The Tellor adapter selects a maximum duration of 12 hours and utilizes the earliest value that satisfies this criterion as the settlement value, ignoring any subsequent values that also meet the condition.
 
 ### Disputes
 
@@ -52,34 +52,37 @@ Any party can challenge data submissions of any reporters when a value is placed
 
 ## How the Tellor adapter works
 
-The usage of the Tellor adapter contract is outlined below:
-1. **Pool creation:** A user creates a contingent pool on DIVA Protocol, designating the Tellor adapter contract address as the data provider. This represents a request to report the outcome of the underlying event/metric at the specified expiry time after expiration.
-2. **Monitoring:** Tellor reporters monitor expired pools requiring reporting by running special software, known as "DIVA Tellor clients". There are two available implementations, one by the [DIVA team](https://github.com/divaprotocol/diva-monorepo/tree/main/packages/diva-oracle) and one by the [Tellor team](https://github.com/tellor-io/telliot-feeds). If you're planning to build your own reporter software, please refer to the [README](https://github.com/divaprotocol/oracles/blob/main/README.md) for guidance.
-3. **Reporting to Tellor Protocol:** If a pool expires, reporters submit their values to the Tellor smart contract. Valid submissions must be made during the 7-day (subject to change) submission period, starting at the time of pool expiration.
-4. **Reporting to DIVA Protocol:** The first value submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final one. This value is submitted to DIVA Protocol by calling the [`setFinalReferenceValue`](#setfinalreferencevalue) (or a variant of it) function on the Tellor adapter contract. This sets the final reference value to "Confirmed" and determines the payouts for each counterparty involved in the derivative contract. No further submissions to DIVA Protocol are permitted thereafter. Disputed values will be disregarded and are handled in a separate process on the Tellor side.
+The end-to-end usage of the Tellor adapter is outlined below:
+1. **Pool creation:** A user creates a contingent pool on DIVA Protocol, assigning the Tellor adapter contract address as the data provider. This step constitutes a request to report the outcome of the underlying event/metric at the specified expiry time after expiration.
+2. **Monitoring:** Tellor reporters monitor expired pools requiring reporting by running special software, known as "Tellor clients". There are two available implementations, one by the [DIVA team](https://github.com/divaprotocol/diva-monorepo/tree/main/packages/diva-oracle) which is focused on reporting for DIVA pools and one by the [Tellor team](https://github.com/tellor-io/telliot-feeds) which is generic reporter not necessarily focused on DIVA. If you're planning to build your own reporter software, please refer to the [README](https://github.com/divaprotocol/oracles/blob/main/README.md) for guidance.
+3. **Reporting to Tellor Protocol:** If a pool expires, reporters submit their values to the Tellor smart contract. Valid submissions must be made during the 7-day submission period (subject to change with a minimum of 3 days), starting at the time of pool expiration.
+4. **Reporting to DIVA Protocol:** The first value submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final one. This value is submitted to DIVA Protocol by calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract. This sets the final reference value status inside the DIVA smart contract to "Confirmed" and determines the payouts for each counterparty involved in the derivative contract. No further submissions to DIVA Protocol are permitted thereafter. Disputed values will be disregarded and are handled in a separate process on the Tellor side.
 
->**Note:** Submissions to Tellor Protocol made before pool expiration or for already confirmed pools will not be considered. To reduce gas costs, it is recommended to verify the timestamps of the Tellor submissions and the status of the final reference value before calling the [`setFinalReferenceValue`](#setfinalreferencevalue) (or a variant of it) function on the Tellor adapter contract.
+>**Note:** Submissions to Tellor Protocol made before pool expiration or for already confirmed pools will not be considered. To reduce gas costs, it is recommended to verify the timestamps of the Tellor submissions and the status of the final reference value before calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract.
 
 ## Reporting incentives
 
-Reporters in the DIVA Protocol-Tellor integration are incentivized to report outcomes through two mechanisms: settlement fees and tips.
+Reporters in the DIVA Protocol-Tellor integration are incentivized to report outcomes through two mechanisms:
+* Settlement fees
+* Tips
 
 ### Settlement fees
 
-- DIVA Protocol pays a settlement fee (initially, 0.05%) to the data provider, which in this case is the Tellor adapter contract. The fee is transferred to the actual reporter via DIVA Protocol's [`transferFeeClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#transferfeeclaim) function when the [`setFinalReferenceValue`](#setfinalreferencevalue) (or a variant of it) function in the Tellor adapter contract is called.
+- DIVA Protocol pays a settlement fee (initially, 0.05% of the gross collateral deposited into the pool over time) to the data provider, which in this case is the Tellor adapter contract. The fee is transferred to the actual reporter via DIVA Protocol's [`transferFeeClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#transferfeeclaim) function when the [`setFinalReferenceValue`](#setfinalreferencevalue) function in the Tellor adapter contract is called.
 - To obtain the applicable settlement fee for a pool, reporters can call DIVA Protocol's [`getPoolParameters()`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) and pass the returned `indexFees` parameter to the [`getFees`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getfees) function.
-- Reporters can calculate their fee reward by multiplying the gross collateral deposited into the pool during (found in the `collateralBalanceGross` field in the subgraph) with the corresponding fee rate.
-- The fee is paid in collateral token and is retained in the DIVA smart contract until claimed by the recipient through the [`claimFee`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#transferfeeclaim) function in the DIVA smart contract directly or via the [`claimDIVAFee`](#claimdivafee) convenience function in the Tellor adapter contract.
-- The maximum reward paid per pool for a reporter is capped at $10, with the remaining reward going to the Tellor treasury. This measure was implemented to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward. 
+- Reporters can calculate their fee reward by multiplying the gross collateral deposited into the pool during its lifetime (found in the `collateralBalanceGross` field in the subgraph) with the corresponding fee rate.
+- The fee is paid in the pool's collateral token and is retained in the DIVA smart contract until claimed by the recipient through the [`claimFee`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#transferfeeclaim) function in the DIVA smart contract directly or via the [`claimReward`](#claimreward) convenience function in the Tellor adapter contract.
+- The maximum reward paid per pool for a reporter is capped at $10, with the remaining reward going to the DIVA owner. This measure was implemented to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward. 
 - For additional information, refer to the [DIVA Protocol docs](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md).
 
 ### Tips
 
 - Anyone can incentivize reporting by adding tips in any ERC20 token. Multiple tips in different ERC20 tokens are allowed, and reporters can choose which tips to claim. Tips is retained in the Tellor adapter contract until claimed by the recipient through the [`claimTips`](#claimtips) function.
+- DIVA Protocol also offers the possibility to tip via the `addTip` function, but the tipping token is restricted to the collateral token of the pool.
 
 Notes:
 
-- To calculate the split, the reporters are also submitted the USD value of the collateral token.
+- To calculate the split, the reporters also submit the USD value of the collateral token.
 - Only the first reporter whose reported value remains undisputed for at least 12h will receive a reward. It is recommended to check existing value submission before spending gas on submitted a new one.
 
 ## Reporting Costs
@@ -111,7 +114,7 @@ Note that depositing a stake or or disputing a value requires prior approval for
 
 ## Supported data feeds
 
-The Tellor protocol has the capability to handle any data that is submitted to it. This universality extends to the Tellor adapter, which can be utilized with any data feed. To ensure high coverage by reporters, it's suggested to check with the Tellor community which data feeds are well-established and which may need extra support.
+The Tellor protocol has the capability to handle any type of data. This universality extends to the Tellor adapter, which can be utilized with any data feed. To ensure high coverage by reporters, it's suggested to check with the Tellor community which data feeds are well-established and which may need extra support and communication.
 
 ## DIVA Disputes
 
@@ -170,35 +173,31 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 | Function                                                                                        | Description                                                                                                                          |     |
 | :---------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- | --- |
 | **Core functions**                                                                              |                                                                                                                                      |
-| [`addTip`](#addtip)                                                                             | Function to run a single tip.                                                                                                        |
-| [`claimTips`](#claimtips)                                                                       | Function to claim tips.                                                                                                              |
-| [`claimDIVAFee`](#claimdivafee)                                                                 | Function to claim fee from DIVA.                                                                                                     |
-| [`claimTipsAndDIVAFee`](#claimtipsanddivafee)                                                   | Function to claim tips from `DIVAOracleTellor` and claim fee from DIVA.                                                              |
-| [`setFinalReferenceValue`](#setfinalreferencevalue)                                             | Function to set the final reference value for a given `_poolId`.                                                                     |
-| [`setFinalReferenceValueAndClaimTips`](#setfinalreferencevalueandclaimtips)                     | Function to set the final reference value and claim tips for a given `_poolId` with given tipping tokens.                            |
-| [`setFinalReferenceValueAndClaimDIVAFee`](#setfinalreferencevalueandclaimdivafee)               | Function to set the final reference value and claim DIVA fee for a given `_poolId` with given tipping tokens.                        |
-| [`setFinalReferenceValueAndClaimTipsAndDIVAFee`](#setfinalreferencevalueandclaimtipsanddivafee) | Function to set the final reference value and claim tips and DIVA fee for a given `_poolId` with given tipping tokens.               |
+| [`addTip`](#addtip)                                                                             | Function to tip a pool.                                                                                                        |
+| [`claimReward`](#claimreward)                                                                 | Function to claim tips in `DIVAOracleTellor` and settlement fee/tips from DIVA.                                                                                                     |
+| [`setFinalReferenceValue`](#setfinalreferencevalue)                                             | Function to set the final reference value for a given `_poolId` and optionally clam tips and settlement fee in the same call.                                                                     |
+| **Governance functions** (execution is reserved for DIVA owner only)                      |                                                                                                                                                             |
+| [`updateExcessFeeRecipient`](#updateexcessfeerecipient)                                             | Function to update the excess fee recipient address.                                                                     |
+| [`updateMaxFeeAmountUSD`](#updatemaxfeeamountusd)                                             | Function to update the maximum USD fee amount that goes to the reporter.                                                                     |
+| [`revokePendingMaxFeeAmountUSDUpdate`](#revokependingmaxfeeamountusdupdate)                                             | Function to revoke a pending maximum USD fee amount update and restore the previous one.                                                                     |
+| [`revokePendingExcessFeeRecipientUpdate`](#revokependingexcessfeerecipientupdate)                                             | Function to revoke a pending excess fee recipient address update and restore the previous one.                                                                     |
 | **Getter functions**                                                                            |                                                                                                                                      |
 | [`getChallengeable`](#getchallengeable)                                                         | Function to return whether the oracle's data feed is challengeable or not.                                                           |
-| [`getExcessFeeRecipient`](#getexcessfeerecipient)                                               | Function to return the excess fee recipient address.                                                                                 |
+| [`getExcessFeeRecipientInfo`](#getexcessfeerecipientinfo)                                               | Function to return the latest update of the excess fee recipient address, including the activation time and the previous value.                                                                                 |
+| [`getMaxFeeAmountUSDInfo`](#getmaxfeeamountusdinfo)                                                     | Function to return the latest update of the max USD fee amount, including the activation time and the previous value.                                                                    |
 | [`getMinPeriodUndisputed`](#getminperiodundisputed)                                             | Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid.        |
-| [`getMaxFeeAmountUSD`](#getmaxfeeamountusd)                                                     | Function to return the max fee amount usd value with 18 decimals.                                                                    |
+| [`getTippingTokens`](#gettippingtokens)                                                         | Function to return the array of tipping tokens for a given set of poolIds.                                 |
+| [`getTippingTokensLengthForPoolIds`](#gettippingtokenslengthforpoolids)                         | Function to return the number of tipping tokens for the given set of poolIds.                                                           |
+| [`getTipAmounts`](#gettipamounts)                                                               | Function to return the tipping amounts for a given set of poolIds and tipping tokens.                                      |
 | [`getDIVAAddress`](#getdivaaddress)                                                             | Function to return the DIVA address that the oracle is linked to.                                                                    |
-| [`getTipAmounts`](#gettipamounts)                                                               | Function to return the array of tipping amounts for the given array of `ArgsBatchInput` struct.                                      |
 | [`getReporters`](#getreporters)                                                                 | Function to return the array of reporter addresses for the given `_poolIds`.                                                         |
-| [`getTippingTokens`](#gettippingtokens)                                                         | Function to return the array of tipping tokens for the given array of `ArgsGetTippingTokens` struct.                                 |
-| [`getTippingTokensLengthForPoolIds`](#gettippingtokenslengthforpoolids)                         | Function to return the lengths of tipping tokens for the given `_poolIds`.                                                           |
-| [`getPoolIdsForReporters`](#getpoolidsforreporters)                                             | Function to return the array of pool ids reported by reporters for the given array of `ArgsGetPoolIdsForReporters` struct.           |
-| [`getPoolIdsLengthForReporters`](#getpoolidslengthforreporters)                                 | Function to return the lengths of pool ids reported by reporters for the given `_reporters`.                                         |
-| [`getQueryId`](#getqueryid)                                                                     | Function to return the query id for a given `_poolId`.                                                                               |
-| **Setter functions** (execution is reserved for contract owner only)                            |                                                                                                                                      |
-| [`setExcessFeeRecipient`](#setexcessfeerecipient)                                               | Function to update `_excessFeeRecipient`.                                                                                            |     |
-| [`setMinPeriodUndisputed`](#setminperiodundisputed)                                             | Function to update `_minPeriodUndisputed` with minimum value of 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds). |
-| [`setMaxFeeAmountUSD`](#setmaxfeeamountusd)                                                     | Function to update `_maxFeeAmountUSD`.                                                                                               |
+| [`getPoolIdsForReporters`](#getpoolidsforreporters)                                             | Function to return the array of poolIds reported by reporters for a given set of reporter addresses.           |
+| [`getPoolIdsLengthForReporters`](#getpoolidslengthforreporters)                                 | Function to return the number of poolIds reported by a reporter for a given set of reporters. Includes useful information for populating the argument for `getPoolIdsForReporters`.                                        |
+| [`getOwnershipContract`](#getownershipcontract)                                                                         | Function to return the address of the ownership contract that stores the owner variable. Call the `getOwner` function on the returned contract address to obtain the DIVA owner.                                                                                                |
+| [`getActivationDelay`](#getactivationdelay)                                                                 | Function to return the activation delay (in seconds) for governance related updates.                                                         |
+| [`getQueryId`](#getqueryid)                                                                     | Function to return the query id for a given poolId.                                                                               |
 | **Batch functions**                                                                             |
-| [`batchClaimTips`](#batchclaimtips)                                                             | Batch version of `claimTips`.                                                                                                        |
-| [`batchClaimDIVAFee`](#batchclaimdivafee)                                                       | Batch version of `claimDIVAFee`.                                                                                                     |
-| [`batchClaimTipsAndDIVAFee`](#batchclaimtipsanddivafee)                                         | Batch version of `claimTipsAndDIVAFee`.                                                                                              |
+| [`batchClaimReward`](#batchclaimreward)                                                       | Batch version of `claimReward`.                                                                                                     |
 
 # Core functions
 
@@ -206,12 +205,21 @@ DIVAOracleTellor implements the following core functions.
 
 ## addTip
 
-Function to run a single tip.
+Function to tip a pool. The function executes the following steps in the following order:
+* Confirm that the final value hasn't been submitted to DIVA Protocol yet, in which case `_poolIdToReporter` would resolve to the zero address.
+* Add a new entry in the `_poolIdToTippingTokens` array if the specified `_tippingToken` does not yet exist for the specified pool.
+* Update balance before doing a potentially unsafe `safeTransferFrom` call. Requires prior user approval to succeed.
+* Transfer tipping token from `msg.sender` to this contract.
+* Emit a [`TipAdded`](#tipadded) event on success.
+
+The function reverts under the following conditions:
+
+
 
 ```js
 function addTip(
     uint256 _poolId,        // The unique identifier of the pool
-    uint256 _amount,        // The amount to tip
+    uint256 _amount,        // The amount to tip expressed as an integer with tipping token decimals
     address _tippingToken   // Tipping token address
 )
     external;
@@ -572,18 +580,22 @@ function setMaxFeeAmountUSD(
 
 To keep a max fee amount usd parameter unchanged, simply pass the current value as function parameter.
 
+## Reentrancy protection
+
+All state-modifying functions, including their batch versions, implement [openzeppelin's `nonReentrant` modifier][openzeppelin-reentrancy-guard] to protect against reentrancy attacks, with the exception of governance related functions.
+
 # Events
 
 ## TipAdded
 
-Emitted when the tip is added.
+Emitted when a tip is added via the [`addTip`](#addtip) function.
 
 ```
 event TipAdded(
-    uint256 poolId,         // The Id of an existing derivatives pool
-    address tippingToken,   // Address of tipping token
-    uint256 amount,         // Tipping token amount
-    address tipper          // Address of user who adds the tip
+    uint256 poolId,         // The Id of the tipped pool
+    address tippingToken,   // Tipping token address
+    uint256 amount,         // Tipping token amount expressed as an integer with tipping token decimals
+    address tipper          // Tipper address
 );
 ```
 
@@ -658,3 +670,9 @@ The following errors may be emitted during execution:
 | `OutOfRange()`                        | `setMinPeriodUndisputed`                                                                                                                                 | Thrown if `_minPeriodUndisputed` passed into `setMinPeriodUndisputed` is not within the expected range (min 1h, max 18h)                        |
 | `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` / `setFinalReferenceValueAndClaimTips`/ `setFinalReferenceValueAndClaimDIVAFee`/ `setFinalReferenceValueAndClaimTipsAndDIVAFee` | Thrown when user calls `setFinalReferenceValue` (or a variant of it) but there is no data reported after the expiry time of the underlying pool |
 | `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` / `setFinalReferenceValueAndClaimTips`/ `setFinalReferenceValueAndClaimDIVAFee`/ `setFinalReferenceValueAndClaimTipsAndDIVAFee` | Thrown if user tries to call `setFinalReferenceValue` (or a variant of it) before the minimum period undisputed period has passed               |
+
+
+
+
+
+[openzeppelin-reentrancy-guard]: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/security/ReentrancyGuard.sol

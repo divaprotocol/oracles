@@ -28,7 +28,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     address private _excessFeeRecipient;
     uint256 private _startTimeExcessFeeRecipient;
 
-    address private _ownershipContract;
+    address private immutable _ownershipContract;
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
 
@@ -76,19 +76,30 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         uint256 _amount,
         address _tippingToken
     ) external override nonReentrant {
+        // Confirm that the final value hasn't been submitted to DIVA Protocol yet,
+        // in which case `_poolIdToReporter` would resolve to the zero address.
         if (_poolIdToReporter[_poolId] != address(0)) {
             revert AlreadyConfirmedPool();
         }
 
+        // Add a new entry in the `_poolIdToTippingTokens` array if the specified
+        //`_tippingToken` does not yet exist for the specified pool. 
         if (_tips[_poolId][_tippingToken] == 0) {
             _poolIdToTippingTokens[_poolId].push(_tippingToken);
         }
+
+        // Follow the CEI pattern by updating the balance before doing a potentially
+        // unsafe `safeTransferFrom` call.
+        _tips[_poolId][_tippingToken] += _amount;
+
+        // Transfer tipping token from `msg.sender` to this contract.
         IERC20Metadata(_tippingToken).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
-        _tips[_poolId][_tippingToken] += _amount;
+
+        // Log event including tipping information and tipper address
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
