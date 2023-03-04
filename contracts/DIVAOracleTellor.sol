@@ -588,23 +588,24 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function _setFinalReferenceValue(uint256 _poolId) private {
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId); // updated the Pool struct based on the latest contracts
+        // Load pool information from the DIVA smart contract.
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
-        // Get queryId from poolId
+        // Get queryId from poolId for the value look-up inside the Tellor contract.
         bytes32 _queryId = getQueryId(_poolId);
 
-        // Find first oracle submission after or at expiryTime, if it exists
+        // Find first oracle submission after or at expiryTime, if it exists.
         (
             bytes memory _valueRetrieved,
             uint256 _timestampRetrieved
-        ) = getDataAfter(_queryId, _params.expiryTime - 1);
+        ) = getDataAfter(_queryId, _params.expiryTime);
 
-        // Check that data exists (_timestampRetrieved = 0 if it doesn't)
+        // Check that data exists (_timestampRetrieved = 0 if it doesn't).
         if (_timestampRetrieved == 0) {
             revert NoOracleSubmissionAfterExpiryTime();
         }
 
-        // Check that _minPeriodUndisputed has passed after _timestampRetrieved
+        // Check that `_minPeriodUndisputed` has passed after `_timestampRetrieved`.
         if (block.timestamp - _timestampRetrieved < _minPeriodUndisputed) {
             revert MinPeriodUndisputedNotPassed();
         }
@@ -677,6 +678,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
         _diva.batchTransferFeeClaim(_feeClaimTransfers);
 
+        // Log event including reported information
         emit FinalReferenceValueSet(
             _poolId,
             _formattedFinalReferenceValue,

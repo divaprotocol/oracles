@@ -72,11 +72,12 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when the tip is claimed.
-     * @param poolId The Id of an existing derivatives pool.
+     * @notice Emitted in `claimReward` when the reward is claimed.
+     * @param poolId The Id of the pool.
      * @param recipient Address of the tip recipient.
-     * @param tippingToken Address of tipping token.
-     * @param amount Claimed tipping token amount.
+     * @param tippingToken Tipping token address.
+     * @param amount Claimed amount expressed as an integer with tipping
+     * token decimals.
      */
     event TipClaimed(
         uint256 poolId,
@@ -209,7 +210,7 @@ interface IDIVAOracleTellor {
      * If no tipping tokens are provided and `_claimDIVAReward` is
      * set to `false`, the function will not execute anything, but will
      * not revert.
-     * @param _poolId The id of the pool.
+     * @param _poolId The Id of the pool.
      * @param _tippingTokens Array of tipping tokens to claim.
      * @param _claimDIVAReward Flag indicating whether to claim the
      * DIVA reward.
@@ -230,10 +231,14 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @dev Function to set the final reference value for a given `_poolId`.
+     * @notice Function to set the final reference value for a given `_poolId`.
+     * The first value that was submitted to the Tellor contract after the pool
+     * expiration and remained undisputed for at least 12 hours will be passed
+     * on to the DIVA smart contract for settlement.
+     * @dev Function must be triggered within the submission window of the pool.
      * @param _poolId The id of the pool.
-     * @param _tippingTokens Array of tipping tokens to claim tip.
-     * @param _claimDIVAReward Flag showing whether to claim DIVA reward.
+     * @param _tippingTokens Array of tipping tokens to claim.
+     * @param _claimDIVAReward Flag indicating whether to claim the DIVA reward.
      */
     function setFinalReferenceValue(
         uint256 _poolId,

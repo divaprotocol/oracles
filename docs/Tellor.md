@@ -31,6 +31,13 @@ Please refer to the ["Risks and Mitigants"](#risks-and-mitigants) section for a 
 
 >**Terminology:** As funds backing the derivative contracts are held in so-called "contingent pools", the terms "derivative" and "contingent pool" (or simply "pool") are used interchangeably.
 
+## Involved contracts
+* **Tellor contract:** A key-value store where reporters submit their values.
+* **DIVA contract:** The contract that issued the derivative products and expects the outcome reporting.
+* **Tellor adapter contract:** The contract that pulls the value from Tellor contract and passes it on to DIVA contract for settlement.
+
+TODO: Add illustration
+
 ## What is Tellor protocol
 
 Tellor is a decentralized oracle protocol that allows smart contracts on EVM chains to securely and reliably access data from off-chain sources, including data from other chains. It uses a decentralized network of stakers to provide this data, and incentivizes them with the Tellor token (TRB) to maintain the integrity of the network.
@@ -246,35 +253,65 @@ The function executes the following steps in the following order:
    * Transfer the reward to the eligible reporter via the `claimFee` function.
    * Emit a `FeeClaimed` event on successful completion of the `claimFee` function.
 
->**Note: ** If no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not execute anything, but will not revert. 
+>**Note: ** If no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not execute anything, but will not revert. Further note, that the DIVA reward can also be claimed directly from the DIVA smart contract by calling the `claimFee` function.
 
 ```js
 function claimReward(
-    uint256 _poolId,                    // The id of the pool
+    uint256 _poolId,                    // The Id of the pool
     address[] memory _tippingTokens,    // Array of tipping tokens to claim
     bool _claimDIVAReward               // Flag indicating whether to claim the DIVA reward
 )
     external;
 ```
 
-## batchClaimTips
+## batchClaimReward
 
-Batch version of `claimTips`.
+Batch version of `claimReward`.
 
 ```js
-function batchClaimTips(
-    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing poolIds and tipping tokens
+function batchClaimReward(
+    ArgsBatchClaimReward[] calldata _argsBatchClaimReward // Struct array containing the poolIds, tipping tokens and the `claimDIVAReward` flag
 )
     external;
 ```
 
 ## setFinalReferenceValue
 
-Function to set the final reference value for a given `_poolId`.
+Function to set the final reference value for a given `_poolId`. It retrieves the first value that was submitted to the Tellor contract after the pool expiration and remained undisputed for at least 12 hours, and passes it on to the DIVA smart contract for settlement. The address of the reporter who submitted the final reference value to the Tellor smart contract will be stored within the `_poolIdToReporter` mapping and will be eligible to claim the reward. 
+
+Users can claim their rewards in the same call by specifying which tips to claim from the Tellor adapter contract using the `_tippingTokens` array, and can indicate whether they want to claim the DIVA reward by setting the `_claimDIVAReward` parameter to `true`. The tipping tokens associated with a pool can be obtained via the [`getTippingTokens`](#gettippingtokens) function.
+
+If no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not claim any rewards and users can claim them separately via the [`claimReward`](#claimreward) function.
+
+Note that the DIVA reward, which includes the settlement fee and any tip added via DIVA's `addTip` function (not to be confused with the [`addTip`](#addtip) function inside the Tellor adapter), is capped at $10. The remaining reward goes to the excess fee recipient address [set](#updateexcessfeerecipient) by the DIVA owner. This measure was implemented to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward. Note that tips added via the [`addTip`](#addtip) function to the Tellor adapter contract are not affected by this cap.
+
+Further note that the `setFinalReferenceValue` function can be triggered by anyone.
+
+>**Important:** The function `setFinalReferenceValue` should be called within submission window of the pool. This window can be retrieved via DIVA's `getSettlementPeriods` function by passing the `indexSettlementPeriods` obtained via `getPoolParameters`. The submission window can be set within a range between 3 and 15 days inside the DIVA smart contract.
+
+The function executes the following steps in the following order:
+* Load the pool parameters from the DIVA smart contract.
+* Get the queryId for the specified `poolId` to look up the reported value inside the Tellor contract.
+* Retrieve the submitted values, which include the final reference value and the USD value of the collateral token. Latter is used to calculate the equivalent of the $10 reward cap in collateral token.
+* Confirm that the value pair has been submitted after pool expiration and remained undisputed for at least 12 hours. Note that disputed values will be removed from the key-value store and not returned during the `getDataAfter` call.
+* Decode the submitted values.
+* Retrieve the reporter address and store it as the eligible address to claim the reward inside the `_poolIdToReporter` mapping.
+* Add an entry to `_reporterToPoolIds` array to allow reporters to retrieve the pools that they are eligible for via [`getPoolIdsForReporters`](#getpoolidsforreporters).
+* Pass on the final reference value to the DIVA smart contract to determine the payouts. Note that DIVA's challenge feature is disabled and the first value successfully submitted will be confirmed, allowing position token holders to start claiming their payouts.
+* Calculate the $10 equivalent in collateral token and transfer the DIVA reward to the eligible reporter and excess fee recipient. 
+* Emit a [`FinalReferenceValueSet`](#finalreferencevalueset) event. 
+* If `_tippingTokens` are provided and/or the `_claimDIVAReward` parameter is set to `true`, follow the same steps as outlined in [`claimReward`](#claimreward).
+
+The function reverts under the following conditions:
+* No value has been reported after pool expiration. In this case `getDataAfter` returns `timestampRetrieved = 0`. Reverts with a `NoOracleSubmissionAfterExpiryTime` error.
+* A value has been submitted but the minimum dispute period of 12 hours hasn't passed yet. Reverts with a `MinPeriodUndisputedNotPassed` error.
+* Triggered outside of the submission window for the pool.
 
 ```js
 function setFinalReferenceValue(
-    uint256 _poolId // The id of the pool
+    uint256 _poolId,                    // The id of the pool
+    address[] calldata _tippingTokens,  // Array of tipping tokens to claim
+    bool _claimDIVAReward               // Flag indicating whether to claim the DIVA reward
 )
     external;
 ```
@@ -576,14 +613,14 @@ event TipAdded(
 
 ## TipClaimed
 
-Emitted when the tip is claimed.
+Emitted in `claimReward` when the reward is claimed.
 
 ```
 event TipClaimed(
-    uint256 poolId,         // The Id of an existing derivatives pool
+    uint256 poolId,         // The Id of the pool
     address recipient,      // Address of the tip recipient
-    address tippingToken,   // Address of tipping token
-    uint256 amount          // Claimed tipping token amount
+    address tippingToken,   // Tipping token address
+    uint256 amount          // Claimed amount expressed as an integer with tipping token decimals
 );
 ```
 
