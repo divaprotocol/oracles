@@ -231,23 +231,28 @@ function addTip(
 
 ## claimReward
 
-Function to claim tips and/or DIVA reward. The caller can specify via the `_tippingTokens` array which tips to claim from the Tellor adapter contract and via the `_claimDIVAReward` boolean flag whether to claim the DIVA reward in the same call. Note that if no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not execute anything. The function will __not__ revert in that scenario.
+Function to claim tips and/or DIVA rewards. Users can specify which tips to claim from the Tellor adapter contract using the `_tippingTokens` array, and can indicate whether they want to claim the DIVA reward by setting the `_claimDIVAReward` parameter to `true`. Users can obtain the tipping tokens associated with a pool by calling the [`getTippingTokens`](#gettippingtokens) function.
 
-Claiming rewards is only possible after the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Anyone can trigger this function to transfer the rewards to the eligible reporter.
+It's important to note that rewards can only be claimed after the final value has been submitted and confirmed in the DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. This function can be triggered by anyone to transfer the rewards to the eligible reporter.
 
 The function executes the following steps in the following order:
-* Check whether caller has provided `_tippingTokens`. If yes, proceed with the following steps. If no, skip them.
-   * Get tip amount for pool and tipping token.
-   * Set tip amount to zero to prevent multiple payouts in the event that the same tipping token is provided multiple times.
-   * Transfer tip from the Tellor adapter contract to the eligible reporter stored in `_poolIdToReporter` mapping.
-   * Emits a `TipClaimed` event per tipping token claimed. Emits a `FeeClaimed` event in DIVA smart contract when fee is claimed.
-* When the caller sets `_claimDIVAReward` to `true`, the function triggers the claim of the DIVA reward from the DIVA smart contract. The collateral token of the pool is retrieved from the pool parameters stored within DIVA Protocol, and then transferred to the eligible reporter via the claimFee function.
+* Check whether the caller has provided any tipping tokens in the `_tippingTokens` array. If tipping tokens are provided, the function will proceed with the following steps. If not, the function will skip these steps.
+   * Retrieve the tip amount for the pool in the specified tipping token.
+   * Set the tip amount to zero to prevent multiple payouts in case the same tipping token is provided multiple times.
+   * Transfer the tip from the Tellor adapter contract to the eligible reporter stored in the `_poolIdToReporter` mapping (set during successful execution of the [`setFinalReferenceValue`](#setfinalreferencevalue) function).
+   * Emit a [`TipClaimed`](#tipclaimed) event for each tipping token claimed.
+* If the `_claimDIVAReward` parameter is set to `true`, the function will trigger the claim of the DIVA reward from the DIVA smart contract:
+   * Retrieve the collateral token of the pool from the pool parameters stored within the DIVA Protocol.
+   * Transfer the reward to the eligible reporter via the `claimFee` function.
+   * Emit a `FeeClaimed` event on successful completion of the `claimFee` function.
+
+>**Note: ** If no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not execute anything, but will not revert. 
 
 ```js
 function claimReward(
     uint256 _poolId,                    // The id of the pool
-    address[] memory _tippingTokens,    // Array of tipping tokens to claim tip
-    bool _claimDIVAReward               // Flag showing whether to claim DIVA reward
+    address[] memory _tippingTokens,    // Array of tipping tokens to claim
+    bool _claimDIVAReward               // Flag indicating whether to claim the DIVA reward
 )
     external;
 ```

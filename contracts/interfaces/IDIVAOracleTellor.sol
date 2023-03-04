@@ -201,16 +201,18 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Function to claim tips and/or DIVA reward.
-     * Claiming rewards is only possible after the final value has been
+     * @dev Claiming rewards is only possible after the final value has been
      * submitted and confirmed in DIVA Protocol by successfully calling
      * the `setFinalReferenceValue` function. Anyone can trigger this
      * function to transfer the rewards to the eligible reporter.
-     * @dev Note that if no tipping tokens are provided and `_claimDIVAReward`
-     * is set to `false`, the function will not execute anything. The
-     * function will not revert in that scenario.
+     * 
+     * If no tipping tokens are provided and `_claimDIVAReward` is
+     * set to `false`, the function will not execute anything, but will
+     * not revert.
      * @param _poolId The id of the pool.
-     * @param _tippingTokens Array of tipping tokens to claim tip.
-     * @param _claimDIVAReward Flag showing whether to claim DIVA reward.
+     * @param _tippingTokens Array of tipping tokens to claim.
+     * @param _claimDIVAReward Flag indicating whether to claim the
+     * DIVA reward.
      */
     function claimReward(
         uint256 _poolId,
