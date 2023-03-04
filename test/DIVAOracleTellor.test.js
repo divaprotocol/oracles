@@ -448,7 +448,7 @@ describe("DIVAOracleTellor", () => {
           await collateralTokenInstance.balanceOf(reporter.address)
         ).to.eq(0);
 
-        // Check that pool id is added to `reporterToPoolIds`
+        // Check that poolId is added to `reporterToPoolIds`
         expect(
           (
             await divaOracleTellor.getPoolIdsLengthForReporters([
@@ -2590,7 +2590,7 @@ describe("DIVAOracleTellor", () => {
         .setFinalReferenceValue(latestPoolId, [], false);
     });
 
-    it("Should get pool ids with correct start and end index", async () => {
+    it("Should get poolIds with correct start and end index", async () => {
       // ---------
       // Arrange: Set start, end index and reporter
       // ---------
@@ -2602,7 +2602,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Assert: Check that params are correct
       // ---------
-      // Get pool ids for reporter
+      // Get poolIds for reporter
       const poolIdsForReporter = (
         await divaOracleTellor.getPoolIdsForReporters([
           {
@@ -2616,7 +2616,7 @@ describe("DIVAOracleTellor", () => {
       expect(poolIdsForReporter[0]).to.eq(latestPoolId);
     });
 
-    it("Should get pool ids with end index larger than length of pool ids reportedy by reporter", async () => {
+    it("Should get poolIds with end index larger than length of poolIds reportedy by reporter", async () => {
       // ---------
       // Arrange: Set start, end index and reporter
       // ---------
@@ -2631,7 +2631,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Assert: Check that params are correct
       // ---------
-      // Get pool ids for reporter
+      // Get poolIds for reporter
       const poolIdsForReporter = (
         await divaOracleTellor.getPoolIdsForReporters([
           {

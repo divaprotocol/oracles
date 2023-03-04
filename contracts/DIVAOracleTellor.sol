@@ -547,7 +547,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         bool _claimDIVAReward
     ) private onlyConfirmedPool(_poolId) {
 
-        // Iterate over the provided _tippingTokens array. Will skip the for
+        // Iterate over the provided `_tippingTokens` array. Will skip the for
         // loop if no tipping tokens have been provided.
         uint256 _len = _tippingTokens.length;
         for (uint256 i = 0; i < _len; ) {
@@ -560,6 +560,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             // the same tipping token is provided multiple times.
             _tips[_poolId][_tippingToken] = 0;
 
+            // Transfer tip from `this` to eligible reporter.
             IERC20Metadata(_tippingToken).safeTransfer(
                 _poolIdToReporter[_poolId],
                 _tipAmount
@@ -578,6 +579,8 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             }
         }
 
+        // Claim DIVA reward if indicated in the function call. Alternatively,
+        // DIVA rewards can be claimed from the DIVA smart contract directly.
         if (_claimDIVAReward) {
             IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
             _diva.claimFee(_params.collateralToken, _poolIdToReporter[_poolId]);
@@ -618,7 +621,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _timestampRetrieved
         );
 
-        // Set reporter with pool id
+        // Set reporter with poolId
         _poolIdToReporter[_poolId] = _reporter;
         _reporterToPoolIds[_reporter].push(_poolId);
 

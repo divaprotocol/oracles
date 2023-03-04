@@ -181,10 +181,13 @@ interface IDIVAOracleTellor {
     }
 
     /**
-     * @dev Function to tip a pool using any ERC20 token. Tips
-     * can be added until the final value has been submitted and
+     * @notice Function to tip a pool. Tips can be added in any
+     * ERC20 token until the final value has been submitted and
      * confirmed in DIVA Protocol by successfully calling the
-     * `setFinalReferenceValue` function.
+     * `setFinalReferenceValue` function. Tips can e claimed via the
+     * `claimReward` function after final value confirmation.
+     * @dev Function will revert if `msg.sender` has insufficient
+     * allowance.
      * @param _poolId The id of the pool.
      * @param _amount The amount to tip expressed as an integer
      * with tipping token decimals.
@@ -197,7 +200,14 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @dev Function to claim tips and/or DIVA reward.
+     * @notice Function to claim tips and/or DIVA reward.
+     * Claiming rewards is only possible after the final value has been
+     * submitted and confirmed in DIVA Protocol by successfully calling
+     * the `setFinalReferenceValue` function. Anyone can trigger this
+     * function to transfer the rewards to the eligible reporter.
+     * @dev Note that if no tipping tokens are provided and `_claimDIVAReward`
+     * is set to `false`, the function will not execute anything. The
+     * function will not revert in that scenario.
      * @param _poolId The id of the pool.
      * @param _tippingTokens Array of tipping tokens to claim tip.
      * @param _claimDIVAReward Flag showing whether to claim DIVA reward.
@@ -210,7 +220,7 @@ interface IDIVAOracleTellor {
 
     /**
      * @dev Batch version of `claimReward`.
-     * @param _argsBatchClaimReward Struct array containing pool ids, tipping
+     * @param _argsBatchClaimReward Struct array containing poolIds, tipping
      * tokens, and `claimDIVAReward` flag.
      */
     function batchClaimReward(
@@ -300,7 +310,7 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to return the array of tipping amounts for the given
      * array of `ArgsGetTipAmounts` struct.
-     * @param _argsGetTipAmounts Struct array containing pool ids and tipping
+     * @param _argsGetTipAmounts Struct array containing poolIds and tipping
      * tokens.
      */
     function getTipAmounts(ArgsGetTipAmounts[] calldata _argsGetTipAmounts)
@@ -314,7 +324,7 @@ interface IDIVAOracleTellor {
      * the zero address if a value has been reported to the Tellor contract
      * but it hasn't been pulled into DIVA Protocol by calling
      * `setFinalReferenceValue` yet.
-     * @param _poolIds Array of pool id.
+     * @param _poolIds Array of poolIds.
      */
     function getReporters(uint256[] calldata _poolIds)
         external
@@ -324,7 +334,7 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to return the array of tipping tokens for the given array
      * of `ArgsGetTippingTokens` struct.
-     * @param _argsGetTippingTokens Struct array containing pool id,
+     * @param _argsGetTippingTokens Struct array containing poolId,
      * start index and end index
      */
     function getTippingTokens(
@@ -334,7 +344,7 @@ interface IDIVAOracleTellor {
     /**
      * @dev Function to return the lengths of tipping tokens for the given
      * `_poolIds`.
-     * @param _poolIds Array of pool ids.
+     * @param _poolIds Array of poolIds.
      */
     function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
         external
@@ -342,7 +352,7 @@ interface IDIVAOracleTellor {
         returns (uint256[] memory);
 
     /**
-     * @dev Function to return the array of pool ids reported by reporters for
+     * @dev Function to return the array of poolIds reported by reporters for
      * the given array of `ArgsGetPoolIdsForReporters` struct.
      * @param _argsGetPoolIdsForReporters Struct array containing reporter
      * address, start index and end index.
@@ -352,7 +362,7 @@ interface IDIVAOracleTellor {
     ) external view returns (uint256[][] memory);
 
     /**
-     * @dev Function to return the lengths of pool ids reported by reporters
+     * @dev Function to return the lengths of poolIds reported by reporters
      * for the given `_reporters`.
      * @param _reporters Array of reporter address.
      */

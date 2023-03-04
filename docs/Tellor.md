@@ -205,7 +205,7 @@ DIVAOracleTellor implements the following core functions.
 
 ## addTip
 
-Function to tip a pool using any ERC20 token. Tips can be added until the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function.
+Function to tip a pool. Tips can be added in any ERC20 token until the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Tips can be claimed via the [`claimReward`](#claimreward) function after final value confirmation.
 
 The function executes the following steps in the following order:
 * Confirm that the final value hasn't been submitted to DIVA Protocol yet, in which case `_poolIdToReporter` would resolve to the zero address.
@@ -216,7 +216,7 @@ The function executes the following steps in the following order:
 
 The function reverts under the following conditions:
 * The final value has already been submitted and confirmed in DIVA Protocol.
-* The `msg.sender` has set insufficient allowance for the `_tippingToken`
+* The `msg.sender` has set insufficient allowance for the `_tippingToken`.
 
 ```js
 function addTip(
@@ -231,14 +231,14 @@ function addTip(
 
 ## claimReward
 
-Function to claim tips and/or DIVA reward. The function executes the following steps in the following order when looping through the list of tipping tokens:
+Function to claim tips and/or DIVA reward. Claiming rewards is only possible after the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Anyone can trigger this function to transfer the rewards to the eligible reporter.
+
+The function executes the following steps in the following order when looping through the provided list of tipping tokens to claim:
 * Get tip amount for pool and tipping token.
 * Set tip amount to zero to prevent multiple payouts in the event that the same tipping token is provided multiple times.
 * Emits a `TipClaimed` event per tipping token claimed. Emits a `FeeClaimed` event in DIVA smart contract when fee is claimed.
 
-
-
-Note that if no tipping tokens are provided and `_claimDIVAReward` is `false`, then 
+Note that if no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not execute anything. The function will not revert in that scenario.
 
 ```js
 function claimReward(
@@ -255,7 +255,7 @@ Batch version of `claimTips`.
 
 ```js
 function batchClaimTips(
-    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing pool ids and tipping tokens
+    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing poolIds and tipping tokens
 )
     external;
 ```
@@ -277,7 +277,7 @@ Batch version of `claimDIVAReward`.
 
 ```js
 function batchClaimDIVAReward(
-    uint256[] calldata _poolIds // Array of pool ids
+    uint256[] calldata _poolIds // Array of poolIds
 )
     external;
 ```
@@ -300,7 +300,7 @@ Batch version of `claimTipsAndDIVAReward`.
 
 ```js
 function batchClaimTipsAndDIVAReward(
-    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing pool ids and tipping tokens
+    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing poolIds and tipping tokens
 )
     external;
 ```
@@ -418,7 +418,7 @@ Function to return the array of tipping amounts for the given array of `ArgsBatc
 
 ```js
 function getTipAmounts(
-    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing pool ids and tipping tokens
+    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing poolIds and tipping tokens
 )
     external
     view
@@ -440,7 +440,7 @@ Function to return the array of reporter addresses for the given `_poolIds`.
 
 ```js
 function getReporters(
-    uint256[] calldata _poolIds // Array of pool ids
+    uint256[] calldata _poolIds // Array of poolIds
 )
     external
     view
@@ -455,7 +455,7 @@ Function to return the array of tipping tokens for the given array of `ArgsGetTi
 
 ```js
 function getTippingTokens(
-    ArgsGetTippingTokens[] calldata _argsGetTippingTokens // Struct array containing pool id, start index and end index
+    ArgsGetTippingTokens[] calldata _argsGetTippingTokens // Struct array containing poolId, start index and end index
 )
     external
     view
@@ -478,7 +478,7 @@ Function to return the lengths of tipping tokens for the given `_poolIds`.
 
 ```js
 function getTippingTokensLengthForPoolIds(
-    uint256[] calldata _poolIds // Array of pool ids
+    uint256[] calldata _poolIds // Array of poolIds
 )
     external
     view
@@ -487,7 +487,7 @@ function getTippingTokensLengthForPoolIds(
 
 ## getPoolIdsForReporters
 
-Function to return the array of pool ids reported by reporters for the given array of `ArgsGetPoolIdsForReporters` struct.
+Function to return the array of poolIds reported by reporters for the given array of `ArgsGetPoolIdsForReporters` struct.
 
 ```js
 function getPoolIdsForReporters(
@@ -510,7 +510,7 @@ struct ArgsGetPoolIdsForReporters {
 
 ## getPoolIdsLengthForReporters
 
-Function to return the lengths of pool ids reported by reporters for the given `_reporters`.
+Function to return the lengths of poolIds reported by reporters for the given `_reporters`.
 
 ```js
 function getPoolIdsLengthForReporters(
