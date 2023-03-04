@@ -231,14 +231,17 @@ function addTip(
 
 ## claimReward
 
-Function to claim tips and/or DIVA reward. Claiming rewards is only possible after the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Anyone can trigger this function to transfer the rewards to the eligible reporter.
+Function to claim tips and/or DIVA reward. The caller can specify via the `_tippingTokens` array which tips to claim from the Tellor adapter contract and via the `_claimDIVAReward` boolean flag whether to claim the DIVA reward in the same call. Note that if no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not execute anything. The function will __not__ revert in that scenario.
 
-The function executes the following steps in the following order when looping through the provided list of tipping tokens to claim:
-* Get tip amount for pool and tipping token.
-* Set tip amount to zero to prevent multiple payouts in the event that the same tipping token is provided multiple times.
-* Emits a `TipClaimed` event per tipping token claimed. Emits a `FeeClaimed` event in DIVA smart contract when fee is claimed.
+Claiming rewards is only possible after the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Anyone can trigger this function to transfer the rewards to the eligible reporter.
 
-Note that if no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not execute anything. The function will not revert in that scenario.
+The function executes the following steps in the following order:
+* Check whether caller has provided `_tippingTokens`. If yes, proceed with the following steps. If no, skip them.
+   * Get tip amount for pool and tipping token.
+   * Set tip amount to zero to prevent multiple payouts in the event that the same tipping token is provided multiple times.
+   * Transfer tip from the Tellor adapter contract to the eligible reporter stored in `_poolIdToReporter` mapping.
+   * Emits a `TipClaimed` event per tipping token claimed. Emits a `FeeClaimed` event in DIVA smart contract when fee is claimed.
+* When the caller sets `_claimDIVAReward` to `true`, the function triggers the claim of the DIVA reward from the DIVA smart contract. The collateral token of the pool is retrieved from the pool parameters stored within DIVA Protocol, and then transferred to the eligible reporter via the claimFee function.
 
 ```js
 function claimReward(
@@ -255,51 +258,6 @@ Batch version of `claimTips`.
 
 ```js
 function batchClaimTips(
-    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing poolIds and tipping tokens
-)
-    external;
-```
-
-## claimDIVAReward
-
-Function to claim fee from DIVA.
-
-```js
-function claimDIVAReward(
-    uint256 _poolId // The id of the pool
-)
-    external;
-```
-
-## batchClaimDIVAReward
-
-Batch version of `claimDIVAReward`.
-
-```js
-function batchClaimDIVAReward(
-    uint256[] calldata _poolIds // Array of poolIds
-)
-    external;
-```
-
-## claimTipsAndDIVAReward
-
-Function to claim tips from `DIVAOracleTellor` and claim fee from DIVA.
-
-```js
-function claimTipsAndDIVAReward(
-    uint256 _poolId,                // The id of the pool
-    address[] memory _tippingTokens // Array of tipping tokens to claim tip
-)
-    external;
-```
-
-## batchClaimTipsAndDIVAReward
-
-Batch version of `claimTipsAndDIVAReward`.
-
-```js
-function batchClaimTipsAndDIVAReward(
     ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing poolIds and tipping tokens
 )
     external;
