@@ -205,7 +205,9 @@ DIVAOracleTellor implements the following core functions.
 
 ## addTip
 
-Function to tip a pool. The function executes the following steps in the following order:
+Function to tip a pool using any ERC20 token. Tips can be added until the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function.
+
+The function executes the following steps in the following order:
 * Confirm that the final value hasn't been submitted to DIVA Protocol yet, in which case `_poolIdToReporter` would resolve to the zero address.
 * Add a new entry in the `_poolIdToTippingTokens` array if the specified `_tippingToken` does not yet exist for the specified pool.
 * Update balance before doing a potentially unsafe `safeTransferFrom` call. Requires prior user approval to succeed.
@@ -225,13 +227,11 @@ function addTip(
     external;
 ```
 
->**Note:** DIVA Protocol also has an `addTip` function, but it only allows tipping with the tipping token with the collateral token of the pool. When a tip is added through this function, it is credited to the data provider along with the settlement fees once the final value is confirmed.
+>**Note:** DIVA Protocol also has an `addTip` function, but it only allows tipping with the collateral token of the pool. When a tip is added through this function, it is credited to the data provider along with the settlement fees (combined referred to as DIVA reward) once the final value is confirmed.
 
 ## claimReward
 
-Function to claim tips and/or DIVA reward.
-
-The function executes the following steps in the following order when looping through the list of tipping tokens:
+Function to claim tips and/or DIVA reward. The function executes the following steps in the following order when looping through the list of tipping tokens:
 * Get tip amount for pool and tipping token.
 * Set tip amount to zero to prevent multiple payouts in the event that the same tipping token is provided multiple times.
 * Emits a `TipClaimed` event per tipping token claimed. Emits a `FeeClaimed` event in DIVA smart contract when fee is claimed.

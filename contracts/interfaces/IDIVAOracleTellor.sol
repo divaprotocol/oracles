@@ -181,7 +181,10 @@ interface IDIVAOracleTellor {
     }
 
     /**
-     * @dev Function to tip a pool.
+     * @dev Function to tip a pool using any ERC20 token. Tips
+     * can be added until the final value has been submitted and
+     * confirmed in DIVA Protocol by successfully calling the
+     * `setFinalReferenceValue` function.
      * @param _poolId The id of the pool.
      * @param _amount The amount to tip expressed as an integer
      * with tipping token decimals.
