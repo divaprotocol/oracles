@@ -41,7 +41,7 @@ TODO: Add illustration
 ## Privileges
 The contract owner is inherited from the DIVA Ownership contract and is granted the right to update the maximum amount of DIVA rewards that a reporter can receive, denominated in USD, as well as the excess fee recipient. 
 
-The update process follows the same logic as in DIVA Protocol, where the owner first triggers an update of the respective value and it only gets activated after some delay. This delay is hard-coded to 3 days in the Tellor adapter contract and cannot be modified.
+The update process follows the same logic as in DIVA Protocol, where the owner first triggers an update of the respective value and it only gets activated after some delay. This delay is hard-coded to 3 days in the Tellor adapter contract and cannot be modified. The contract owner can revoke an update during that period. 
 
 ## What is Tellor protocol
 
@@ -350,6 +350,30 @@ function updateMaxFeeAmountUSD(
     uint256 _newMaxFeeAmountUSD  // New amount expressed as an integer with 18 decimals
 )
     external;
+```
+
+## revokePendingExcessFeeRecipientUpdate
+
+Function to revoke a pending excess fee recipient update and restore the previous one. On success, emits a [`PendingExcessFeeRecipientUpdateRevoked`](#pendingexcessfeerecipientupdaterevoked) event including the revoked and restored excess fee recipient address. 
+
+Reverts if:
+* `msg.sender` is not contract owner.
+* New excess fee recipient is already active (i.e. `block.timestamp >= startTime`).
+
+```js
+function revokePendingExcessFeeRecipientUpdate() external;
+```
+
+## revokePendingMaxFeeAmountUSDUpdate
+
+Function to revoke a pending max USD fee amount update and restore the previous one. On success, emits a [`PendingMaxFeeAmountUSDUpdateRevoked`](#pendingmaxfeeamountusdupdaterevoked) event including the revoked and restored amount. 
+
+Reverts if:
+* `msg.sender` is not contract owner.
+* New amount is already active (i.e. `block.timestamp >= startTime`).
+
+```js
+function revokePendingMaxFeeAmountUSDUpdate() external;
 ```
 
 # Getter functions
@@ -662,26 +686,27 @@ event MaxFeeAmountUSDUpdated(
 );
 ```
 
+## PendingExcessFeeRecipientUpdateRevoked
 
-## MinPeriodUndisputedSet
-
-Emitted when the `_minPeriodUndisputed` is set.
+Emitted in `revokePendingExcessFeeRecipientUpdate` when a pending excess fee recipient update is revoked.
 
 ```
-event MinPeriodUndisputedSet(
-    address indexed from,       // Address that initiated the change (contract owner)
-    uint32 minPeriodUndisputed  // New `_minPeriodUndisputed`
+event PendingExcessFeeRecipientUpdateRevoked(
+    address indexed revokedBy,                  // Address that initiated the revocation
+    address indexed revokedExcessFeeRecipient,  // Pending excess fee recipient that was revoked
+    address indexed restoredExcessFeeRecipient  // Previous excess fee recipient that was restored
 );
 ```
 
-## MaxFeeAmountUSDSet
+## PendingMaxFeeAmountUSDUpdateRevoked
 
-Emitted when the max fee amount usd value is set.
+Emitted in `revokePendingMaxFeeAmountUSDUpdate` when a pending max USD fee amount update is revoked.
 
 ```
-event MaxFeeAmountUSDSet(
-    address indexed from,   // Address that initiated the change (contract owner)
-    uint256 maxFeeAmountUSD // New max fee amount usd value
+event PendingMaxFeeAmountUSDUpdateRevoked(
+    address indexed revokedBy,          // Address that initiated the revocation
+    uint256 revokedMaxFeeAmountUSD,     // Pending max USD fee amount that was revoked
+    uint256 restoredMaxFeeAmountUSD     // Previous max USD fee amount that was restored
 );
 ```
 

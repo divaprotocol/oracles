@@ -130,8 +130,9 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when a pending excess fee recipient update is revoked.
-     * @param revokedBy The address that initiated the revocation.
+     * @notice Emitted in `revokePendingExcessFeeRecipientUpdate` when a pending
+     * excess fee recipient update is revoked.
+     * @param revokedBy Address that initiated the revocation.
      * @param revokedExcessFeeRecipient Pending excess fee recipient that was
      * revoked.
      * @param restoredExcessFeeRecipient Previous excess fee recipient that was
@@ -144,8 +145,9 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when a pending max USD fee amount update is revoked.
-     * @param revokedBy The address that initiated the revocation.
+     * @notice Emitted in `revokePendingMaxFeeAmountUSDUpdate` when a pending
+     * max USD fee amount update is revoked.
+     * @param revokedBy Address that initiated the revocation.
      * @param revokedMaxFeeAmountUSD Pending max USD fee amount that was
      * revoked.
      * @param restoredMaxFeeAmountUSD Previous max USD fee amount that was
@@ -253,6 +255,11 @@ interface IDIVAOracleTellor {
      * @notice Function to update the excess fee recipient address.
      * @dev Activation is restricted to the contract owner and subject
      * to a 3-day delay.
+     *
+     * Reverts if:
+     * - `msg.sender` is not contract owner.
+     * - provided address equals zero address.
+     * - there is already a pending excess fee recipient address update.
      * @param _newExcessFeeRecipient New excess fee recipient address.
      */
     function updateExcessFeeRecipient(address _newExcessFeeRecipient) external;
@@ -262,6 +269,10 @@ interface IDIVAOracleTellor {
      * a reporter can receive, denominated in USD.
      * @dev Activation is restricted to the contract owner and subject
      * to a 3-day delay.
+     *
+     * Reverts if:
+     * - `msg.sender` is not contract owner.
+     * - there is already a pending amount update.
      * @param _newMaxFeeAmountUSD New amount expressed as an integer with
      * 18 decimals.
      */
@@ -269,13 +280,19 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Function to revoke a pending excess fee recipient update
-     * and restore the previous one. Only callable by contract owner.
+     * and restore the previous one.
+     * @dev Reverts if:
+     * - `msg.sender` is not contract owner.
+     * - new excess fee recipient is already active.
      */
     function revokePendingExcessFeeRecipientUpdate() external;
 
     /**
      * @notice Function to revoke a pending max USD fee amount update
      * and restore the previous one. Only callable by contract owner.
+     * @dev Reverts if:
+     * - `msg.sender` is not contract owner.
+     * - new amount is already active.
      */
     function revokePendingMaxFeeAmountUSDUpdate() external;
 
