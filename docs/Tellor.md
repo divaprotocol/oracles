@@ -38,6 +38,11 @@ Please refer to the ["Risks and Mitigants"](#risks-and-mitigants) section for a 
 
 TODO: Add illustration
 
+## Privileges
+The contract owner is inherited from the DIVA Ownership contract and is granted the right to update the maximum amount of DIVA rewards that a reporter can receive, denominated in USD, as well as the excess fee recipient. 
+
+The update process follows the same logic as in DIVA Protocol, where the owner first triggers an update of the respective value and it only gets activated after some delay. This delay is hard-coded to 3 days in the Tellor adapter contract and cannot be modified.
+
 ## What is Tellor protocol
 
 Tellor is a decentralized oracle protocol that allows smart contracts on EVM chains to securely and reliably access data from off-chain sources, including data from other chains. It uses a decentralized network of stakers to provide this data, and incentivizes them with the Tellor token (TRB) to maintain the integrity of the network.
@@ -310,6 +315,39 @@ function setFinalReferenceValue(
     uint256 _poolId,                    // The id of the pool
     address[] calldata _tippingTokens,  // Array of tipping tokens to claim
     bool _claimDIVAReward               // Flag indicating whether to claim the DIVA reward
+)
+    external;
+```
+
+# Governance functions
+
+## updateExcessFeeRecipient
+
+Function to update the excess fee recipient address. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`ExcessFeeRecipientUpdated`](#excessfeerecipientupdated) event including the new excess fee recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingExcessFeeRecipientUpdate`](#revokependingexcessfeerecipientupdate). The previous excess fee recipient address as well as the current one can be obtained via the [`getExcessFeeRecipientInfo`](#getexcessfeerecipientinfo) function.
+
+Reverts if:
+* `msg.sender` is not contract owner.
+* provided address equals zero address.
+* there is already a pending excess fee recipient address update.
+
+```js
+function updateExcessFeeRecipient(
+    address _newExcessFeeRecipient  // New excess fee recipient address
+)
+    external;
+```
+
+## updateMaxFeeAmountUSD
+
+Function to update the maximum amount of DIVA reward that a reporter can receive, denominated in USD. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`MaxFeeAmountUSDUpdated`](#maxfeeamountusdupdated) event including the new excess fee recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingMaxFeeAmountUSDUpdate`](#revokependingmaxfeeamountusdupdate). The previous amount as well as the current one can be obtained via the [`getMaxFeeAmountUSDInfo`](#getmaxfeeamountusdinfo) function.
+
+Reverts if:
+* `msg.sender` is not contract owner.
+* there is already a pending amount update.
+
+```js
+function updateMaxFeeAmountUSD(
+    uint256 _newMaxFeeAmountUSD  // New amount expressed as an integer with 18 decimals
 )
     external;
 ```
@@ -600,16 +638,30 @@ event FinalReferenceValueSet(
 );
 ```
 
-## ExcessFeeRecipientSet
+## ExcessFeeRecipientUpdated
 
-Emitted when the excess fee recipient is set.
+Emitted in `updateExcessFeeRecipient` when the excess fee recipient is updated.
 
 ```
-event ExcessFeeRecipientSet(
-    address indexed from,               // Address that initiated the change (contract owner)
-    address indexed excessFeeRecipient  // New excess fee recipient address
+event ExcessFeeRecipientUpdated(
+    address indexed from,                   // Address that initiated the change (contract owner)
+    address indexed excessFeeRecipient,     // New excess fee recipient address
+    uint256 startTimeExcessFeeRecipient     // Timestamp in seconds since epoch at which the new excess fee recipient will be activated
 );
 ```
+
+## MaxFeeAmountUSDUpdated
+
+Emitted in `updateMaxFeeAmountUSD` when the max USD fee amount is updated.
+
+```
+event MaxFeeAmountUSDUpdated(
+    address indexed from,               // Address that initiated the change (contract owner)
+    uint256 maxFeeAmountUSD,            // New max USD fee amount expressed as an integer with 18 decimals
+    uint256 startTimeMaxFeeAmountUSD    // Timestamp in seconds since epoch at which the new max USD fee amount will be activated
+);
+```
+
 
 ## MinPeriodUndisputedSet
 

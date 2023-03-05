@@ -101,9 +101,10 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when the excess fee recipient is set.
-     * @param from The address that initiated the change (contract owner).
-     * @param excessFeeRecipient New excess fee recipient.
+     * @notice Emitted in `updateExcessFeeRecipient` when the excess
+     * fee recipient is updated.
+     * @param from Address that initiated the change (contract owner).
+     * @param excessFeeRecipient New excess fee recipient address.
      * @param startTimeExcessFeeRecipient Timestamp in seconds since epoch at
      * which the new excess fee recipient will be activated.
      */
@@ -114,9 +115,11 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when the max USD fee amount is set.
-     * @param from The address that initiated the change (contract owner).
-     * @param maxFeeAmountUSD New max USD fee amount.
+     * @notice Emitted in `updateMaxFeeAmountUSD` when the max USD fee
+     * amount is updated.
+     * @param from Address that initiated the change (contract owner).
+     * @param maxFeeAmountUSD New max USD fee amount expressed as an
+     * integer with 18 decimals.
      * @param startTimeMaxFeeAmountUSD Timestamp in seconds since epoch at
      * which the new max USD fee amount will be activated.
      */
@@ -222,7 +225,7 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @dev Batch version of `claimReward`.
+     * @notice Batch version of `claimReward`.
      * @param _argsBatchClaimReward Struct array containing poolIds, tipping
      * tokens, and `claimDIVAReward` flag.
      */
@@ -247,40 +250,44 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @dev Function to update `_excessFeeRecipient`. Only callable
-     * by contract owner.
-     * @param _newExcessFeeRecipient New `_excessFeeRecipient`.
+     * @notice Function to update the excess fee recipient address.
+     * @dev Activation is restricted to the contract owner and subject
+     * to a 3-day delay.
+     * @param _newExcessFeeRecipient New excess fee recipient address.
      */
     function updateExcessFeeRecipient(address _newExcessFeeRecipient) external;
 
     /**
-     * @dev Function to update `_maxFeeAmountUSD`. Only callable by contract owner.
+     * @notice Function to update the maximum amount of DIVA reward that
+     * a reporter can receive, denominated in USD.
+     * @dev Activation is restricted to the contract owner and subject
+     * to a 3-day delay.
      * @param _newMaxFeeAmountUSD New amount expressed as an integer with
      * 18 decimals.
      */
     function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
 
     /**
-     * @dev Function to revoke a pending excess fee recipient update
+     * @notice Function to revoke a pending excess fee recipient update
      * and restore the previous one. Only callable by contract owner.
      */
     function revokePendingExcessFeeRecipientUpdate() external;
 
     /**
-     * @dev Function to revoke a pending max USD fee amount update
+     * @notice Function to revoke a pending max USD fee amount update
      * and restore the previous one. Only callable by contract owner.
      */
     function revokePendingMaxFeeAmountUSDUpdate() external;
 
     /**
-     * @dev Function to return whether the oracle's data feed is challengeable
+     * @notice Function to return whether the oracle's data feed is challengeable
      * or not.
      * Will return `false` in that implementation.
      */
     function getChallengeable() external view returns (bool);
 
     /**
-     * @dev Function to return the excess fee recipient info.
+     * @notice Function to return the excess fee recipient info.
      */
     function getExcessFeeRecipientInfo()
         external
@@ -292,13 +299,13 @@ interface IDIVAOracleTellor {
         );
 
     /**
-     * @dev Function to return the minimum period (in seconds) a reported
+     * @notice Function to return the minimum period (in seconds) a reported
      * value has to remain undisputed in order to be considered valid.
      */
     function getMinPeriodUndisputed() external pure returns (uint32);
 
     /**
-     * @dev Function to return the max USD fee amount info.
+     * @notice Function to return the max USD fee amount info.
      */
     function getMaxFeeAmountUSDInfo()
         external
@@ -310,12 +317,12 @@ interface IDIVAOracleTellor {
         );
 
     /**
-     * @dev Function to return the DIVA address that the oracle is linked to.
+     * @notice Function to return the DIVA address that the oracle is linked to.
      */
     function getDIVAAddress() external view returns (address);
 
     /**
-     * @dev Function to return the array of tipping amounts for the given
+     * @notice Function to return the array of tipping amounts for the given
      * array of `ArgsGetTipAmounts` struct.
      * @param _argsGetTipAmounts Struct array containing poolIds and tipping
      * tokens.
@@ -326,7 +333,7 @@ interface IDIVAOracleTellor {
         returns (uint256[][] memory);
 
     /**
-     * @dev Function to return the list of reporter addresses that are entitled
+     * @notice Function to return the list of reporter addresses that are entitled
      * to receive the fees/tips for the provided poolIds. Note that it returns
      * the zero address if a value has been reported to the Tellor contract
      * but it hasn't been pulled into DIVA Protocol by calling
@@ -339,7 +346,7 @@ interface IDIVAOracleTellor {
         returns (address[] memory);
 
     /**
-     * @dev Function to return the array of tipping tokens for the given array
+     * @notice Function to return the array of tipping tokens for the given array
      * of `ArgsGetTippingTokens` struct.
      * @param _argsGetTippingTokens Struct array containing poolId,
      * start index and end index
@@ -349,7 +356,7 @@ interface IDIVAOracleTellor {
     ) external view returns (address[][] memory);
 
     /**
-     * @dev Function to return the lengths of tipping tokens for the given
+     * @notice Function to return the lengths of tipping tokens for the given
      * `_poolIds`.
      * @param _poolIds Array of poolIds.
      */
@@ -359,7 +366,7 @@ interface IDIVAOracleTellor {
         returns (uint256[] memory);
 
     /**
-     * @dev Function to return the array of poolIds reported by reporters for
+     * @notice Function to return the array of poolIds reported by reporters for
      * the given array of `ArgsGetPoolIdsForReporters` struct.
      * @param _argsGetPoolIdsForReporters Struct array containing reporter
      * address, start index and end index.
@@ -369,7 +376,7 @@ interface IDIVAOracleTellor {
     ) external view returns (uint256[][] memory);
 
     /**
-     * @dev Function to return the lengths of poolIds reported by reporters
+     * @notice Function to return the lengths of poolIds reported by reporters
      * for the given `_reporters`.
      * @param _reporters Array of reporter address.
      */
@@ -379,17 +386,17 @@ interface IDIVAOracleTellor {
         returns (uint256[] memory);
 
     /**
-     * @dev Returns the DIVA ownership contract address.
+     * @notice Returns the DIVA ownership contract address.
      */
     function getOwnershipContract() external view returns (address);
 
     /**
-     * @dev Returns the activation delay in seconds.
+     * @notice Returns the activation delay in seconds.
      */
     function getActivationDelay() external pure returns (uint256);
 
     /**
-     * @dev Function to return the query id for a given `_poolId`.
+     * @notice Function to return the query id for a given `_poolId`.
      * @param _poolId The id of the pool.
      */
     function getQueryId(uint256 _poolId) external view returns (bytes32);

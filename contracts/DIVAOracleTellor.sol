@@ -661,7 +661,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             feeToReporter = feeClaim;
         }
 
-        // Transfer fee claim to reporter and excessFeeRecipient
+        // Transfer fee claim to reporter and excessFeeRecipient. Note that the
+        // transfer takes place internally inside the DIVA smart contract and the
+        // reward has to be claimed separately either by setting the `_claimDIVAReward`
+        // parameter to `true` or later by calling the `claimReward` function. 
         IDIVA.ArgsBatchTransferFeeClaim[]
             memory _feeClaimTransfers = new IDIVA.ArgsBatchTransferFeeClaim[](
                 2
