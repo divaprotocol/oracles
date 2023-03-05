@@ -159,8 +159,23 @@ interface IDIVAOracleTellor {
         uint256 restoredMaxFeeAmountUSD
     );
 
-    // Struct for `batchClaim` function input.
+    // Struct for `batchAddTip` function input.
+    struct ArgsBatchAddTip {
+        uint256 poolId;
+        uint256 amount;
+        address tippingToken;
+    }
+    
+    // Struct for `batchClaimReward` function input.
     struct ArgsBatchClaimReward {
+        uint256 poolId;
+        address[] tippingTokens;
+        bool claimDIVAReward;
+    }
+
+    // @todo add batch functions to function overview in docs
+    // Struct for `batchSetFinalReferenceValue` function input.
+    struct ArgsBatchSetFinalReferenceValue {
         uint256 poolId;
         address[] tippingTokens;
         bool claimDIVAReward;
@@ -194,7 +209,7 @@ interface IDIVAOracleTellor {
      * `claimReward` function after final value confirmation.
      * @dev Function will revert if `msg.sender` has insufficient
      * allowance.
-     * @param _poolId The id of the pool.
+     * @param _poolId The Id of the pool.
      * @param _amount The amount to tip expressed as an integer
      * with tipping token decimals.
      * @param _tippingToken Tipping token address.
@@ -203,6 +218,15 @@ interface IDIVAOracleTellor {
         uint256 _poolId,
         uint256 _amount,
         address _tippingToken
+    ) external;
+
+    /**
+     * @notice Batch version of `addTip`.
+     * @param _argsBatchAddTip Struct array containing poolIds, amounts
+     * and tipping tokens.
+     */
+    function batchAddTip(
+        ArgsBatchAddTip[] calldata _argsBatchAddTip
     ) external;
 
     /**
@@ -241,7 +265,7 @@ interface IDIVAOracleTellor {
      * expiration and remained undisputed for at least 12 hours will be passed
      * on to the DIVA smart contract for settlement.
      * @dev Function must be triggered within the submission window of the pool.
-     * @param _poolId The id of the pool.
+     * @param _poolId The Id of the pool.
      * @param _tippingTokens Array of tipping tokens to claim.
      * @param _claimDIVAReward Flag indicating whether to claim the DIVA reward.
      */
@@ -249,6 +273,15 @@ interface IDIVAOracleTellor {
         uint256 _poolId,
         address[] calldata _tippingTokens,
         bool _claimDIVAReward
+    ) external;
+
+    /**
+     * @notice Batch version of `setFinalReferenceValue`.
+     * @param _argsBatchSetFinalReferenceValue Struct array containing poolIds, tipping
+     * tokens, and `claimDIVAReward` flag.
+     */
+    function batchSetFinalReferenceValue(
+        ArgsBatchSetFinalReferenceValue[] calldata _argsBatchSetFinalReferenceValue
     ) external;
 
     /**
@@ -413,8 +446,8 @@ interface IDIVAOracleTellor {
     function getActivationDelay() external pure returns (uint256);
 
     /**
-     * @notice Function to return the query id for a given `_poolId`.
-     * @param _poolId The id of the pool.
+     * @notice Function to return the query Id for a given `_poolId`.
+     * @param _poolId The Id of the pool.
      */
     function getQueryId(uint256 _poolId) external view returns (bytes32);
 }

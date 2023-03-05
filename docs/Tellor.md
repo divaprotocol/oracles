@@ -217,7 +217,7 @@ DIVAOracleTellor implements the following core functions.
 
 ## addTip
 
-Function to tip a pool. Tips can be added in any ERC20 token until the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Tips can be claimed via the [`claimReward`](#claimreward) function after final value confirmation.
+Function to tip a pool. Tips can be added in any ERC20 token until the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Tips can be claimed via the [`claimReward`](#claimreward) function after final value confirmation. Refer to [`batchAddTip`](#batchaddtip) for the batch version of the function.
 
 The function executes the following steps in the following order:
 * Confirm that the final value hasn't been submitted to DIVA Protocol yet, in which case `_poolIdToReporter` would resolve to the zero address.
@@ -241,6 +241,27 @@ function addTip(
 
 >**Note:** DIVA Protocol also has an `addTip` function, but it only allows tipping with the collateral token of the pool. When a tip is added through this function, it is credited to the data provider along with the settlement fees (combined referred to as DIVA reward) once the final value is confirmed.
 
+## batchAddTip
+
+Batch version of [`addTip`](#addtip).
+
+```js
+function batchAddTip(
+    ArgsBatchAddTip[] calldata _argsBatchAddTip
+)
+    external;
+```
+
+where `ArgsBatchAddTip` is given by
+
+```
+struct ArgsBatchAddTip {
+    uint256 poolId;         // The id of the pool
+    uint256 amount;         // The amount to tip expressed as an integer with tipping token decimals
+    address tippingToken;   // Tipping token address
+}
+```
+
 ## claimReward
 
 Function to claim tips and/or DIVA rewards. Users can specify which tips to claim from the Tellor adapter contract using the `_tippingTokens` array, and can indicate whether they want to claim the DIVA reward by setting the `_claimDIVAReward` parameter to `true`. Users can obtain the tipping tokens associated with a pool by calling the [`getTippingTokens`](#gettippingtokens) function.
@@ -254,7 +275,7 @@ The function executes the following steps in the following order:
    * Transfer the tip from the Tellor adapter contract to the eligible reporter stored in the `_poolIdToReporter` mapping (set during successful execution of the [`setFinalReferenceValue`](#setfinalreferencevalue) function).
    * Emit a [`TipClaimed`](#tipclaimed) event for each tipping token claimed.
 * If the `_claimDIVAReward` parameter is set to `true`, the function will trigger the claim of the DIVA reward from the DIVA smart contract:
-   * Retrieve the collateral token of the pool from the pool parameters stored within the DIVA Protocol.
+   * Retrieve the collateral token of the pool from the pool parameters stored within the DIVA smart contract.
    * Transfer the reward to the eligible reporter via the `claimFee` function.
    * Emit a `FeeClaimed` event on successful completion of the `claimFee` function.
 
@@ -271,13 +292,23 @@ function claimReward(
 
 ## batchClaimReward
 
-Batch version of `claimReward`.
+Batch version of [`claimReward`](#claimreward).
 
 ```js
 function batchClaimReward(
-    ArgsBatchClaimReward[] calldata _argsBatchClaimReward // Struct array containing the poolIds, tipping tokens and the `claimDIVAReward` flag
+    ArgsBatchClaimReward[] calldata _argsBatchClaimReward
 )
     external;
+```
+
+where `ArgsBatchClaimReward` is given by
+
+```
+struct ArgsBatchClaimReward {
+    uint256 poolId;             // The Id of the pool
+    address[] tippingTokens;    // Array of tipping tokens to claim
+    bool claimDIVAReward;       // Flag indicating whether to claim the DIVA reward
+}
 ```
 
 ## setFinalReferenceValue
@@ -317,6 +348,27 @@ function setFinalReferenceValue(
     bool _claimDIVAReward               // Flag indicating whether to claim the DIVA reward
 )
     external;
+```
+
+## batchSetFinalReferenceValue
+
+Batch version of [`setFinalReferenceValue`](#setfinalreferencevalue).
+
+```js
+function batchSetFinalReferenceValue(
+    ArgsBatchSetFinalReferenceValue[] calldata _argsBatchSetFinalReferenceValue
+)
+    external;
+```
+
+where `ArgsBatchSetFinalReferenceValue` is given by
+
+```
+struct ArgsBatchSetFinalReferenceValue {
+    uint256 poolId;             // The id of the pool
+    address[] tippingTokens;    // Array of tipping tokens to claim
+    bool claimDIVAReward;       // Flag indicating whether to claim the DIVA reward
+}
 ```
 
 # Governance functions

@@ -71,11 +71,22 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _diva = IDIVA(diva_);
     }
 
+    // @todo add batch version of setFinalReferenceValue
+
+    // @todo add test for batch function
     function addTip(
         uint256 _poolId,
         uint256 _amount,
         address _tippingToken
-    ) external override nonReentrant {
+    ) external override nonReentrannt {
+        _addTip(_poolId, _amount, _tippingToken);
+    }
+    
+    function _addTip(
+        uint256 _poolId,
+        uint256 _amount,
+        address _tippingToken
+    ) private {
         // Confirm that the final value hasn't been submitted to DIVA Protocol yet,
         // in which case `_poolIdToReporter` would resolve to the zero address.
         if (_poolIdToReporter[_poolId] != address(0)) {
@@ -101,6 +112,24 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
 
         // Log event including tipped pool, amount and tipper address.
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
+    }
+
+    // @todo add test
+    function batchAddTip(
+        ArgsBatchAddTip[] calldata _argsBatchAddTip
+    ) external override nonReentrant {
+        uint256 _len = _argsBatchAddTip.length;
+        for (uint256 i = 0; i < _len; ) {
+            _addTip(
+                _argsBatchAddTip[i].poolId,
+                _argsBatchAddTip[i].amount,
+                _argsBatchAddTip[i].tippingToken
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function claimReward(
@@ -135,6 +164,25 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     ) external override nonReentrant {
         _setFinalReferenceValue(_poolId);
         _claimReward(_poolId, _tippingTokens, _claimDIVAReward);
+    }
+
+    // @todo add test
+    function batchSetFinalReferenceValue(
+        ArgsBatchSetFinalReferenceValue[] calldata _argsBatchSetFinalReferenceValue
+    ) external override nonReentrant {
+        uint256 _len = _argsBatchSetFinalReferenceValue.length;
+        for (uint256 i = 0; i < _len; ) {
+            _setFinalReferenceValue(_argsBatchSetFinalReferenceValue[i].poolId);
+            _claimReward(
+                _argsBatchSetFinalReferenceValue[i].poolId,
+                _argsBatchSetFinalReferenceValue[i].tippingTokens,
+                _argsBatchSetFinalReferenceValue[i].claimDIVAReward
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function updateExcessFeeRecipient(address _newExcessFeeRecipient)
