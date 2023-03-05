@@ -331,13 +331,18 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Function to return whether the oracle's data feed is challengeable
-     * or not.
-     * Will return `false` in that implementation.
+     * or not. Will return `false` in that implementation.
      */
     function getChallengeable() external view returns (bool);
 
     /**
      * @notice Function to return the excess fee recipient info.
+     * @dev The initial excess fee recipient is set when the contract is deployed.
+     * The previous excess fee recipient is set to the zero address initially.
+     * @return previousExcessFeeRecipient Previous excess fee recipient address.
+     * @return excessFeeRecipient Latest update of the excess fee recipient address.
+     * @return startTimeExcessFeeRecipient Timestamp in seconds since epoch at which
+     * `excessFeeRecipient` is activated.
      */
     function getExcessFeeRecipientInfo()
         external
@@ -356,6 +361,12 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Function to return the max USD fee amount info.
+     * @dev The initial value is set when the contract is deployed.
+     * The previous value is set to zero initially.
+     * @return previousMaxFeeAmountUSD Previous value.
+     * @return maxFeeAmountUSD Latest update of the value.
+     * @return startTimeMaxFeeAmountUSD Timestamp in seconds since epoch at which
+     * `maxFeeAmountUSD` is activated.
      */
     function getMaxFeeAmountUSDInfo()
         external
@@ -367,7 +378,9 @@ interface IDIVAOracleTellor {
         );
 
     /**
-     * @notice Function to return the DIVA address that the oracle is linked to.
+     * @notice Function to return the DIVA contract address that the oracle
+     * is linked to.
+     * @dev The address is set at contract deployment.
      */
     function getDIVAAddress() external view returns (address);
 

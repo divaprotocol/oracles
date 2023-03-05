@@ -207,7 +207,7 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 | [`getPoolIdsLengthForReporters`](#getpoolidslengthforreporters)                                 | Function to return the number of poolIds reported by a reporter for a given set of reporters. Includes useful information for populating the argument for `getPoolIdsForReporters`.                                        |
 | [`getOwnershipContract`](#getownershipcontract)                                                                         | Function to return the address of the ownership contract that stores the owner variable. Call the `getOwner` function on the returned contract address to obtain the DIVA owner.                                                                                                |
 | [`getActivationDelay`](#getactivationdelay)                                                                 | Function to return the activation delay (in seconds) for governance related updates.                                                         |
-| [`getQueryId`](#getqueryid)                                                                     | Function to return the query id for a given poolId.                                                                               |
+| [`getQueryId`](#getqueryid)                                                                     | Function to return the query Id for a given poolId.                                                                               |
 | **Batch functions**                                                                             |
 | [`batchClaimReward`](#batchclaimreward)                                                       | Batch version of `claimReward`.                                                                                                     |
 
@@ -232,7 +232,7 @@ The function reverts under the following conditions:
 
 ```js
 function addTip(
-    uint256 _poolId,        // The id of the pool
+    uint256 _poolId,        // The Id of the pool
     uint256 _amount,        // The amount to tip expressed as an integer with tipping token decimals
     address _tippingToken   // Tipping token address
 )
@@ -256,7 +256,7 @@ where `ArgsBatchAddTip` is given by
 
 ```
 struct ArgsBatchAddTip {
-    uint256 poolId;         // The id of the pool
+    uint256 poolId;         // The Id of the pool
     uint256 amount;         // The amount to tip expressed as an integer with tipping token decimals
     address tippingToken;   // Tipping token address
 }
@@ -343,7 +343,7 @@ The function reverts under the following conditions:
 
 ```js
 function setFinalReferenceValue(
-    uint256 _poolId,                    // The id of the pool
+    uint256 _poolId,                    // The Id of the pool
     address[] calldata _tippingTokens,  // Array of tipping tokens to claim
     bool _claimDIVAReward               // Flag indicating whether to claim the DIVA reward
 )
@@ -365,7 +365,7 @@ where `ArgsBatchSetFinalReferenceValue` is given by
 
 ```
 struct ArgsBatchSetFinalReferenceValue {
-    uint256 poolId;             // The id of the pool
+    uint256 poolId;             // The Id of the pool
     address[] tippingTokens;    // Array of tipping tokens to claim
     bool claimDIVAReward;       // Flag indicating whether to claim the DIVA reward
 }
@@ -434,9 +434,7 @@ DIVAOracleTellor implements the following getter functions.
 
 ## getChallengeable
 
-Function to return whether the oracle's data feed is challengeable or not.
-
-Will return `false` in that implementation.
+Function to return whether the oracle's data feed is challengeable or not. Will return `false` in that implementation.
 
 ```js
 function getChallengeable()
@@ -445,15 +443,19 @@ function getChallengeable()
     returns (bool);
 ```
 
-## getExcessFeeRecipient
+## getExcessFeeRecipientInfo
 
-Function to return the excess fee recipient address.
+Function to return the excess fee recipient info. The initial excess fee recipient is set when the contract is deployed. The previous excess fee recipient is set to the zero address initially.
 
 ```js
-function getExcessFeeRecipient()
+ function getExcessFeeRecipientInfo()
     external
     view
-    returns (address);
+    returns (
+        address previousExcessFeeRecipient, // Previous excess fee recipient address.
+        address excessFeeRecipient,         // Latest update of the excess fee recipient address.
+        uint256 startTimeExcessFeeRecipient // Timestamp in seconds since epoch at which `excessFeeRecipient` is activated.
+    );
 ```
 
 ## getMinPeriodUndisputed
@@ -467,20 +469,24 @@ function getMinPeriodUndisputed()
     returns (uint32);
 ```
 
-## getMaxFeeAmountUSD
+## getMaxFeeAmountUSDInfo
 
-Function to return the max fee amount usd value with 18 decimals.
+Function to return the max USD fee amount info. The initial value is set when the contract is deployed. The previous value is set to zero initially.
 
 ```js
-function getMaxFeeAmountUSD()
+function getMaxFeeAmountUSDInfo()
     external
     view
-    returns (uint256);
+    returns (
+        uint256 previousMaxFeeAmountUSD,    // Previous value
+        uint256 maxFeeAmountUSD,            // Latest update of the value
+        uint256 startTimeMaxFeeAmountUSD    // Timestamp in seconds since epoch at which `maxFeeAmountUSD` is activated
+    );
 ```
 
 ## getDIVAAddress
 
-Function to return the DIVA address that the oracle is linked to.
+Function to return the DIVA contract address that the oracle is linked to. The address is set in the constructor at contract deployment.
 
 ```js
 function getDIVAAddress()
@@ -600,11 +606,11 @@ function getPoolIdsLengthForReporters(
 
 ## getQueryId
 
-Function to return the query id for a given `_poolId`.
+Function to return the query Id for a given `_poolId`.
 
 ```js
 function getQueryId(
-    uint256 _poolId // The id of the pool
+    uint256 _poolId // The Id of the pool
 )
     external
     view
