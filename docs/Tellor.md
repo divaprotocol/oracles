@@ -373,6 +373,8 @@ struct ArgsBatchSetFinalReferenceValue {
 
 # Governance functions
 
+The execution of the following functions is reserved to the contract owner only.
+
 ## updateExcessFeeRecipient
 
 Function to update the excess fee recipient address. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`ExcessFeeRecipientUpdated`](#excessfeerecipientupdated) event including the new excess fee recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingExcessFeeRecipientUpdate`](#revokependingexcessfeerecipientupdate). The previous excess fee recipient address as well as the current one can be obtained via the [`getExcessFeeRecipientInfo`](#getexcessfeerecipientinfo) function.
@@ -460,7 +462,7 @@ Function to return the excess fee recipient info. The initial excess fee recipie
 
 ## getMinPeriodUndisputed
 
-Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid.
+Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid (12 hours = 43'200 seconds).
 
 ```js
 function getMinPeriodUndisputed()
@@ -497,7 +499,7 @@ function getDIVAAddress()
 
 ## getTipAmounts
 
-Function to return the array of tipping amounts for the given array of `ArgsBatchInput` struct.
+Function to return the array of tipping amounts for the given struct array of poolIds and tipping tokens.
 
 ```js
 function getTipAmounts(
@@ -519,7 +521,7 @@ struct ArgsBatchInput {
 
 ## getReporters
 
-Function to return the array of reporter addresses for the given `_poolIds`.
+Function to return the list of reporter addresses that are entitled to receive rewards for the provided poolIds. If a value has been reported to the Tellor contract but hasn't been pulled into the DIVA contract via the [`setFinalReferenceValue`](#setfinalreferencevalue) function yet, the function returns the zero address.
 
 ```js
 function getReporters(
@@ -530,15 +532,13 @@ function getReporters(
     returns (address[] memory);
 ```
 
-> **Note:** it returns the zero address if a value has been reported to the Tellor contract but it hasn't been pulled into DIVA Protocol by calling [`setFinalReferenceValue`](#setFinalReferenceValue) (or a variant of it) yet.
-
 ## getTippingTokens
 
-Function to return the array of tipping tokens for the given array of `ArgsGetTippingTokens` struct.
+Function to return an array of tipping tokens for the given struct array of poolIds, along with start and end indices to manage the return size of the array. It can be helpful when calling [`claimReward`](#claimreward) or [`setFinalReferenceValue`](#setfinalreferencevalue).
 
 ```js
 function getTippingTokens(
-    ArgsGetTippingTokens[] calldata _argsGetTippingTokens // Struct array containing poolId, start index and end index
+    ArgsGetTippingTokens[] calldata _argsGetTippingTokens
 )
     external
     view
@@ -549,15 +549,15 @@ where `ArgsGetTippingTokens` struct is defined as
 
 ```js
 struct ArgsGetTippingTokens {
-    uint256 poolId;
-    uint256 startIndex;
-    uint256 endIndex;
+    uint256 poolId;         // The Id of the pool
+    uint256 startIndex;     // Start index within the `_poolIdToTippingTokens` mapping array
+    uint256 endIndex;       // End index within the `_poolIdToTippingTokens` mapping array
 }
 ```
 
 ## getTippingTokensLengthForPoolIds
 
-Function to return the lengths of tipping tokens for the given `_poolIds`.
+Function to return the number of tipping tokens for the given poolIds. It can be helpful when calling [`getTippingTokens`](#gettippingtokens).
 
 ```js
 function getTippingTokensLengthForPoolIds(
@@ -570,11 +570,11 @@ function getTippingTokensLengthForPoolIds(
 
 ## getPoolIdsForReporters
 
-Function to return the array of poolIds reported by reporters for the given array of `ArgsGetPoolIdsForReporters` struct.
+Function to return an array of poolIds that a reporter is eligible to claim rewards for. It takes a struct array of reporter addresses, as well as the start and end indices to manage the return size of the array. it can be helpful when calling [`claimReward`](#claimreward) or its batch version.
 
 ```js
 function getPoolIdsForReporters(
-    ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters // Struct array containing reporter address, start index and end index
+    ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
 )
     external
     view
@@ -585,15 +585,15 @@ where `ArgsGetPoolIdsForReporters` struct is defined as
 
 ```js
 struct ArgsGetPoolIdsForReporters {
-    address reporter;
-    uint256 startIndex;
-    uint256 endIndex;
+    address reporter;   // Reporter address
+    uint256 startIndex; // Start index within the `_reporterToPoolIds` mapping array
+    uint256 endIndex;   // End index within the `_reporterToPoolIds` mapping array
 }
 ```
 
 ## getPoolIdsLengthForReporters
 
-Function to return the lengths of poolIds reported by reporters for the given `_reporters`.
+Function to return the number of poolIds a given list of reporter addresses are eligible to claim rewards for. It can be helpful when calling [`getPoolIdsForReporters`](#getpoolidsforreporters).
 
 ```js
 function getPoolIdsLengthForReporters(
@@ -604,9 +604,31 @@ function getPoolIdsLengthForReporters(
     returns (uint256[] memory);
 ```
 
+## getOwnershipContract
+
+Function to return the DIVA ownership contract address that stores the contract owner.
+
+```js
+function getOwnershipContract()
+    external
+    view
+    returns (address);
+```
+
+## getActivationDelay
+
+Function to return the activation delay in seconds (3 days = 259'200 seconds).
+
+```js
+function getActivationDelay()
+    external
+    pure
+    returns (uint256);
+```
+
 ## getQueryId
 
-Function to return the query Id for a given `_poolId`.
+Function to return the query Id for a given poolId.
 
 ```js
 function getQueryId(
@@ -616,64 +638,6 @@ function getQueryId(
     view
     returns (bytes32);
 ```
-
-# Setter functions
-
-The DIVAOracleTellor contract implements the below mentioned setter functions. The execution of all setter functions is reserved to the contract owner only.
-
-## setExcessFeeRecipient
-
-Function to update `_excessFeeRecipient`. On success, emits one [`ExcessFeeRecipientSet`](#ExcessFeeRecipientSet) event including the excess fee recipient address.
-
-Reverts if:
-
-- `msg.sender` is not contract owner.
-- `_newExcessFeeRecipient` is zero address.
-
-```js
-function setExcessFeeRecipient(
-    address _newExcessFeeRecipient // New `_excessFeeRecipient`
-)
-    external;
-```
-
-To keep an excess fee recipient parameter unchanged, simply pass the current value as function parameter.
-
-## setMinPeriodUndisputed
-
-Function to update `_minPeriodUndisputed` with minimum value of 1 hour (3600 seconds) and maximum value of 18 hours (64800 seconds). On success, emits one [`MinPeriodUndisputedSet`](#MinPeriodUndisputedSet) event including the undisputed minimum period value.
-
-Reverts if:
-
-- `msg.sender` is not contract owner.
-- `_newMinPeriodUndisputed` is smaller than 3600.
-- `_newMinPeriodUndisputed` is bigger than 64800.
-
-```js
-function setMinPeriodUndisputed(
-    uint32 _newMinPeriodUndisputed // New `_minPeriodUndisputed` in seconds
-)
-    external;
-```
-
-To keep a undisputed minimum period parameter unchanged, simply pass the current value as function parameter.
-
-## setMaxFeeAmountUSD
-
-Function to update `_maxFeeAmountUSD`. On success, emits one [`MaxFeeAmountUSDSet`](#MaxFeeAmountUSDSet) event including the max fee amount usd value.
-
-Reverts if:
-
-- `msg.sender` is not contract owner.
-
-```js
-function setMaxFeeAmountUSD(
-    uint256 _newMaxFeeAmountUSD // New amount expressed as an integer with 18 decimals
-)
-    external;
-```
-
-To keep a max fee amount usd parameter unchanged, simply pass the current value as function parameter.
 
 ## Reentrancy protection
 
@@ -696,7 +660,7 @@ event TipAdded(
 
 ## TipClaimed
 
-Emitted in `claimReward` when the reward is claimed.
+Emitted when the reward is claimed via the [`claimReward`](#claimreward) function.
 
 ```
 event TipClaimed(
@@ -709,20 +673,20 @@ event TipClaimed(
 
 ## FinalReferenceValueSet
 
-Emitted when the final reference value is set.
+Emitted when the final reference value is set via the [`setFinalReferenceValue`](#setfinalreferencevalue) function.
 
 ```
 event FinalReferenceValueSet(
-    uint256 indexed poolId, // The Id of an existing derivatives pool
-    uint256 finalValue,     // Tellor value (converted into 18 decimals)
-    uint256 expiryTime,     // Unix timestamp in seconds of pool expiry date
+    uint256 indexed poolId, // The Id of the pool
+    uint256 finalValue,     // Tellor value expressed as an integer with 18 decimals
+    uint256 expiryTime,     // Pool expiry time as a unix timestamp in seconds
     uint256 timestamp       // Tellor value timestamp
 );
 ```
 
 ## ExcessFeeRecipientUpdated
 
-Emitted in `updateExcessFeeRecipient` when the excess fee recipient is updated.
+Emitted when the excess fee recipient is updated via the [`updateExcessFeeRecipient`](#updateexcessfeerecipient) function.
 
 ```
 event ExcessFeeRecipientUpdated(
@@ -734,7 +698,7 @@ event ExcessFeeRecipientUpdated(
 
 ## MaxFeeAmountUSDUpdated
 
-Emitted in `updateMaxFeeAmountUSD` when the max USD fee amount is updated.
+Emitted when the max USD fee amount is updated via the [`updateMaxFeeAmountUSD`](#updatemaxfeeamountusd) function.
 
 ```
 event MaxFeeAmountUSDUpdated(
@@ -746,7 +710,7 @@ event MaxFeeAmountUSDUpdated(
 
 ## PendingExcessFeeRecipientUpdateRevoked
 
-Emitted in `revokePendingExcessFeeRecipientUpdate` when a pending excess fee recipient update is revoked.
+Emitted when a pending excess fee recipient update is revoked via the [`revokePendingExcessFeeRecipientUpdate`](#revokependingexcessfeerecipientupdate) function.
 
 ```
 event PendingExcessFeeRecipientUpdateRevoked(
@@ -758,7 +722,7 @@ event PendingExcessFeeRecipientUpdateRevoked(
 
 ## PendingMaxFeeAmountUSDUpdateRevoked
 
-Emitted in `revokePendingMaxFeeAmountUSDUpdate` when a pending max USD fee amount update is revoked.
+Emitted when a pending max USD fee amount update is revoked via the [`revokePendingMaxFeeAmountUSDUpdate`](#revokependingmaxfeeamountusdupdate) function.
 
 ```
 event PendingMaxFeeAmountUSDUpdateRevoked(
