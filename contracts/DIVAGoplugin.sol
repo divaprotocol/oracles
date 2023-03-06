@@ -51,6 +51,8 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         external
         returns (bytes32)
     {
+        // @todo add balance check before initiating that function as we might sponsor data feeds
+        // by funding the contract with PLI tokens
         _pli.safeTransferFrom(msg.sender, address(this), FEE_PER_REQUEST);
 
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
@@ -75,25 +77,25 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             _poolId
         ];
 
-        // Check that data exists (_lastRequestedBlocktimestamp = 0 if it
-        // doesn't)
-        if (_lastRequestedBlocktimestamp == 0) {
-            revert NoOracleSubmissionAfterExpiryTime();
-        }
+        // // Check that data exists (_lastRequestedBlocktimestamp = 0 if it
+        // // doesn't)
+        // if (_lastRequestedBlocktimestamp == 0) {
+        //     revert NoOracleSubmissionAfterExpiryTime();
+        // }
 
-        // Check that `MIN_PERIOD_UNDISPUTED` has passed after
-        // `_lastRequestedBlocktimestamp`
-        if (
-            block.timestamp - _lastRequestedBlocktimestamp <
-            MIN_PERIOD_UNDISPUTED
-        ) {
-            revert MinPeriodUndisputedNotPassed();
-        }
+        // // Check that `MIN_PERIOD_UNDISPUTED` has passed after
+        // // `_lastRequestedBlocktimestamp`
+        // if (
+        //     block.timestamp - _lastRequestedBlocktimestamp <
+        //     MIN_PERIOD_UNDISPUTED
+        // ) {
+        //     revert MinPeriodUndisputedNotPassed();
+        // }
 
         // Format values (18 decimals)
         uint256 _formattedFinalReferenceValue = IInvokeOracle(
             _stringToAddress(_params.referenceAsset)
-        ).showPrice();
+        ).showPrice(); // @todo divide by 10000
 
         // Forward final value to DIVA contract.
         //Allocates the fee as part of that process.
@@ -108,7 +110,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             _poolIdToRequester[_poolId],
             _params.collateralToken,
             _diva.getClaim(_params.collateralToken, address(this))
-        );
+        ); // @todo 
 
         emit FinalReferenceValueSet(
             _poolId,
