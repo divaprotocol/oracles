@@ -35,13 +35,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     uint256 private constant _activationDelay = 3 days;
     uint32 private constant _minPeriodUndisputed = 12 hours;
 
-    modifier onlyConfirmedPool(uint256 _poolId) {
-        if (_poolIdToReporter[_poolId] == address(0)) {
-            revert NotConfirmedPool();
-        }
-        _;
-    }
-
     modifier onlyOwner() {
         address _owner = _contractOwner();
         if (msg.sender != _owner) {
@@ -593,7 +586,12 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         uint256 _poolId,
         address[] calldata _tippingTokens,
         bool _claimDIVAReward
-    ) private onlyConfirmedPool(_poolId) {
+    ) private {
+        // Check that the pool has already been confirmed. The `_poolIdToReporter`
+        // value is set during `setFinalReferenceValue`
+        if (_poolIdToReporter[_poolId] == address(0)) {
+            revert NotConfirmedPool();
+        }
 
         // Iterate over the provided `_tippingTokens` array. Will skip the for
         // loop if no tipping tokens have been provided.

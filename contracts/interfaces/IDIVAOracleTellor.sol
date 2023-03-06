@@ -2,8 +2,9 @@
 pragma solidity 0.8.9;
 
 interface IDIVAOracleTellor {
-    // Thrown in `onlyConfirmedPool` modifier if user tries to claim fees/tips
-    // for a pool that was not yet confirmed.
+    // Thrown in the internal `_claimReward` function used in `claimReward`, 
+    // `setFinalReferenceValue` and their respective batch versions if
+    // rewards are claimed before a pool was confirmed.
     error NotConfirmedPool();
 
     // Thrown in `addTip` if user tries to add a tip for an already confirmed
@@ -15,7 +16,7 @@ interface IDIVAOracleTellor {
     error ZeroExcessFeeRecipient();
 
     // Thrown in `setFinalReferenceValue` if there is no data reported after
-    // the expiry time of the underlying pool.
+    // the expiry time for the specified pool.
     error NoOracleSubmissionAfterExpiryTime();
 
     // Thrown in `setFinalReferenceValue` if user tries to call the function
@@ -25,7 +26,9 @@ interface IDIVAOracleTellor {
     // Thrown in constructor if zero address is provided as ownershipContract.
     error ZeroOwnershipContractAddress();
 
-    // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner.
+    // Thrown in governance related functions including `updateExcessFeeRecipient`
+    // `updateMaxFeeAmountUSD`, `revokePendingExcessFeeRecipientUpdate`,
+    // and `revokePendingMaxFeeAmountUSDUpdate` and `msg.sender` is not contract owner.
     error NotContractOwner(address _user, address _contractOwner);
 
     // Thrown in `updateExcessFeeRecipient` if there is already a pending

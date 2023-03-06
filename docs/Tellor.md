@@ -269,6 +269,7 @@ Function to claim tips and/or DIVA rewards. Users can specify which tips to clai
 It's important to note that rewards can only be claimed after the final value has been submitted and confirmed in the DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. This function can be triggered by anyone to transfer the rewards to the eligible reporter.
 
 The function executes the following steps in the following order:
+* Check that pool has already been confirmed.
 * Check whether the caller has provided any tipping tokens in the `_tippingTokens` array. If tipping tokens are provided, the function will proceed with the following steps. If not, the function will skip these steps.
    * Retrieve the tip amount for the pool in the specified tipping token.
    * Set the tip amount to zero to prevent multiple payouts in case the same tipping token is provided multiple times.
@@ -734,19 +735,17 @@ event PendingMaxFeeAmountUSDUpdateRevoked(
 
 # Errors
 
-The following errors may be emitted during execution:
+The following errors may be emitted during execution of the mentioned functions including their batch versions.
 
 | Error name                            | Function                                                                                                                                                 | Description                                                                                                                                     |
 | :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NotConfirmedPool()`                  | `claimTips` / `batchClaimTips` / `claimDIVAReward` / `batchClaimDIVAReward` / `claimTipsAndDIVAReward` / `batchClaimTipsAndDIVAReward`                               | Thrown if user tries to claim fees/tips for a pool that was not yet confirmed                                                                   |
+| `NotConfirmedPool()`                  | `claimReward` / `setFinalReferenceValue`| Thrown if rewards are claimed before a pool was confirmed.                                                                   |
 | `AlreadyConfirmedPool()`              | `addTip`                                                                                                                                                 | Thrown if user tries to add a tip for an already confirmed pool                                                                                 |
-| `ZeroExcessFeeRecipient()`            | `setExcessFeeRecipient`                                                                                                                                  | Thrown if the zero address is passed as input into `setExcessFeeRecipient`                                                                      |
-| `OutOfRange()`                        | `setMinPeriodUndisputed`                                                                                                                                 | Thrown if `_minPeriodUndisputed` passed into `setMinPeriodUndisputed` is not within the expected range (min 1h, max 18h)                        |
-| `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` / `setFinalReferenceValueAndClaimTips`/ `setFinalReferenceValueAndClaimDIVAReward`/ `setFinalReferenceValueAndClaimTipsAndDIVAReward` | Thrown when user calls `setFinalReferenceValue` (or a variant of it) but there is no data reported after the expiry time of the underlying pool |
-| `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` / `setFinalReferenceValueAndClaimTips`/ `setFinalReferenceValueAndClaimDIVAReward`/ `setFinalReferenceValueAndClaimTipsAndDIVAReward` | Thrown if user tries to call `setFinalReferenceValue` (or a variant of it) before the minimum period undisputed period has passed               |
-
-
-
+| `ZeroExcessFeeRecipient()`            | `updateExcessFeeRecipient` / constructor                                                                                                                                  | Thrown if the zero address is passed as excess fee recipient address.                                                                      |
+| `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` | Thrown if there is no data reported after the expiry time for the underlying pool. |
+| `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` | Thrown if user tries to call `setFinalReferenceValue` before the minimum period undisputed period has passed.               |
+| `ZeroOwnershipContractAddress()`      | constructor | Thrown in constructor if zero address is provided as ownershipContract.               |
+| `NotContractOwner()`      | `updateExcessFeeRecipient` / `updateMaxFeeAmountUSD` / `revokePendingExcessFeeRecipientUpdate` / `revokePendingMaxFeeAmountUSDUpdate` | Thrown in constructor if zero address is provided as ownershipContract.               |
 
 
 [openzeppelin-reentrancy-guard]: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/security/ReentrancyGuard.sol
