@@ -32,14 +32,14 @@ interface IDIVAOracleTellor {
     error NotContractOwner(address _user, address _contractOwner);
 
     // Thrown in `updateExcessFeeRecipient` if there is already a pending
-    // excess fee recipient update.
+    // excess fee recipient address update.
     error PendingExcessFeeRecipientUpdate(
         uint256 _timestampBlock,
         uint256 _startTimeExcessFeeRecipient
     );
 
     // Thrown in `updateMaxFeeAmountUSD` if there is already a pending max USD
-    // fee amount USD update.
+    // fee amount update.
     error PendingMaxFeeAmountUSDUpdate(
         uint256 _timestampBlock,
         uint256 _startTimeMaxFeeAmountUSD

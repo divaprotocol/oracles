@@ -745,7 +745,11 @@ The following errors may be emitted during execution of the mentioned functions 
 | `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` | Thrown if there is no data reported after the expiry time for the underlying pool. |
 | `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` | Thrown if user tries to call `setFinalReferenceValue` before the minimum period undisputed period has passed.               |
 | `ZeroOwnershipContractAddress()`      | constructor | Thrown in constructor if zero address is provided as ownershipContract.               |
-| `NotContractOwner()`      | `updateExcessFeeRecipient` / `updateMaxFeeAmountUSD` / `revokePendingExcessFeeRecipientUpdate` / `revokePendingMaxFeeAmountUSDUpdate` | Thrown in constructor if zero address is provided as ownershipContract.               |
+| `NotContractOwner(address _user, address _contractOwner)`      | `updateExcessFeeRecipient` / `updateMaxFeeAmountUSD` / `revokePendingExcessFeeRecipientUpdate` / `revokePendingMaxFeeAmountUSDUpdate` | Thrown in constructor if zero address is provided as ownershipContract.               |
+| `PendingExcessFeeRecipientUpdate(uint256 _timestampBlock, uint256 _startTimeExcessFeeRecipient)`      | `updateExcessFeeRecipient` | Thrown if there is already a pending excess fee recipient address update.               |
+| `PendingMaxFeeAmountUSDUpdate(uint256 _timestampBlock, uint256 _startTimeMaxFeeAmountUSD)`      | `updateMaxFeeAmountUSD` | Thrown if there is already a pending max USD fee amount update.               |
+| `ExcessFeeRecipientAlreadyActive(uint256 _timestampBlock, uint256 _startTimeExcessFeeRecipient)`      | `revokePendingExcessFeeRecipientUpdate` | Thrown if the excess fee recipient update to be revoked is already active.               |
+| `MaxFeeAmountUSDAlreadyActive(uint256 _timestampBlock, uint256 _startTimeMaxFeeAmountUSD)`      | `revokePendingMaxFeeAmountUSDUpdate` | Thrown if the max USD fee amount update to be revoked is already active.               |
 
 
 [openzeppelin-reentrancy-guard]: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/security/ReentrancyGuard.sol
