@@ -151,31 +151,40 @@ The Tellor adapter contract serves as a bridge that retrieves values reported to
 
 ## How to use the Tellor adapter
 
-Using the Tellor adapter for outcome reporting in DIVA Protocol is as simple as assigning its network specific [contract address](#contract-addresses) as the data provider when creating a pool in DIVA Protocol.
+To use the Tellor adapter for outcome reporting in DIVA Protocol, simply assign its network-specific [contract address](#contract-addresses) as the data provider when creating a pool. The process of reporting outcomes for pools that use the Tellor adapter as the data provider consists of the following four elements: 
+1. **Monitoring:** To identify expired pools that require reporting, Tellor reporters monitor the [DIVA subgraph](#contract-addresses) or use DIVA Protocol's [`getPoolParamters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function.
 
-Once the Tellor adapter has been assigned as the data provider, the process can be broken down into three phases: 
-1. **Monitoring:** Tellor reporters monitor expired pools requiring reporting by running special software, known as "Tellor clients". There are two available implementations, one developed by the [DIVA team](https://github.com/divaprotocol/diva-monorepo/tree/main/packages/diva-oracle) which is designed to report for DIVA pools exclusively and one by the [Tellor team](https://github.com/tellor-io/telliot-feeds) which is generic reporter not necessarily focused on DIVA. If you're planning to build your own reporter software, please refer to the [README](https://github.com/divaprotocol/oracles/blob/main/README.md) for guidance.
-1. **Reporting to Tellor Protocol:** If a pool expires, reporters submit their values to the Tellor contract. Valid submissions must be made during the pool specific submission period (between 3 and 15 days) granted by DIVA Protocol. Note that due to the dispute period of 12 hours, the effective submission period is shorter by that period of time.
-1. **Reporting to DIVA Protocol:** The first value submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final one. This value is submitted to DIVA Protocol by calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract. This sets the final reference value status inside the DIVA smart contract to "Confirmed" and determines the payouts for each counterparty involved in the derivative contract. No further submissions to DIVA Protocol are permitted thereafter. Disputed values will be disregarded and are handled in a separate process on the Tellor side.
+1. **Reporting to Tellor contract:** When a pool expires, reporters submit their values to the Tellor contract during the applicable submission period, which lasts between 3 and 15 days. It's important to note that the effective submission period is shorter by the 12-hour dispute period. This means that any submissions made within the last 12 hours of the submission period will not be accepted due to the dispute delay that has to be respected.
 
->**Note:** Submissions to Tellor Protocol made before pool expiration or for already confirmed pools will not be considered. To reduce gas costs, it is recommended to verify the timestamps of the Tellor submissions and the status of the final reference value before calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract.
+1. **Disputes:** Tellor reporters monitor the submissions to the Tellor contract and dispute any incorrect reportings. 
 
-# Reporting Rewards
+1. **Reporting to DIVA contract:** The first value that is submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final value. By calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract, this value is then submitted to DIVA Protocol which is used to determine the payouts for the pool participants. With that, the value is confirmed and no further submissions to DIVA Protocol are permitted thereafter. Note that submissions to the Tellor contract made before pool expiration or for already confirmed pools will not be ignored.
 
-Reporters receive rewards from two different sources:
-* [Settlement fees](#settlement-fees)
-* [Tips](#settlement-fees)
+Refer to the [reporting software](#reporting-software) section to learn more about software that automates the described reporting process. 
 
-### Settlement fees
+## Reporting software
 
-- DIVA Protocol pays a settlement fee (initially, 0.05% of the gross collateral deposited into the pool over time) to the data provider, which in this case is the Tellor adapter contract. The fee is transferred to the actual reporter via DIVA Protocol's [`transferFeeClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#transferfeeclaim) function when the [`setFinalReferenceValue`](#setfinalreferencevalue) function in the Tellor adapter contract is called.
-- To obtain the applicable settlement fee for a pool, reporters can call DIVA Protocol's [`getPoolParameters()`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) and pass the returned `indexFees` parameter to the [`getFees`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getfees) function.
-- Reporters can calculate their fee reward by multiplying the gross collateral deposited into the pool during its lifetime (found in the `collateralBalanceGross` field in the subgraph) with the corresponding fee rate.
-- The fee is paid in the pool's collateral token and is retained in the DIVA smart contract until claimed by the recipient through the [`claimFee`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#transferfeeclaim) function in the DIVA smart contract directly or via the [`claimReward`](#claimreward) convenience function in the Tellor adapter contract.
-- The maximum reward paid per pool for a reporter is capped at USD 10, with the remaining reward going to the DIVA owner. This measure was implemented to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward. 
-- For additional information, refer to the [DIVA Protocol docs](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md).
+There are two available versions of Tellor reporter software that facilitate the process of monitoring and reporting pools using the Tellor adapter as the data provider: 
+1. [DIVA specific reporter](https://github.com/divaprotocol/diva-monorepo/tree/main/packages/diva-oracle): Developed by the DIVA team, this software is designed to report outcomes for DIVA pools specifically.
+2. [Generic Tellor reporter](https://github.com/tellor-io/telliot-feeds): Developed by the Tellor team, this software can be used to report values for anything, not necessarily focused on DIVA.
 
-### Tips
+If you plan to build your own reporter software, please refer to the [README](https://github.com/divaprotocol/oracles/blob/main/README.md) for guidance.
+
+# Reporting rewards
+
+To incentivize reporting, reporters receive two types of rewards:
+* [DIVA rewards](#diva-rewards) including settlement fee and tips added to DIVA Protocol
+* [Tips](#tips) added to the Tellor adapter contract
+
+## DIVA rewards
+
+DIVA rewards are derived from two different source:
+* **Settlement fee:** DIVA Protocol pays a settlement fee of 0.05% of the gross collateral deposited into the pool over time to the data provider in the pool's collateral token. For example, reporting for a pool that has had USDC 100k in liquidity added over its lifetime would yield a settlement fee of USDC 50. 
+* **Tips:** In addition to the settlement fee, users can add a tip using DIVA Protocol's [`addTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function to incentivize reporting. This can be particularly useful when the gross collateral of the pool is relatively small and the settlement fee would not justify the gas cost for reporting. Note that in DIVA Protocol, tipping tokens are limited to the collateral token of the respective pool.
+
+It is important to highlight that the DIVA reward is capped at USD 10, with any excess fee going to the recipient specified by the contract owner. This measure was put in place to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward.
+
+## Tips
 
 - Anyone can incentivize reporting by adding tips in any ERC20 token. Multiple tips in different ERC20 tokens are allowed, and reporters can choose which tips to claim. Tips is retained in the Tellor adapter contract until claimed by the recipient through the [`claimTips`](#claimtips) function.
 - DIVA Protocol also offers the possibility to tip via the `addTip` function, but the tipping token is restricted to the collateral token of the pool.
@@ -386,7 +395,7 @@ The caller, which can be anyone, can trigger the claim of the rewards in the sam
 
 If no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not claim any rewards and users can claim them separately via the [`claimReward`](#claimreward) function.
 
-Note that the DIVA reward, which includes the settlement fee and any tip added via DIVA's `addTip` function (not to be confused with the [`addTip`](#addtip) function inside the Tellor adapter), is capped at USD 10. The remaining reward goes to the excess fee recipient address [set](#updateexcessfeerecipient) by the DIVA owner. This measure was implemented to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward. Note that tips added via the [`addTip`](#addtip) function to the Tellor adapter contract are not affected by this cap.
+Note that the DIVA reward, which includes the settlement fee and any tip added via DIVA's `addTip` function (not to be confused with the [`addTip`](#addtip) function inside the Tellor adapter), is capped at USD 10. The remaining reward goes to the excess fee recipient address [set](#updateexcessfeerecipient) by the DIVA owner. This measure was put in place to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward. Note that tips added via the [`addTip`](#addtip) function to the Tellor adapter contract are not affected by this cap.
 
 >**Important:** The function `setFinalReferenceValue` should be called within submission window of the pool. This window is restricted by the DIVA smart contract to a range of 3 to 15 days and can be retrieved via DIVA's `getSettlementPeriods` function by passing the `indexSettlementPeriods` obtained via `getPoolParameters`.
 
