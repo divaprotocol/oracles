@@ -198,48 +198,6 @@ The Tellor adapter contract also features a tipping functionality enabled by the
 
 To report data, two function calls are required, which together cost approximately 410k gas. The first function call, `submitValue` in the Tellor contract, uses around 160k gas, while the second call, [`setFinalReferenceValue`](#setfinalreferencevalue) in the Tellor adapter contract, uses around 250k gas. At a gas price of 100 Gwei/gas, the total gas fee for reporting is 41m Gwei or 0.041 ETH, 0.041 MATIC, or the equivalent in other gas tokens.
 
-# Risks and mitigants
-
-| Risks                                                                                                                                                | Mitigants                                                                                                           |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
-| No value is reported because the cost of reporting exceeds the expected fee reward (e.g., if gas price is high or fee reward is small).              | Add tips as additional incentive to report or report yourself.                                                      |
-| No value is reported because the data point is not publicly available.                                                                               | Choose publicly available and verifiable data as underlyings.                                                       |
-| Inaccurate value submitted to Tellor Protocol remains undisputed for more than 12h and pushed into DIVA Protocol resulting in inaccurate settlement. | Choose underlyings that are monitored and reported by many reporters.                                               |
-| Bug in Tellor adapter contract.                                                                                                                      | Both the Tellor Protocol as well as the Tellor adapter contract have been audited to reduce the likelihood of bugs. |
-
-## How to manually report a value
-
-**NOTE:** All links and addresses refer to Goerli. will be updated at mainnet launch.
-
-Position token holders that are in the money have a natural incentive to report the outcome. Follow the steps described below or watch our [video guide](www.google.com) to learn how to manually report a value in the event that no one else is reporting, using Goerli network as an example.
-
-1. **Get TRB token:** Get 100 TRB which is the stake amount required to report once every 12 hours.
-1. **Approve transfer for stake deposit:** On the [TRB token contract](https://goerli.etherscan.io/address/0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2#writeProxyContract), call the `approve` function on the TRB contract with the following inputs:
-   - `_spender`: `0xB3B662644F8d3138df63D2F43068ea621e2981f9` (Tellor contract)
-   - `_amount`: `100000000000000000000` (integer representation of 100 using 18 decimals)
-1. **Deposit stake:** On the [Tellor contract](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `depositStake` function with the following input:
-   - `_amount`: `100000000000000000000`
-1. **Get data:** Obtain the underlying value as well as the USD value of the prevailing at the time of expiration from the data source of your choice. Use 0 if no USD value of the collateral asset is available.
-1. **Convert decimal numbers to integers:** Convert data values represented as decimals into integers with 18 decimals, i.e. 100 -> `100000000000000000000`, 0.5 -> `500000000000000000`, etc.
-1. **Get query data and Id:**
-   - Query [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract to receive the queryData and queryId
-   - Refer to the [Tellor documentation][tellor-docs] for details.
-1. **Tellor submission:** On [Etherscan](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `submitValue` function with the followig inputs:
-   - `_queryId`: Query Id from the step above
-   - `_value`: **TODO**
-   - `_nonce`: **TODO**
-   - `_queryData`: Query Data from the step before
-1. **DIVA submission:** On [Etherscan](https://goerli.etherscan.io/address/0x9959f7f8eFa6B77069e817c1Af97094A9CC830FD#code), call the `setFinalReferenceValue` (or a variant of it) function on the DIVA Tellor adapter contract (`0x9959f7f8eFa6B77069e817c1Af97094A9CC830FD`) using the pool Id as input.
-
-For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK) or the [Tellor discord](https://discord.com/invite/n7drGjh).
-
-## How to add a tip manually
-
-1. On [Etherscan](https://goerli.etherscan.io/address/0x9959f7f8eFa6B77069e817c1Af97094A9CC830FD#code), call the `addTip` function with the following inputs:
-   - `_poolId`: the pool Id that the tip should apply to
-   - `_amount`: tipping amount expressed as an integer (e.g., 100000000 for 100 USDC on Polygon which has 6 decimals; 100000000000000000000 for a token with 18 decimals)
-   - `_tippingToken`: address of the tipping token (e.g., `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` for USDC on Polygon)
-
 # Function overview
 
 | Function                                                                                        | Description                                                                                                                          |     |
@@ -812,6 +770,17 @@ The following errors may be emitted during execution of the functions, including
 | `PendingMaxFeeAmountUSDUpdate(uint256 _timestampBlock, uint256 _startTimeMaxFeeAmountUSD)`      | `updateMaxFeeAmountUSD` | Thrown if there is already a pending max USD fee amount update.               |
 | `ExcessFeeRecipientAlreadyActive(uint256 _timestampBlock, uint256 _startTimeExcessFeeRecipient)`      | `revokePendingExcessFeeRecipientUpdate` | Thrown if the excess fee recipient update to be revoked is already active.               |
 | `MaxFeeAmountUSDAlreadyActive(uint256 _timestampBlock, uint256 _startTimeMaxFeeAmountUSD)`      | `revokePendingMaxFeeAmountUSDUpdate` | Thrown if the max USD fee amount update to be revoked is already active.               |
+
+# Risks and mitigants
+
+Using the Tellor adapter as data provider for DIVA pools comes with the following risks:
+
+| Risks                                                                                                                                                | Mitigants                                                                                                           |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| No value is reported because the reward from reporting does not justify the associated cost (e.g., due to high gas price or small pool size).              | Add tips or report yourself.                                                      |
+| No value is reported because the data point is not available.                                                                               | Use publicly available and verifiable metrics as your reference asset. Additionally, when choosing pools, prioritize those with expiration dates that are not too far in the future to minimize the risk of data unavailability.  |
+| An inaccurate value submitted to the Tellor contract remains undisputed for more than 12h and is pushed into DIVA Protocol resulting in inaccurate payouts. | Use metrics that are closely monitored and accurately reported by many reporters.                                               |
+| Bug in Tellor adapter contract.                                                                                                                      | All three contracts involved in the DIVA Tellor integration, including the Tellor adapter contract, have been audited to reduce the likelihood of bugs. |
 
 
 # Links
