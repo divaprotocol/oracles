@@ -32,7 +32,10 @@ Please refer to the ["Risks and Mitigants"](#risks-and-mitigants) section for a 
 * **DIVA contract:** The contract that issued the derivative products and expects the outcome reporting.
 * **Tellor adapter contract:** The contract that pulls the value from Tellor contract and passes it on to DIVA contract for settlement.
 
-TODO: Add illustration
+
+![Tellor-v2 drawio (1)](https://user-images.githubusercontent.com/37043174/223348671-6072d550-ad07-4dff-aafa-99b7d048c53e.png)
+
+
 
 ## Privileges
 The contract owner is inherited from the DIVA Ownership contract and is granted the right to update the maximum amount of DIVA rewards that a reporter can receive, denominated in USD, as well as the excess fee recipient. 
