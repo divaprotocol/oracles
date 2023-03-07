@@ -6,46 +6,38 @@ const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const {
   getLastBlockTimestamp,
   setNextBlockTimestamp,
-  getCurrentTimestampInSeconds,
 } = require("../utils/utils");
-const {
-  ONE_HOUR,
-  ONE_DAY,
-  TEN_MINS,
-  DIVA_ADDRESS,
-  PLI_ADDRESS,
-} = require("../utils/constants"); //  DIVA Protocol v1.0.0
+const { TEN_MINS, DIVA_ADDRESS, PLI_ADDRESS } = require("../utils/constants");
 
 const {
   erc20AttachFixture,
   erc20DeployFixture,
 } = require("./fixtures/MockERC20Fixture");
 
-const network = "apothem"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
+const network = "apothem";
 const collateralTokenDecimals = 6;
 
 describe("DIVAGoplugin", () => {
   let collateralTokenInstance;
-  let user1, user2, user3, reporter;
+  let owner, user1, user2;
 
   let divaGoplugin;
   let divaAddress = DIVA_ADDRESS[network];
   let pliAddress = PLI_ADDRESS[network];
   let pliToken;
 
-  let minPeriodUndisputed;
   let feePerRequest;
 
   let poolId;
   let poolParams;
   let feesParams;
-
   let finalReferenceValue;
+  let settlementFeeAmount;
 
   let nextBlockTimestamp;
 
   before(async () => {
-    [owner, user1, user2, user3, reporter] = await ethers.getSigners();
+    [owner, user1, user2] = await ethers.getSigners();
 
     // Get DIVA contract
     diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -62,24 +54,21 @@ describe("DIVAGoplugin", () => {
     expect(await divaGoplugin.getChallengeable()).to.eq(false);
     expect(await divaGoplugin.getDIVAAddress()).to.eq(divaAddress);
     expect(await divaGoplugin.getPLIAddress()).to.eq(pliAddress);
-    minPeriodUndisputed = await divaGoplugin.getMinPeriodUndisputed();
-    expect(minPeriodUndisputed).to.eq(ONE_HOUR * 12);
     feePerRequest = await divaGoplugin.getFeePerRequest();
     expect(feePerRequest).to.eq(parseUnits("0.1"));
 
     // Get PLI token instance
     pliToken = await erc20AttachFixture(pliAddress);
 
-    // Transfer PLI token to user1
+    // Transfer PLI token to user2
     const ownerPLIBalance = await pliToken.balanceOf(owner.address);
     expect(ownerPLIBalance).to.gt(0);
     await pliToken
       .connect(owner)
-      .transfer(user1.address, ownerPLIBalance.div(2));
+      .transfer(user2.address, ownerPLIBalance.div(2));
 
     // Set user start token balance
     const userStartTokenBalance = parseUnits("1000000");
-
     // Deploy collateral token and approve it to DIVA contract
     collateralTokenInstance = await erc20DeployFixture(
       "DummyToken",
@@ -91,15 +80,15 @@ describe("DIVAGoplugin", () => {
     await collateralTokenInstance
       .connect(user1)
       .approve(diva.address, userStartTokenBalance);
+  });
 
-    // Create an expired contingent pool that uses Tellor as the data provider
+  beforeEach(async () => {
+    // Create an expired contingent pool that uses DIVAGoplugin as the data provider
     const tx = await createContingentPool();
     const receipt = await tx.wait();
-
     poolId = receipt.events?.find((x) => x.event === "PoolIssued")?.args
       ?.poolId;
     poolParams = await diva.getPoolParameters(poolId);
-
     feesParams = await diva.getFees(poolParams.indexFees);
   });
 
@@ -142,19 +131,20 @@ describe("DIVAGoplugin", () => {
   describe("requestFinalReferenceValue", async () => {
     it("Should request final reference value to DIVAGoplugin", async () => {
       // ---------
-      // Arrange: Check that there's no request for final reference value
+      // Arrange: Check that there's no final reference value request
       // ---------
       expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
         0
       );
+      // Approve PLI token of user2 to DIVAGoplugin
       await pliToken
-        .connect(user1)
+        .connect(user2)
         .approve(divaGoplugin.address, feePerRequest);
 
       // ---------
       // Act: Call `requestFinalReferenceValue` function
       // ---------
-      await divaGoplugin.connect(user1).requestFinalReferenceValue(poolId);
+      await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
 
       // ---------
       // Assert: Check that final reference value is requested
@@ -162,142 +152,63 @@ describe("DIVAGoplugin", () => {
       expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
         await getLastBlockTimestamp()
       );
-      expect(await divaGoplugin.getRequester(poolId)).to.eq(user1.address);
     });
   });
 
-  // describe("setFinalReferenceValue", async () => {
-  //   it("Should set a reported Tellor value as the final reference value in DIVA Protocol and leave tips and fee claims in DIVA unclaimed", async () => {
-  //     // ---------
-  //     // Arrange: Confirm params and submit values to tellorPlayground
-  //     // ---------
-  //     // Get tips and balances for tippingToken1
-  //     expect(
-  //       (
-  //         await divaGoplugin.getTipAmounts([
-  //           { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
-  //         ])
-  //       )[0][0]
-  //     ).to.eq(tippingAmount1);
-  //     expect(await tippingToken1.balanceOf(divaGoplugin.address)).to.eq(
-  //       tippingAmount1
-  //     );
-  //     expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
+  describe("setFinalReferenceValue", async () => {
+    beforeEach(async () => {
+      // Request final reference value for `poolId`
+      await pliToken
+        .connect(user2)
+        .approve(divaGoplugin.address, feePerRequest);
+      await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
+    });
 
-  //     // Get tips and balances for tippingToken2
-  //     expect(
-  //       (
-  //         await divaGoplugin.getTipAmounts([
-  //           { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
-  //         ])
-  //       )[0][0]
-  //     ).to.eq(tippingAmount2);
-  //     expect(await tippingToken2.balanceOf(divaGoplugin.address)).to.eq(
-  //       tippingAmount2
-  //     );
-  //     expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
+    it("Should set the value from Goplugin Feed as the final reference value in DIVA Protocol and leave fee claims in DIVA unclaimed", async () => {
+      // ---------
+      // Arrange: Get value from Goplugin Feed for `poolId` and check token balance
+      // ---------
+      finalReferenceValue = await divaGoplugin.getGopluginValue(poolId);
 
-  //     // Check collateral token balance for reporter
-  //     expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
-  //       0
-  //     );
+      // Calc settlement fee
+      settlementFeeAmount = poolParams.collateralBalance
+        .mul(feesParams.settlementFee)
+        .div(parseUnits("1"));
 
-  //     // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol
-  //     expect(poolParams.finalReferenceValue).to.eq(0);
-  //     expect(poolParams.statusFinalReferenceValue).to.eq(0);
+      // Check collateral token balance for DIVAGoplugin
+      expect(
+        await collateralTokenInstance.balanceOf(divaGoplugin.address)
+      ).to.eq(0);
 
-  //     // Prepare value submission to tellorPlayground
-  //     finalReferenceValue = parseUnits("42000");
-  //     collateralToUSDRate = parseUnits("1.14");
-  //     oracleValue = encodeOracleValue(
-  //       finalReferenceValue,
-  //       collateralToUSDRate
-  //     );
+      // ---------
+      // Act: Call `setFinalReferenceValue` function inside DIVAGoplugin
+      // contract after exactly pool expiry time has passed
+      // ---------
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await divaGoplugin.connect(user1).setFinalReferenceValue(poolId);
 
-  //     // Submit value to Tellor playground contract
-  //     nextBlockTimestamp = poolParams.expiryTime.add(1);
-  //     await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
-  //     await tellorPlayground
-  //       .connect(reporter)
-  //       .submitValue(queryId, oracleValue, 0, queryData);
+      // ---------
+      // Assert: Confirm that `finalReferenceValue`, `statusFinalReferenceValue` and feeClaim in DIVA Protocol are updated
+      // but collateral token balance remains unchanged
+      // ---------
+      // Check that `finalReferenceValue` and `statusFinalReferenceValue` are updated in DIVA Protocol
+      poolParams = await diva.getPoolParameters(poolId);
+      expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue);
+      expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
 
-  //     // Calculate settlement fee expressed in collateral token
-  //     const [settlementFeeAmount] = calcSettlementFee(
-  //       poolParams.collateralBalance,
-  //       feesParams.settlementFee,
-  //       collateralTokenDecimals,
-  //       collateralToUSDRate
-  //     );
+      // Check that the fee claim was allocated to the DIVAGoplugin in DIVA Protocol
+      expect(
+        await diva.getClaim(
+          collateralTokenInstance.address,
+          divaGoplugin.address
+        )
+      ).to.eq(settlementFeeAmount);
 
-  //     // ---------
-  //     // Act: Call `setFinalReferenceValue` function inside DIVAOracleTellor
-  //     // contract after exactly `minPeriodUndisputed` period has passed
-  //     // ---------
-  //     nextBlockTimestamp =
-  //       (await getLastBlockTimestamp()) + minPeriodUndisputed;
-  //     await setNextBlockTimestamp(nextBlockTimestamp);
-  //     await divaGoplugin
-  //       .connect(user2)
-  //       .setFinalReferenceValue(latestPoolId, [], false);
-
-  //     // ---------
-  //     // Assert: Confirm that finalReferenceValue, statusFinalReferenceValue and feeClaim in DIVA Protocol are updated
-  //     // but tipping token and collateral token balances remain unchanged
-  //     // ---------
-  //     // Check that finalReferenceValue and statusFinalReferenceValue are updated in DIVA Protocol
-  //     poolParams = await diva.getPoolParameters(latestPoolId);
-  //     expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue);
-  //     expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
-
-  //     // Check that the fee claim was allocated to the reporter in DIVA Protocol
-  //     expect(
-  //       await diva.getClaim(collateralTokenInstance.address, reporter.address)
-  //     ).to.eq(settlementFeeAmount);
-
-  //     // Check that tips and balances for tippinToken1 are unchanged
-  //     expect(
-  //       (
-  //         await divaGoplugin.getTipAmounts([
-  //           { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
-  //         ])
-  //       )[0][0]
-  //     ).to.eq(tippingAmount1);
-  //     expect(await tippingToken1.balanceOf(divaGoplugin.address)).to.eq(
-  //       tippingAmount1
-  //     );
-  //     expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
-
-  //     // Check that tips and balances for tippinToken2 are unchanged
-  //     expect(
-  //       (
-  //         await divaGoplugin.getTipAmounts([
-  //           { poolId: latestPoolId, tippingTokens: [tippingToken2.address] },
-  //         ])
-  //       )[0][0]
-  //     ).to.eq(tippingAmount2);
-  //     expect(await tippingToken2.balanceOf(divaGoplugin.address)).to.eq(
-  //       tippingAmount2
-  //     );
-  //     expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
-
-  //     // Check that the reporter's collateral token balance is unchanged (as the DIVA fee claim resides inside DIVA Protocol)
-  //     expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
-  //       0
-  //     );
-
-  //     // Check that pool id is added to `reporterToPoolIds`
-  //     expect(
-  //       (
-  //         await divaGoplugin.getPoolIdsLengthForReporters([reporter.address])
-  //       )[0]
-  //     ).to.eq(1);
-  //     expect(
-  //       (
-  //         await divaGoplugin.getPoolIdsForReporters([
-  //           { reporter: reporter.address, startIndex: 0, endIndex: 2 },
-  //         ])
-  //       )[0][0]
-  //     ).to.eq(latestPoolId);
-  //   });
-  // });
+      // Check that the DIVAGoplugin's collateral token balance is unchanged (as the DIVA fee claim resides inside DIVA Protocol)
+      expect(
+        await collateralTokenInstance.balanceOf(divaGoplugin.address)
+      ).to.eq(0);
+    });
+  });
 });

@@ -16,15 +16,13 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
     // mapping `poolId` to last requested blocktimestamp
     mapping(uint256 => uint256) private _lastRequestedBlocktimestamps;
-    // mapping `poolId` to requester address
-    mapping(uint256 => address) private _poolIdToRequester;
 
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
     IERC20Metadata private immutable _pli;
 
-    uint32 private constant MIN_PERIOD_UNDISPUTED = 12 hours;
     uint256 private constant FEE_PER_REQUEST = 0.1 * 10**18;
+    uint256 private constant GOPLUGIN_PRICE_DECIMALS = 4;
 
     modifier onlyOwner() {
         address _owner = _diva.getOwner();
@@ -49,11 +47,12 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
     function requestFinalReferenceValue(uint256 _poolId)
         external
+        override
         returns (bytes32)
     {
-        // @todo add balance check before initiating that function as we might sponsor data feeds
-        // by funding the contract with PLI tokens
-        _pli.safeTransferFrom(msg.sender, address(this), FEE_PER_REQUEST);
+        if (_pli.balanceOf(address(this)) < FEE_PER_REQUEST) {
+            _pli.safeTransferFrom(msg.sender, address(this), FEE_PER_REQUEST);
+        }
 
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
         bytes32 _requestId = IInvokeOracle(
@@ -61,7 +60,8 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         ).requestData({_caller: msg.sender});
 
         _lastRequestedBlocktimestamps[_poolId] = block.timestamp;
-        _poolIdToRequester[_poolId] = msg.sender;
+
+        emit FinalReferenceValueRequested(_poolId, block.timestamp);
 
         return _requestId;
     }
@@ -77,25 +77,19 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             _poolId
         ];
 
-        // // Check that data exists (_lastRequestedBlocktimestamp = 0 if it
-        // // doesn't)
-        // if (_lastRequestedBlocktimestamp == 0) {
-        //     revert NoOracleSubmissionAfterExpiryTime();
-        // }
-
-        // // Check that `MIN_PERIOD_UNDISPUTED` has passed after
-        // // `_lastRequestedBlocktimestamp`
-        // if (
-        //     block.timestamp - _lastRequestedBlocktimestamp <
-        //     MIN_PERIOD_UNDISPUTED
-        // ) {
-        //     revert MinPeriodUndisputedNotPassed();
-        // }
+        // Check that final reference value is requested and requested in the
+        // previous block or not
+        if (
+            _lastRequestedBlocktimestamp == 0 ||
+            block.timestamp == _lastRequestedBlocktimestamp
+        ) {
+            revert FinalReferenceValueNotRequested();
+        }
 
         // Format values (18 decimals)
         uint256 _formattedFinalReferenceValue = IInvokeOracle(
             _stringToAddress(_params.referenceAsset)
-        ).showPrice(); // @todo divide by 10000
+        ).showPrice() * 10**(18 - GOPLUGIN_PRICE_DECIMALS);
 
         // Forward final value to DIVA contract.
         //Allocates the fee as part of that process.
@@ -104,13 +98,6 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             _formattedFinalReferenceValue,
             _challengeable
         );
-
-        // Transfer fee claim to requester
-        _diva.transferFeeClaim(
-            _poolIdToRequester[_poolId],
-            _params.collateralToken,
-            _diva.getClaim(_params.collateralToken, address(this))
-        ); // @todo 
 
         emit FinalReferenceValueSet(
             _poolId,
@@ -132,15 +119,6 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return address(_pli);
     }
 
-    function getRequester(uint256 _poolId)
-        external
-        view
-        override
-        returns (address)
-    {
-        return _poolIdToRequester[_poolId];
-    }
-
     function getLastRequestedBlocktimestamp(uint256 _poolId)
         external
         view
@@ -150,8 +128,17 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return _lastRequestedBlocktimestamps[_poolId];
     }
 
-    function getMinPeriodUndisputed() external pure override returns (uint32) {
-        return MIN_PERIOD_UNDISPUTED;
+    function getGopluginValue(uint256 _poolId)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+
+        return
+            IInvokeOracle(_stringToAddress(_params.referenceAsset))
+                .showPrice() * 10**(18 - GOPLUGIN_PRICE_DECIMALS);
     }
 
     function getFeePerRequest() external pure override returns (uint256) {
