@@ -107,6 +107,7 @@ describe("DIVAOracleTellor", () => {
   let nextBlockTimestamp;
   let excessFeeRecipientInfo;
   let maxFeeAmountUSDInfo;
+  let poolId1, poolId2;
 
   before(async () => {
     [
@@ -1408,6 +1409,117 @@ describe("DIVAOracleTellor", () => {
     });
   });
 
+  describe("batchSetFinalReferenceValue", async () => {
+    it("Should set a reported Tellor value as the final reference value in DIVA Protocol and leave tips and fee claims in DIVA unclaimed", async () => {
+      // ---------
+      // Arrange: Confirm params and submit values to tellorPlayground
+      // ---------
+
+      // Prepare value submission to tellorPlayground
+      finalReferenceValue = parseUnits("42000");
+      collateralToUSDRate = parseUnits("1.14");
+      oracleValue = encodeOracleValue(
+        finalReferenceValue,
+        collateralToUSDRate
+      );
+
+      poolId1 = latestPoolId;
+      // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol for `poolId1`
+      expect(poolParams.finalReferenceValue).to.eq(0);
+      expect(poolParams.statusFinalReferenceValue).to.eq(0);
+
+      // Submit value to Tellor playground contract for `poolId1`
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
+
+      // Calculate settlement fee expressed in collateral token for `poolId1`
+      const [settlementFeeAmount1] = calcSettlementFee(
+        poolParams.collateralBalance,
+        feesParams.settlementFee,
+        collateralTokenDecimals,
+        collateralToUSDRate
+      );
+
+      // Create second expired contingent pool that uses Tellor as the data provider
+      const tx = await createContingentPool();
+      const receipt = await tx.wait();
+      poolId2 = receipt.events?.find((x) => x.event === "PoolIssued")?.args
+        ?.poolId;
+      poolParams = await diva.getPoolParameters(poolId2);
+      feesParams = await diva.getFees(poolParams.indexFees);
+
+      // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol for `poolId2`
+      expect(poolParams.finalReferenceValue).to.eq(0);
+      expect(poolParams.statusFinalReferenceValue).to.eq(0);
+
+      // Prepare Tellor value submission for `poolId2`
+      [queryData, queryId] = getQueryDataAndId(poolId2, divaAddress, chainId);
+
+      // Submit value to Tellor playground contract for `poolId2`
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue, 0, queryData);
+
+      // Calculate settlement fee expressed in collateral token for `poolId2`
+      const [settlementFeeAmount2] = calcSettlementFee(
+        poolParams.collateralBalance,
+        feesParams.settlementFee,
+        collateralTokenDecimals,
+        collateralToUSDRate
+      );
+
+      // ---------
+      // Act: Call `batchSetFinalReferenceValue` function inside DIVAOracleTellor
+      // contract after exactly `minPeriodUndisputed` period has passed
+      // ---------
+      nextBlockTimestamp =
+        (await getLastBlockTimestamp()) + minPeriodUndisputed;
+      await setNextBlockTimestamp(nextBlockTimestamp);
+      await divaOracleTellor.connect(user2).batchSetFinalReferenceValue([
+        { poolId: poolId1, tippingTokens: [], claimDIVAReward: false },
+        { poolId: poolId2, tippingTokens: [], claimDIVAReward: false },
+      ]);
+
+      // ---------
+      // Assert: Confirm that finalReferenceValue, statusFinalReferenceValue and feeClaim in DIVA Protocol are updated
+      // ---------
+      // Check that finalReferenceValue and statusFinalReferenceValue are updated in DIVA Protocol
+      const poolParams1 = await diva.getPoolParameters(poolId1);
+      expect(poolParams1.finalReferenceValue).to.eq(finalReferenceValue);
+      expect(poolParams1.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
+
+      const poolParams2 = await diva.getPoolParameters(poolId2);
+      expect(poolParams2.finalReferenceValue).to.eq(finalReferenceValue);
+      expect(poolParams2.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
+
+      // Check that the fee claim was allocated to the reporter in DIVA Protocol
+      expect(
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
+      ).to.eq(settlementFeeAmount1.add(settlementFeeAmount2));
+
+      // Check that `poolId1` and `poolId2` are added to `reporterToPoolIds`
+      expect(
+        (
+          await divaOracleTellor.getPoolIdsLengthForReporters([
+            reporter.address,
+          ])
+        )[0]
+      ).to.eq(2);
+      const poolIds = (
+        await divaOracleTellor.getPoolIdsForReporters([
+          { reporter: reporter.address, startIndex: 0, endIndex: 2 },
+        ])
+      )[0];
+      expect(poolIds[0]).to.eq(poolId1);
+      expect(poolIds[1]).to.eq(poolId2);
+    });
+  });
+
   describe("addTip", async () => {
     it("Should add tip to DIVAOracleTellor", async () => {
       // ---------
@@ -2076,7 +2188,6 @@ describe("DIVAOracleTellor", () => {
   });
 
   describe("batchClaimReward", async () => {
-    let poolId1, poolId2;
     let tippingAmount1ForPoolId1, tippingAmount2ForPoolId1;
     let tippingAmount1ForPoolId2, tippingAmount2ForPoolId2;
     let poolParams1, poolParams2;
