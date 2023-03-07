@@ -4,15 +4,17 @@ This documentation outlines the functionality of the Tellor adapter for [DIVA Pr
 
 ## Table of contents
 
-1.  [System overview](#system-overview)
-2.  [Function overview](#function-overview)
-3.  [Core functions](#core-functions)
-4.  [Getter functions](#getter-functions)
-5.  [Setter functions](#setter-functions)
-6.  [Events](#events)
-7.  [Errors](#errors)
+1. [Introduction](#introduction)
+2. [System overview](#system-overview)  \
+   2.1 [Tellor contract](#tellor-contract)
+2. [Function overview](#function-overview)
+3. [Core functions](#core-functions)
+4. [Getter functions](#getter-functions)
+5. [Setter functions](#setter-functions)
+6. [Events](#events)
+7. [Errors](#errors)
 
-# System overview
+# Introduction
 
 Derivative contracts created on DIVA Protocol require one data input following expiration. The Tellor adapter offers DIVA Protocol users a decentralized oracle solution for outcome reporting.
 
@@ -21,26 +23,43 @@ The key benefits of using the Tellor adapter for outcome reporting include:
 - No interruption in the reporting process following disputes, eliminating the need for additional requests.
 - Option to add tips for additional reporting incentives.
 
-These advantages provide users with a high level of confidence in correct settlement. The following sections provide and overview of the Tellor protocol, how the adapter works, and how it can be used.
+These advantages provide users with a high level of confidence in correct settlement. The following sections provide an overview of the Tellor protocol, how the adapter works, and how it can be used.
 
 Please refer to the ["Risks and Mitigants"](#risks-and-mitigants) section for a comprehensive understanding of potential risks involved in using the Tellor adapter.
 
 >**Terminology:** As funds backing the derivative contracts are held in so-called "contingent pools", the terms "derivative" and "contingent pool" (or simply "pool") are used interchangeably.
 
-## Involved contracts
-* **Tellor contract:** A key-value store where reporters submit their values.
-* **DIVA contract:** The contract that issued the derivative products and expects the outcome reporting.
-* **Tellor adapter contract:** The contract that pulls the value from Tellor contract and passes it on to DIVA contract for settlement.
+# System overview
 
+The DIVA Tellor integration involves three smart contracts:
+
+* **Tellor contract:** A key-value store where anyone can submit values to.
+* **DIVA contract:** The DIVA smart contract that expects outcome reporting for expired pools.
+* **Tellor adapter contract:** The contract that pulls the value from Tellor contract and passes it on to the DIVA contract for settlement.
+
+The interplay between the three contracts is illustrated below. Please note that the reward claim process has been omitted for the sake of simplicity.
 
 ![Tellor-v2 drawio (1)](https://user-images.githubusercontent.com/37043174/223348671-6072d550-ad07-4dff-aafa-99b7d048c53e.png)
 
+## Tellor contract
 
+All the details about submitting DIVA related values to the Tellor contract are outlined in the [Tellor documentation][tellor-docs]. The easiest and safest way to obtain the right `queryId` for submitting values to Tellor is by using the [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract.
 
-## Privileges
+## DIVA contract
+
+Details about DIVA Protocol and the settlement process can be found in the official [DIVA Protocol documentation][diva-protocol-docs].
+
+## Tellor adapter contract
+
+## Contract ownership and privileges
+
 The contract owner is inherited from the DIVA Ownership contract and is granted the right to update the maximum amount of DIVA rewards that a reporter can receive, denominated in USD, as well as the excess fee recipient. 
 
 The update process follows the same logic as in DIVA Protocol, where the owner first triggers an update of the respective value and it only gets activated after some delay. This delay is hard-coded to 3 days in the Tellor adapter contract and cannot be modified. The contract owner can revoke an update during that period. 
+
+## Upgradeability
+
+The DIVA Tellor adapter is non-upgradeable.
 
 ## What is Tellor protocol
 
@@ -154,15 +173,16 @@ Position token holders that are in the money have a natural incentive to report 
    - `_amount`: `100000000000000000000`
 1. **Get data:** Obtain the underlying value as well as the USD value of the prevailing at the time of expiration from the data source of your choice. Use 0 if no USD value of the collateral asset is available.
 1. **Convert decimal numbers to integers:** Convert data values represented as decimals into integers with 18 decimals, i.e. 100 -> `100000000000000000000`, 0.5 -> `500000000000000000`, etc.
-1. **Generate queryId:**
-   - Go to https://querybuilder.tellor.io/custom
+1. **Get query data and Id:**
+   - Query [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract to receive the queryData and quqeryId
+   <!-- - Go to https://querybuilder.tellor.io/custom
    - Choose Custom option
    - Put `DIVAProtocol` as type
    - Choose `uint256` as arg type and put the pool Id there
    - Choose `address` as arg type and put the DIVA contract adddress there (`0x659f8bF63Dce2548eB4D9b4BfF6883dddFde4848`)
    - Choose `uint256` as arg type and put the chainId there (`5` for Goerli, `1` for Ethereum mainnet, etc.)
    - Click Generate ID
-   - Query Data and Query Id will be necessary for the next step
+   - Query Data and Query Id will be necessary for the next step -->
 1. **Tellor submission:** On [Etherscan](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `submitValue` function with the followig inputs:
    - `_queryId`: Query Id from the step above
    - `_value`: **TODO**
@@ -206,13 +226,15 @@ For help, reach out to the [DIVA discord](https://discord.com/invite/DE5b8ZeJjK)
 | [`getPoolIdsLengthForReporters`](#getpoolidslengthforreporters)                                 | Function to return the number of poolIds reported by a reporter for a given set of reporters. Includes useful information for populating the argument for `getPoolIdsForReporters`.                                        |
 | [`getOwnershipContract`](#getownershipcontract)                                                                         | Function to return the address of the ownership contract that stores the owner variable. Call the `getOwner` function on the returned contract address to obtain the DIVA owner.                                                                                                |
 | [`getActivationDelay`](#getactivationdelay)                                                                 | Function to return the activation delay (in seconds) for governance related updates.                                                         |
-| [`getQueryId`](#getqueryid)                                                                     | Function to return the query Id for a given poolId.                                                                               |
+| [`getQueryDataAndId`](#getquerydataandid)                                                                     | Function to return the query data and Id for a given poolId.                                                                               |
 | **Batch functions**                                                                             |
-| [`batchClaimReward`](#batchclaimreward)                                                       | Batch version of `claimReward`.                                                                                                     |
+| [`batchClaimReward`](#batchclaimreward)                                                       | Batch version of `claimReward` function.                                                                                                     |
+| [`batchAddTip`](#batchaddtip)                                                       | Batch version of `addTip` function.                                                                                                     |
+| [`batchSetFinalReferenceValue`](#batchsetfinalreferencevalue)                                                       | Batch version of `setFinalReferenceValue` function.                                                                                                     |
 
 # Core functions
 
-DIVAOracleTellor implements the following core functions.
+The Tellor adapter implements the following core functions.
 
 ## addTip
 
@@ -626,17 +648,17 @@ function getActivationDelay()
     returns (uint256);
 ```
 
-## getQueryId
+## getQueryDataAndId
 
-Function to return the query Id for a given poolId.
+Function to return the query Id for a given poolId. This is used as the key when submitting values to the Tellor contract. Read more about it in the [Tellor docs][tellor-docs].
 
 ```js
-function getQueryId(
+function getQueryDataAndId(
     uint256 _poolId // The Id of the pool
 )
     external
     view
-    returns (bytes32);
+    returns (bytes memory, bytes32);
 ```
 
 ## Reentrancy protection
@@ -751,4 +773,12 @@ The following errors may be emitted during execution of the functions, including
 | `MaxFeeAmountUSDAlreadyActive(uint256 _timestampBlock, uint256 _startTimeMaxFeeAmountUSD)`      | `revokePendingMaxFeeAmountUSDUpdate` | Thrown if the max USD fee amount update to be revoked is already active.               |
 
 
+# Links
+* [Tellor protocol website][tellor-protocol]
+* [Tellor documentation regarding DIVA Protocol query type][tellor-docs]
+* [DIVA Protocol documentation][diva-protocol-docs]
+
 [openzeppelin-reentrancy-guard]: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/security/ReentrancyGuard.sol
+[diva-protocol-docs]: https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md
+[tellor-docs]: https://github.com/tellor-io/dataSpecs/blob/main/types/DIVAProtocol.md
+[tellor-protocol]: https://tellor.io/

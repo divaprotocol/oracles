@@ -71,7 +71,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         uint256 _poolId,
         uint256 _amount,
         address _tippingToken
-    ) external override nonReentrannt {
+    ) external override nonReentrant {
         _addTip(_poolId, _amount, _tippingToken);
     }
     
@@ -543,14 +543,22 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return _activationDelay;
     }
 
-    function getQueryId(uint256 _poolId)
+    // @todo rename in tests and docs
+    function getQueryDataAndId(uint256 _poolId)
         public
         view
         override
-        returns (bytes32)
+        returns (bytes memory queryData, bytes32 queryId)
     {
-        // Construct Tellor queryID
-        return
+        // Construct Tellor query data
+        queryData = 
+                abi.encode(
+                    "DIVAProtocol",
+                    abi.encode(_poolId, address(_diva), block.chainid)
+                );
+
+        // Construct Tellor queryId
+        queryId = 
             keccak256(
                 abi.encode(
                     "DIVAProtocol",
@@ -638,7 +646,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         // Get queryId from poolId for the value look-up inside the Tellor contract.
-        bytes32 _queryId = getQueryId(_poolId);
+        (, bytes32 _queryId) = getQueryDataAndId(_poolId);
 
         // Find first oracle submission after or at expiryTime, if it exists.
         (

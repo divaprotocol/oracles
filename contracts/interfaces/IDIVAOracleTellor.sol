@@ -469,8 +469,10 @@ interface IDIVAOracleTellor {
     function getActivationDelay() external pure returns (uint256);
 
     /**
-     * @notice Function to return the query Id for a given poolId.
+     * @notice Function to return the query data and Id for a given poolId.
      * @param _poolId The Id of the pool.
      */
-    function getQueryId(uint256 _poolId) external view returns (bytes32);
+    function getQueryDataAndId(
+        uint256 _poolId
+    ) external view returns (bytes memory, bytes32);
 }
