@@ -2,13 +2,9 @@
 pragma solidity 0.8.9;
 
 interface IDIVAGoplugin {
-    // Thrown in `setFinalReferenceValue` if there is no data reported after
-    // the expiry time of the underlying pool.
-    error NoOracleSubmissionAfterExpiryTime();
-
     // Thrown in `setFinalReferenceValue` if user tries to call the function
-    // before the minimum period undisputed period has passed.
-    error MinPeriodUndisputedNotPassed();
+    // before request final reference value.
+    error FinalReferenceValueNotRequested();
 
     // Thrown in constructor if zero address is provided as DIVA protocol address.
     error ZeroDIVAAddress();
@@ -18,6 +14,16 @@ interface IDIVAGoplugin {
 
     // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner.
     error NotContractOwner(address _user, address _contractOwner);
+
+    /**
+     * @notice Emitted when the final reference value is requested.
+     * @param poolId The Id of an existing derivatives pool.
+     * @param requestedTimestamp Current blocktimestamp.
+     */
+    event FinalReferenceValueRequested(
+        uint256 indexed poolId,
+        uint256 requestedTimestamp
+    );
 
     /**
      * @notice Emitted when the final reference value is set.
@@ -34,6 +40,15 @@ interface IDIVAGoplugin {
     );
 
     /**
+     * @dev Function to request final reference value to Goplugin Feed
+     * for a given `_poolId`.
+     * @param _poolId The unique identifier of the pool.
+     */
+    function requestFinalReferenceValue(uint256 _poolId)
+        external
+        returns (bytes32);
+
+    /**
      * @dev Function to set the final reference value for a given `_poolId`.
      * @param _poolId The unique identifier of the pool.
      */
@@ -46,10 +61,10 @@ interface IDIVAGoplugin {
     function getChallengeable() external view returns (bool);
 
     /**
-     * @dev Returns the minimum period (in seconds) a reported value has
-     * to remain undisputed in order to be considered valid.
+     * @dev Returns the value from Goplugin Feed with 18 decimals.
+     * @param _poolId The unique identifier of the pool.
      */
-    function getMinPeriodUndisputed() external pure returns (uint32);
+    function getGopluginValue(uint256 _poolId) external view returns (uint256);
 
     /**
      * @dev Returns the fee per request.
@@ -57,14 +72,8 @@ interface IDIVAGoplugin {
     function getFeePerRequest() external pure returns (uint256);
 
     /**
-     * @dev Returns the requester address.
-     * @param _poolId Array of poolIds.
-     */
-    function getRequester(uint256 _poolId) external view returns (address);
-
-    /**
      * @dev Returns the last requested blocktimestamp.
-     * @param _poolId Array of poolIds.
+     * @param _poolId The unique identifier of the pool.
      */
     function getLastRequestedBlocktimestamp(uint256 _poolId)
         external
