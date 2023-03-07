@@ -31,35 +31,102 @@ Please refer to the ["Risks and Mitigants"](#risks-and-mitigants) section for a 
 
 # System overview
 
-The DIVA Tellor integration involves three smart contracts:
+The DIVA Tellor integration is an interplay between three smart contracts:
 
 * **Tellor contract:** A key-value store where anyone can submit values to.
 * **DIVA contract:** The DIVA smart contract that expects outcome reporting for expired pools.
 * **Tellor adapter contract:** The contract that pulls the value from Tellor contract and passes it on to the DIVA contract for settlement.
 
-The interplay between the three contracts is illustrated below. Please note that the reward claim process has been omitted for the sake of simplicity.
+The interplay is visualized below. For the sake of simplicity, the reward claim process has been omitted from the illustration.
 
 ![Tellor-v2 drawio (1)](https://user-images.githubusercontent.com/37043174/223348671-6072d550-ad07-4dff-aafa-99b7d048c53e.png)
 
-## Tellor contract
+This documentation will describe the process of reporting values to the Tellor contract and pushing them into DIVA Protocol via the Tellor adapter. To learn more about DIVA Protocol and the settlement process, please refer to their official [DIVA Protocol documentation][diva-protocol-docs].
 
-All the details about submitting DIVA related values to the Tellor contract are outlined in the [Tellor documentation][tellor-docs]. The easiest and safest way to obtain the right `queryId` for submitting values to Tellor is by using the [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract.
+## Contract addresses
 
-## DIVA contract
+Relevant contract addresses and subgraph urls are summarized below, grouped by network:
 
-Details about DIVA Protocol and the settlement process can be found in the official [DIVA Protocol documentation][diva-protocol-docs].
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | Address of the contract where values are reported to and TRB is staked.                                | 
+| Tellor adapter contract    | Address of the contract that connects the Tellor contract with the DIVA contract and is used as data provider when creating a pool.                                |
+| DIVA contract    | Address of the DIVA contract.                                |
+| TRB token                  | Address of the TRB token needs to be staked in order to be able to report values to the Tellor contract.                                | 
+| Tellor governance contract | Address of the contract that handles Tellor disputes.                                | 
+| DIVA subgraph              | Subgraph url containing DIVA pool related information. |   
 
-## Tellor adapter contract
+### Ethereum
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | `tbd`                                | 
+| Tellor adapter contract    | `tbd`                                |
+| DIVA contract    | `tbd`                                |
+| TRB token                  | `tbd`                                | 
+| Tellor governance contract | `tbd`                                | 
+| DIVA subgraph              | tbd |   
 
-## Contract ownership and privileges
 
-The contract owner is inherited from the DIVA Ownership contract and is granted the right to update the maximum amount of DIVA rewards that a reporter can receive, denominated in USD, as well as the excess fee recipient. 
+### Polygon
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | `tbd`                                | 
+| Tellor adapter contract    | `tbd`                                |
+| DIVA contract    | `tbd`                                |
+| TRB token                  | `tbd`                                | 
+| Tellor governance contract | `tbd`                                | 
+| DIVA subgraph              | tbd |   
 
-The update process follows the same logic as in DIVA Protocol, where the owner first triggers an update of the respective value and it only gets activated after some delay. This delay is hard-coded to 3 days in the Tellor adapter contract and cannot be modified. The contract owner can revoke an update during that period. 
+### Gnosis
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | `tbd`                                | 
+| Tellor adapter contract    | `tbd`                                |
+| DIVA contract    | `tbd`                                |
+| TRB token                  | `tbd`                                | 
+| Tellor governance contract | `tbd`                                | 
+| DIVA subgraph              | tbd |   
+
+### Arbitrum
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | `tbd`                                | 
+| Tellor adapter contract    | `tbd`                                |
+| DIVA contract    | `tbd`                                |
+| TRB token                  | `tbd`                                | 
+| Tellor governance contract | `tbd`                                | 
+| DIVA subgraph              | tbd |   
+
+### Goerli
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | `tbd`                                | 
+| Tellor adapter contract    | `tbd`                                |
+| DIVA contract    | `tbd`                                |
+| TRB token                  | `tbd`                                | 
+| Tellor governance contract | `tbd`                                | 
+| DIVA subgraph              | tbd |   
+
+<!-- 
+Note that depositing a stake or or disputing a value requires prior approval for the TRB token for the corresponding contract to transfer the token. -->
+
+## Ownership and privileges
+
+The Tellor adapter contract implements an owner which is inherited from the DIVA Ownership contract, which is the same contract that DIVA Protocol inherits their owner from. The owner is authorized to update the maximum amount of DIVA rewards that a reporter can receive, denominated in USD, as well as the recipient of any excess fee. 
+
+The update process is the same as in DIVA Protocol. The owner initiates an update of the relevant value, which only becomes effective after a pre-defined delay. In the Tellor adapter contract, this delay is fixed at 3 days and cannot be modified. However, during this delay period, the contract owner has the ability to cancel the update if needed.
 
 ## Upgradeability
 
-The DIVA Tellor adapter is non-upgradeable.
+The Tellor adapter contract is not upgradeable.
+
+
+
+# Tellor contract
+
+The Tellor contract is where reporters submit their values to be used in DIVA Protocol. In this section, we will provide an overview of the Tellor protocol is and explain how users can report values to the Tellor contract.
+
+<!-- All the details about submitting DIVA related values to the Tellor contract are outlined in the [Tellor documentation][tellor-docs]. The easiest and safest way to obtain the right `queryId` for submitting values to Tellor is by using the [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract. -->
 
 ## What is Tellor protocol
 
@@ -76,17 +143,29 @@ Assuming that the value of TRB is at least $15 (corresponding to 100 TRB require
 
 To ensure the reliability of reported data, only data reports that have remained undisputed for a specified duration (up to 12 hours) should be considered valid. The Tellor adapter selects a maximum duration of 12 hours and utilizes the earliest value that satisfies this criterion as the settlement value, ignoring any subsequent values that also meet the condition.
 
-### Disputes
+## Disputes
 
 Any party can challenge data submissions of any reporters when a value is placed on-chain. A challenger must submit a dispute fee to each challenge. Once a challenge is submitted, the potentially malicious reporter who submitted the value is placed in a locked state for the duration of the vote. For the next two days, TRB holders vote on the validity of the reported value. All TRB holders have an incentive to maintain an honest oracle and can vote on the dispute. For more information, refer to the official [Tellor docs](https://docs.tellor.io/tellor/disputing-data/introduction).
 
-## How the Tellor adapter works
 
-The end-to-end usage of the Tellor adapter is outlined below:
-1. **Pool creation:** A user creates a contingent pool on DIVA Protocol, assigning the Tellor adapter contract address as the data provider. This step constitutes a request to report the outcome of the underlying event/metric at the specified expiry time after expiration.
-2. **Monitoring:** Tellor reporters monitor expired pools requiring reporting by running special software, known as "Tellor clients". There are two available implementations, one by the [DIVA team](https://github.com/divaprotocol/diva-monorepo/tree/main/packages/diva-oracle) which is focused on reporting for DIVA pools and one by the [Tellor team](https://github.com/tellor-io/telliot-feeds) which is generic reporter not necessarily focused on DIVA. If you're planning to build your own reporter software, please refer to the [README](https://github.com/divaprotocol/oracles/blob/main/README.md) for guidance.
-3. **Reporting to Tellor Protocol:** If a pool expires, reporters submit their values to the Tellor smart contract. Valid submissions must be made during the 7-day submission period (subject to change with a minimum of 3 days), starting at the time of pool expiration.
-4. **Reporting to DIVA Protocol:** The first value submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final one. This value is submitted to DIVA Protocol by calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract. This sets the final reference value status inside the DIVA smart contract to "Confirmed" and determines the payouts for each counterparty involved in the derivative contract. No further submissions to DIVA Protocol are permitted thereafter. Disputed values will be disregarded and are handled in a separate process on the Tellor side.
+
+
+
+
+
+
+# Tellor adapter contract
+
+The Tellor adapter contract serves as a bridge that retrieves values reported to the Tellor contract and forwards them to the DIVA Protocol for settlement. In this section, we will provide an overview how the Tellor adapter works and how to use it.
+
+## How to use the Tellor adapter
+
+Using the Tellor adapter for outcome reporting in DIVA Protocol is as simple as assigning its network specific [contract address](#contract-addresses) as the data provider when creating a pool in DIVA Protocol.
+
+The process after assigning the Tellor adapter as the data provider is outlined below:
+1. **Monitoring:** Tellor reporters monitor expired pools requiring reporting by running special software, known as "Tellor clients". There are two available implementations, one developed by the [DIVA team](https://github.com/divaprotocol/diva-monorepo/tree/main/packages/diva-oracle) which is designed to report for DIVA pools exclusively and one by the [Tellor team](https://github.com/tellor-io/telliot-feeds) which is generic reporter not necessarily focused on DIVA. If you're planning to build your own reporter software, please refer to the [README](https://github.com/divaprotocol/oracles/blob/main/README.md) for guidance.
+1. **Reporting to Tellor Protocol:** If a pool expires, reporters submit their values to the Tellor contract. Valid submissions must be made during the 7-day submission period (subject to change with a minimum of 3 days), starting at the time of pool expiration. Note that due to the dispute period of 12 hours, the effective submission period is shorter by that amount of time.
+1. **Reporting to DIVA Protocol:** The first value submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final one. This value is submitted to DIVA Protocol by calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract. This sets the final reference value status inside the DIVA smart contract to "Confirmed" and determines the payouts for each counterparty involved in the derivative contract. No further submissions to DIVA Protocol are permitted thereafter. Disputed values will be disregarded and are handled in a separate process on the Tellor side.
 
 >**Note:** Submissions to Tellor Protocol made before pool expiration or for already confirmed pools will not be considered. To reduce gas costs, it is recommended to verify the timestamps of the Tellor submissions and the status of the final reference value before calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract.
 
@@ -124,24 +203,6 @@ Reporting involves calling two functions which combined costs c. 410k gas.
 
 At 100 Gwei/gas, the gas fee is 41m Gwei (0.041 ETH, 0.041 MATIC, etc.).
 
-## Relevant addresses
-
-| Name                       |                                                                             |                                                                                                                                                                                                                    |
-| :------------------------- | :-------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Ethereum**                                                               |
-| **Polygon**                                                               |
-| **Gnosis**                                                               |
-| **Arbitrum**                                                               |
-| **Goerli**                                                               |
-| Tellor adapter contract    | `0x9959f7f8eFa6B77069e817c1Af97094A9CC830FD`                                | Contract that connects the Tellor system with DIVA Protocol. To be used as the data provider address when creating a pool                                                                                          |
-| TRB token                  | `0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2`                                | Token that needs to be staked in order to be able to report values to the Tellor system. One stake corresponds to 100 TRB allows and allows to report one value every 12 hours.                                    |
-| Tellor system              | `0xB3B662644F8d3138df63D2F43068ea621e2981f9`                                | Tellor contract where values are reported to and TRB staked.                                                                                                                                                       |
-| Tellor governance contract | `0x02803dcFD7Cb32E97320CFe7449BFb45b6C931b8`                                | Implements the `beginDispute` function to initiate a dispute.                                                                                                                                                      |
-| DIVA smart contract        | `0x659f8bF63Dce2548eB4D9b4BfF6883dddFde4848`                                | The DIVA smart contract address that the Tellor adapter contract points to. Selecting the Tellor adapter contract as the oracle for any other version of the DIVA smart contract will result in failure to report. |
-| DIVA subgraph              | https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new-2 | Subgraph containing all pool related information.                                                                                                                                                                  |
-
-Note that depositing a stake or or disputing a value requires prior approval for the TRB token for the corresponding contract to transfer the token.
-
 ## Supported data feeds
 
 The Tellor protocol has the capability to handle any type of data. This universality extends to the Tellor adapter, which can be utilized with any data feed. To ensure high coverage by reporters, it's suggested to check with the Tellor community which data feeds are well-established and which may need extra support and communication.
@@ -174,15 +235,7 @@ Position token holders that are in the money have a natural incentive to report 
 1. **Get data:** Obtain the underlying value as well as the USD value of the prevailing at the time of expiration from the data source of your choice. Use 0 if no USD value of the collateral asset is available.
 1. **Convert decimal numbers to integers:** Convert data values represented as decimals into integers with 18 decimals, i.e. 100 -> `100000000000000000000`, 0.5 -> `500000000000000000`, etc.
 1. **Get query data and Id:**
-   - Query [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract to receive the queryData and quqeryId
-   <!-- - Go to https://querybuilder.tellor.io/custom
-   - Choose Custom option
-   - Put `DIVAProtocol` as type
-   - Choose `uint256` as arg type and put the pool Id there
-   - Choose `address` as arg type and put the DIVA contract adddress there (`0x659f8bF63Dce2548eB4D9b4BfF6883dddFde4848`)
-   - Choose `uint256` as arg type and put the chainId there (`5` for Goerli, `1` for Ethereum mainnet, etc.)
-   - Click Generate ID
-   - Query Data and Query Id will be necessary for the next step -->
+   - Query [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract to receive the queryData and queryId
 1. **Tellor submission:** On [Etherscan](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `submitValue` function with the followig inputs:
    - `_queryId`: Query Id from the step above
    - `_value`: **TODO**
@@ -650,7 +703,7 @@ function getActivationDelay()
 
 ## getQueryDataAndId
 
-Function to return the query Id for a given poolId. This is used as the key when submitting values to the Tellor contract. Read more about it in the [Tellor docs][tellor-docs].
+Function to return the query data and Id for a given poolId. This is used as as inputs for submitting values to the Tellor contract. Read more about it in the [Tellor docs][tellor-docs].
 
 ```js
 function getQueryDataAndId(

@@ -543,7 +543,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return _activationDelay;
     }
 
-    // @todo rename in tests and docs
+    // @todo rename in tests
     function getQueryDataAndId(uint256 _poolId)
         public
         view
