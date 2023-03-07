@@ -1,7 +1,3 @@
-# TODO
-
-- Create video guide for manual reporting
-
 # Tellor adapter for DIVA Protocol v1 - Documentation
 
 This documentation outlines the functionality of the Tellor adapter for [DIVA Protocol v1](https://github.com/divaprotocol/diva-contracts).
@@ -735,7 +731,7 @@ event PendingMaxFeeAmountUSDUpdateRevoked(
 
 # Errors
 
-The following errors may be emitted during execution of the mentioned functions including their batch versions.
+The following errors may be emitted during execution of the functions, including their batch versions.
 
 | Error name                            | Function                                                                                                                                                 | Description                                                                                                                                     |
 | :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
