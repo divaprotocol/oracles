@@ -558,13 +558,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
                 );
 
         // Construct Tellor queryId
-        queryId = 
-            keccak256(
-                abi.encode(
-                    "DIVAProtocol",
-                    abi.encode(_poolId, address(_diva), block.chainid)
-                )
-            );
+        queryId = keccak256(queryData);
     }
 
     function _getCurrentExcessFeeRecipient() internal view returns (address) {
