@@ -162,6 +162,10 @@ To use the Tellor adapter for outcome reporting in DIVA Protocol, simply assign 
 
 Refer to the [reporting software](#reporting-software) section to learn more about software that automates the described reporting process. 
 
+## Supported data feeds
+
+The Tellor protocol has the capability to handle any type of data. This universality extends to the Tellor adapter, which can be utilized with any data feed. To ensure high coverage by reporters, it's suggested to check with the Tellor community which data feeds are well-established and which may need extra support and communication.
+
 ## Reporting software
 
 There are two available versions of Tellor reporter software that facilitate the process of monitoring and reporting pools using the Tellor adapter as the data provider: 
@@ -172,44 +176,27 @@ If you plan to build your own reporter software, please refer to the [README](ht
 
 # Reporting rewards
 
-To incentivize reporting, reporters receive two types of rewards:
-* [DIVA rewards](#diva-rewards) including settlement fee and tips added to DIVA Protocol
-* [Tips](#tips) added to the Tellor adapter contract
+Reporters receive rewards from two different sources:
+* [DIVA rewards](#diva-rewards)
+* [Tips](#tips)
 
 ## DIVA rewards
 
-DIVA rewards are derived from two different source:
+DIVA rewards are derived from two different sources:
 * **Settlement fee:** DIVA Protocol pays a settlement fee of 0.05% of the gross collateral deposited into the pool over time to the data provider in the pool's collateral token. For example, reporting for a pool that has had USDC 100k in liquidity added over its lifetime would yield a settlement fee of USDC 50. 
-* **Tips:** In addition to the settlement fee, users can add a tip using DIVA Protocol's [`addTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function to incentivize reporting. This can be particularly useful when the gross collateral of the pool is relatively small and the settlement fee would not justify the gas cost for reporting. Note that in DIVA Protocol, tipping tokens are limited to the collateral token of the respective pool.
+* **Tips:** In addition to the settlement fee, users can add a tip using DIVA Protocol's [`addTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function to incentivize reporting. This can be particularly useful when the gross collateral of the pool is relatively small and the settlement fee would not justify the gas cost for reporting. Note that the tip can only be given in the collateral token of the respective pool.
 
-It is important to highlight that the DIVA reward is capped at USD 10, with any excess fee going to the recipient specified by the contract owner. This measure was put in place to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward.
+>**Important:** The DIVA reward is capped at USD 10 per pool, with any excess fee going to the recipient specified by the contract owner. This measure was put in place to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward.
 
 ## Tips
 
-- Anyone can incentivize reporting by adding tips in any ERC20 token. Multiple tips in different ERC20 tokens are allowed, and reporters can choose which tips to claim. Tips is retained in the Tellor adapter contract until claimed by the recipient through the [`claimTips`](#claimtips) function.
-- DIVA Protocol also offers the possibility to tip via the `addTip` function, but the tipping token is restricted to the collateral token of the pool.
+The Tellor adapter contract implements a tipping functionality via an [`addTip`](#addtip) function which allows tips in any ERC20. Reporters can choose which ones they want to claim. As opposed to the DIVA rewards, tips added to the Tellor adapter contract are NOT subject to USD 10 cap.
 
-Notes:
+The Tellor adapter contract also features a tipping functionality enabled by the [`addTip`](#addtip) function, which accepts tips in any ERC20 token. Unlike DIVA rewards, tips added to the Tellor adapter contract are not subject to the USD 10 cap. Reporters can select which tips they want to claim.
 
-- To calculate the split, the reporters also submit the USD value of the collateral token.
-- Only the first reporter whose reported value remains undisputed for at least 12h will receive a reward. It is recommended to check existing value submission before spending gas on submitted a new one.
+# Reporting costs
 
-## Reporting Costs
-
-Reporting involves calling two functions which combined costs c. 410k gas.
-
-- `submitValue` (on Tellor contract): 160k gas
-- `setFinalReferenceValue` (on Tellor adapter contract): 250k gas
-
-At 100 Gwei/gas, the gas fee is 41m Gwei (0.041 ETH, 0.041 MATIC, etc.).
-
-## Supported data feeds
-
-The Tellor protocol has the capability to handle any type of data. This universality extends to the Tellor adapter, which can be utilized with any data feed. To ensure high coverage by reporters, it's suggested to check with the Tellor community which data feeds are well-established and which may need extra support and communication.
-
-## DIVA Disputes
-
-The Tellor adapter deactivates the possibility to challenge within DIVA Protocol as the Tellor system comes with its own dispute mechanism. In other words, the value that is reported to DIVA Protocol via the Tellor adapter is immediately confirmed and considered the final one.
+To report data, two function calls are required, which together cost approximately 410k gas. The first function call, `submitValue` in the Tellor contract, uses around 160k gas, while the second call, [`setFinalReferenceValue`](#setfinalreferencevalue) in the Tellor adapter contract, uses around 250k gas. At a gas price of 100 Gwei/gas, the total gas fee for reporting is 41m Gwei or 0.041 ETH, 0.041 MATIC, or the equivalent in other gas tokens.
 
 # Risks and mitigants
 
