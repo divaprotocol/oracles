@@ -120,8 +120,6 @@ The update process is the same as in DIVA Protocol. The owner initiates an updat
 
 The Tellor adapter contract is not upgradeable.
 
-
-
 # Tellor contract
 
 The Tellor contract is where reporters submit their values to be used in DIVA Protocol. In this section, we will provide an overview of the Tellor protocol is and explain how users can report values to the Tellor contract.
@@ -147,33 +145,26 @@ To ensure the reliability of reported data, only data reports that have remained
 
 Any party can challenge data submissions of any reporters when a value is placed on-chain. A challenger must submit a dispute fee to each challenge. Once a challenge is submitted, the potentially malicious reporter who submitted the value is placed in a locked state for the duration of the vote. For the next two days, TRB holders vote on the validity of the reported value. All TRB holders have an incentive to maintain an honest oracle and can vote on the dispute. For more information, refer to the official [Tellor docs](https://docs.tellor.io/tellor/disputing-data/introduction).
 
-
-
-
-
-
-
-
 # Tellor adapter contract
 
-The Tellor adapter contract serves as a bridge that retrieves values reported to the Tellor contract and forwards them to the DIVA Protocol for settlement. In this section, we will provide an overview how the Tellor adapter works and how to use it.
+The Tellor adapter contract serves as a bridge that retrieves values reported to the Tellor contract and forwards them to the DIVA Protocol for settlement. In this section, we will provide an overview how the Tellor adapter works and how it can be used for outcome reporting in DIVA Protocol.
 
 ## How to use the Tellor adapter
 
 Using the Tellor adapter for outcome reporting in DIVA Protocol is as simple as assigning its network specific [contract address](#contract-addresses) as the data provider when creating a pool in DIVA Protocol.
 
-The process after assigning the Tellor adapter as the data provider is outlined below:
+Once the Tellor adapter has been assigned as the data provider, the process can be broken down into three phases: 
 1. **Monitoring:** Tellor reporters monitor expired pools requiring reporting by running special software, known as "Tellor clients". There are two available implementations, one developed by the [DIVA team](https://github.com/divaprotocol/diva-monorepo/tree/main/packages/diva-oracle) which is designed to report for DIVA pools exclusively and one by the [Tellor team](https://github.com/tellor-io/telliot-feeds) which is generic reporter not necessarily focused on DIVA. If you're planning to build your own reporter software, please refer to the [README](https://github.com/divaprotocol/oracles/blob/main/README.md) for guidance.
-1. **Reporting to Tellor Protocol:** If a pool expires, reporters submit their values to the Tellor contract. Valid submissions must be made during the 7-day submission period (subject to change with a minimum of 3 days), starting at the time of pool expiration. Note that due to the dispute period of 12 hours, the effective submission period is shorter by that amount of time.
+1. **Reporting to Tellor Protocol:** If a pool expires, reporters submit their values to the Tellor contract. Valid submissions must be made during the pool specific submission period (between 3 and 15 days) granted by DIVA Protocol. Note that due to the dispute period of 12 hours, the effective submission period is shorter by that period of time.
 1. **Reporting to DIVA Protocol:** The first value submitted to the Tellor Protocol that remains undisputed for over 12h will be considered the final one. This value is submitted to DIVA Protocol by calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract. This sets the final reference value status inside the DIVA smart contract to "Confirmed" and determines the payouts for each counterparty involved in the derivative contract. No further submissions to DIVA Protocol are permitted thereafter. Disputed values will be disregarded and are handled in a separate process on the Tellor side.
 
 >**Note:** Submissions to Tellor Protocol made before pool expiration or for already confirmed pools will not be considered. To reduce gas costs, it is recommended to verify the timestamps of the Tellor submissions and the status of the final reference value before calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function on the Tellor adapter contract.
 
-## Reporting incentives
+# Reporting Rewards
 
-Reporters in the DIVA Protocol-Tellor integration are incentivized to report outcomes through two mechanisms:
-* Settlement fees
-* Tips
+Reporters receive rewards from two different sources:
+* [Settlement fees](#settlement-fees)
+* [Tips](#settlement-fees)
 
 ### Settlement fees
 
@@ -226,16 +217,17 @@ The Tellor adapter deactivates the possibility to challenge within DIVA Protocol
 
 Position token holders that are in the money have a natural incentive to report the outcome. Follow the steps described below or watch our [video guide](www.google.com) to learn how to manually report a value in the event that no one else is reporting, using Goerli network as an example.
 
-1. **Get TRB token:** Get 100 TRB which is the minimum stake to report once every 12 hours.
-1. **Approve transfer for stake deposit:** On [Etherscan](https://goerli.etherscan.io/address/0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2#writeProxyContract), call the `approve` function on the TRB contract with the following inputs:
+1. **Get TRB token:** Get 100 TRB which is the stake amount required to report once every 12 hours.
+1. **Approve transfer for stake deposit:** On the [TRB token contract](https://goerli.etherscan.io/address/0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2#writeProxyContract), call the `approve` function on the TRB contract with the following inputs:
    - `_spender`: `0xB3B662644F8d3138df63D2F43068ea621e2981f9` (Tellor contract)
    - `_amount`: `100000000000000000000` (integer representation of 100 using 18 decimals)
-1. **Deposit stake:** On [Etherscan](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `depositStake` function with the following input:
+1. **Deposit stake:** On the [Tellor contract](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `depositStake` function with the following input:
    - `_amount`: `100000000000000000000`
 1. **Get data:** Obtain the underlying value as well as the USD value of the prevailing at the time of expiration from the data source of your choice. Use 0 if no USD value of the collateral asset is available.
 1. **Convert decimal numbers to integers:** Convert data values represented as decimals into integers with 18 decimals, i.e. 100 -> `100000000000000000000`, 0.5 -> `500000000000000000`, etc.
 1. **Get query data and Id:**
    - Query [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract to receive the queryData and queryId
+   - Refer to the [Tellor documentation][tellor-docs] for details.
 1. **Tellor submission:** On [Etherscan](https://goerli.etherscan.io/address/0xB3B662644F8d3138df63D2F43068ea621e2981f9#writeContract), call the `submitValue` function with the followig inputs:
    - `_queryId`: Query Id from the step above
    - `_value`: **TODO**
