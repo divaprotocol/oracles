@@ -5,18 +5,38 @@ This documentation outlines the functionality of the Tellor adapter for [DIVA Pr
 ## Table of contents
 
 1. [Introduction](#introduction)
-2. [System overview](#system-overview)  \
-   2.1 [Tellor contract](#tellor-contract)
-2. [Function overview](#function-overview)
-3. [Core functions](#core-functions)
-4. [Getter functions](#getter-functions)
-5. [Setter functions](#setter-functions)
-6. [Events](#events)
-7. [Errors](#errors)
+
+2. [Terminology](#terminology)
+
+3. [System overview](#system-overview) \
+   3.1 [Contract addresses and subgraphs](#contract-addresses-and-subgraphs) \
+   3.2 [Ownership and privileges](#ownership-and-privileges) \
+   3.3 [Upgradeability](#upgradeability)
+
+4. [Tellor contract](#tellor-contract) \
+   4.1 [What is Tellor Protocol](#what-is-tellor-protocol) \
+   4.2 [How Tellor Protocol works](#how-tellor-protocol-works) \
+   4.3 [How to report values to Tellor Protocol](#how-to-report-values-to-tellor-protocol)
+
+5. [Tellor adapter contract](#tellor-adapter-contract) \
+   5.1 [How to use the Tellor adapter](#how-to-use-the-tellor-adapter) \
+   5.2 [Supported data feeds](#supported-data-feeds) \
+   5.3 [Reporting software](#reporting-software) \
+   5.4 [Reporting rewards](#reporting-rewards) \
+   5.5 [Reporting costs](#reporting-costs) \
+   5.6 [Function overview](#function-overview) \
+   5.7 [Core functions](#core-functions) \
+   5.8 [Getter functions](#getter-functions) \
+   5.9 [Reentrancy protection](#reentrancy-protection) \
+   5.10 [Events](#events) \
+   5.11 [Errors](#errors) \
+   5.12 [Risks and mitigants](#risks-and-mitigants)
+
+6. [Links](#links)
 
 # Introduction
 
-Derivative contracts created on DIVA Protocol require one data input following expiration. The [Tellor adapter][tellor-adapter-contract] offers DIVA Protocol users a decentralized oracle solution for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses) as the data provider when creating a pool.
+Derivative contracts created on DIVA Protocol require one data input following expiration. The [Tellor adapter][tellor-adapter-contract] offers DIVA Protocol users a decentralized oracle solution for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool.
 
 The key benefits of using the Tellor adapter for outcome reporting include:
 - No single point of failure as outcome reporting is decentralized and permissionless.
@@ -48,7 +68,7 @@ The interplay is visualized below. For the sake of simplicity, the reward claim 
 
 ![Tellor-v2 drawio (1)](https://user-images.githubusercontent.com/37043174/223677771-9c76e8a2-ee63-437e-8192-23bf9d5bd113.png)
 
-## Contract addresses
+## Contract addresses and subgraphs
 
 Relevant contract addresses and subgraph urls are summarized below, grouped by network:
 
@@ -154,8 +174,8 @@ The [Tellor adapter contract][tellor-adapter-contract] serves as a bridge that r
 
 ## How to use the Tellor adapter
 
-Using the Tellor adapter for outcome reporting in DIVA Protocol is as simple as assigning its [contract address](#contract-addresses) as the data provider when creating a pool. The process of reporting outcomes for pools that use the Tellor adapter as the data provider consists of the following four elements: 
-1. **Monitoring:** To identify expired pools that require reporting, Tellor reporters monitor the [DIVA subgraph](#contract-addresses) or use DIVA Protocol's [`getPoolParamters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function.
+Using the Tellor adapter for outcome reporting in DIVA Protocol is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool. The process of reporting outcomes for pools that use the Tellor adapter as the data provider consists of the following four elements: 
+1. **Monitoring:** To identify expired pools that require reporting, Tellor reporters monitor the [DIVA subgraph](#contract-addresses-and-subgraphs) or use DIVA Protocol's [`getPoolParamters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function.
 
 1. **Reporting to Tellor contract:** When a pool expires, reporters submit their values to the Tellor contract during the applicable submission period, which lasts between 3 and 15 days. It's important to note that the effective submission period is shorter by the 12-hour dispute period. This means that any submissions made within the last 12 hours of the submission period will not be accepted due to the dispute delay that has to be respected.
 
