@@ -335,8 +335,11 @@ interface IDIVAOracleTellor {
     function revokePendingMaxFeeAmountUSDUpdate() external;
 
     /**
-     * @notice Function to return whether the oracle's data feed is challengeable
-     * or not. Will return `false` in that implementation.
+     * @notice Function to return whether the Tellor adapter's data feed
+     * is challengeable inside DIVA Protocol. In this implementation, the
+     * function always returns `false`, which means that the first value
+     * submitted to the DIVA Protocol will determine the payouts, and users
+     * can start claiming their payouts thereafter.
      */
     function getChallengeable() external view returns (bool);
 
@@ -360,8 +363,8 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Function to return the minimum period (in seconds) a reported
-     * value has to remain undisputed in order to be considered valid
-     * (12 hours = 43'200 seconds).
+     * value has to remain undisputed in order to be considered valid.
+     * Hard-coded to 12 hours (= 43'200 seconds) in this implementation.
      */
     function getMinPeriodUndisputed() external pure returns (uint32);
 
@@ -464,12 +467,14 @@ interface IDIVAOracleTellor {
     function getOwnershipContract() external view returns (address);
 
     /**
-     * @notice Returns the activation delay in seconds (3 days = 259'200 seconds).
+     * @notice Returns the activation delay in seconds.
+     * Hard-coded to 3 days (= 259'200 seconds).
      */
     function getActivationDelay() external pure returns (uint256);
 
     /**
-     * @notice Function to return the query data and Id for a given poolId.
+     * @notice Function to return the query data and Id for a given poolId
+     * which are required for reporting values to the Tellor contract.
      * @param _poolId The Id of the pool.
      */
     function getQueryDataAndId(
