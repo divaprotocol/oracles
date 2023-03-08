@@ -5,8 +5,8 @@ const { parseUnits } = require("@ethersproject/units");
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const {
   calcSettlementFee,
-  encodeToOracleValue,
-  decodeTellorValue,
+  encodeOracleValue,
+  decodeOracleValue,
   getQueryDataAndId,
   getLastBlockTimestamp,
   setNextBlockTimestamp,
@@ -264,7 +264,7 @@ describe("DIVAOracleTellor", () => {
         // ---------
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -288,7 +288,7 @@ describe("DIVAOracleTellor", () => {
           queryId,
           tellorDataTimestamp
         );
-        const formattedTellorValue = decodeTellorValue(tellorValue);
+        const formattedTellorValue = decodeOracleValue(tellorValue);
         expect(tellorDataTimestamp).to.eq(lastBlockTimestamp);
         expect(formattedTellorValue[0]).to.eq(finalReferenceValue);
         expect(formattedTellorValue[1]).to.eq(collateralToUSDRate);
@@ -336,7 +336,7 @@ describe("DIVAOracleTellor", () => {
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -440,7 +440,7 @@ describe("DIVAOracleTellor", () => {
         // First reporter submission prior to expiration
         finalReferenceValue1 = parseUnits("42000");
         collateralToUSDRate1 = parseUnits("1.14");
-        oracleValue1 = encodeToOracleValue(
+        oracleValue1 = encodeOracleValue(
           finalReferenceValue1,
           collateralToUSDRate1
         );
@@ -453,7 +453,7 @@ describe("DIVAOracleTellor", () => {
         // Second reporter submission after expiration
         finalReferenceValue2 = parseUnits("42500");
         collateralToUSDRate2 = parseUnits("1.15");
-        oracleValue2 = encodeToOracleValue(
+        oracleValue2 = encodeOracleValue(
           finalReferenceValue2,
           collateralToUSDRate2
         );
@@ -494,7 +494,7 @@ describe("DIVAOracleTellor", () => {
         // First reporter submission
         finalReferenceValue1 = parseUnits("42000");
         collateralToUSDRate1 = parseUnits("1.14");
-        oracleValue1 = encodeToOracleValue(
+        oracleValue1 = encodeOracleValue(
           finalReferenceValue1,
           collateralToUSDRate1
         );
@@ -511,7 +511,7 @@ describe("DIVAOracleTellor", () => {
         // Second reporter submission
         finalReferenceValue2 = parseUnits("42500");
         collateralToUSDRate2 = parseUnits("1.15");
-        oracleValue2 = encodeToOracleValue(
+        oracleValue2 = encodeOracleValue(
           finalReferenceValue2,
           collateralToUSDRate2
         );
@@ -551,7 +551,7 @@ describe("DIVAOracleTellor", () => {
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -625,7 +625,7 @@ describe("DIVAOracleTellor", () => {
         // Report value to tellor playground
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -730,7 +730,7 @@ describe("DIVAOracleTellor", () => {
         // Report value to tellor playground with collateralToUSDRate = 0
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("0");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -826,7 +826,7 @@ describe("DIVAOracleTellor", () => {
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -876,7 +876,7 @@ describe("DIVAOracleTellor", () => {
 
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -949,7 +949,7 @@ describe("DIVAOracleTellor", () => {
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -1048,7 +1048,7 @@ describe("DIVAOracleTellor", () => {
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -1158,7 +1158,7 @@ describe("DIVAOracleTellor", () => {
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -1282,7 +1282,7 @@ describe("DIVAOracleTellor", () => {
         // Prepare value submission to tellorPlayground
         finalReferenceValue = parseUnits("42000");
         collateralToUSDRate = parseUnits("1.14");
-        oracleValue = encodeToOracleValue(
+        oracleValue = encodeOracleValue(
           finalReferenceValue,
           collateralToUSDRate
         );
@@ -1381,7 +1381,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground for first pool
       const finalReferenceValue1 = parseUnits("42000");
       const collateralToUSDRate1 = parseUnits("1.14");
-      const oracleValue1 = encodeToOracleValue(
+      const oracleValue1 = encodeOracleValue(
         finalReferenceValue1,
         collateralToUSDRate1
       );
@@ -1409,7 +1409,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground for second pool
       const finalReferenceValue2 = parseUnits("43000");
       const collateralToUSDRate2 = parseUnits("1.24");
-      const oracleValue2 = encodeToOracleValue(
+      const oracleValue2 = encodeOracleValue(
         finalReferenceValue2,
         collateralToUSDRate2
       );
@@ -1570,7 +1570,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       finalReferenceValue = parseUnits("42000");
       collateralToUSDRate = parseUnits("1.14");
-      oracleValue = encodeToOracleValue(
+      oracleValue = encodeOracleValue(
         finalReferenceValue,
         collateralToUSDRate
       );
@@ -1707,7 +1707,7 @@ describe("DIVAOracleTellor", () => {
 
       finalReferenceValue = parseUnits("42000");
       collateralToUSDRate = parseUnits("1.14");
-      oracleValue = encodeToOracleValue(
+      oracleValue = encodeOracleValue(
         finalReferenceValue,
         collateralToUSDRate
       );
@@ -2227,7 +2227,7 @@ describe("DIVAOracleTellor", () => {
 
       finalReferenceValue = parseUnits("42000");
       collateralToUSDRate = parseUnits("1.14");
-      oracleValue = encodeToOracleValue(
+      oracleValue = encodeOracleValue(
         finalReferenceValue,
         collateralToUSDRate
       );
@@ -2730,7 +2730,7 @@ describe("DIVAOracleTellor", () => {
       // Prepare value submission to tellorPlayground
       finalReferenceValue = parseUnits("42000");
       collateralToUSDRate = parseUnits("1.14");
-      oracleValue = encodeToOracleValue(
+      oracleValue = encodeOracleValue(
         finalReferenceValue,
         collateralToUSDRate
       );

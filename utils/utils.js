@@ -4,14 +4,14 @@ const util = require("util");
 const fs = require("fs");
 const child_process = require("child_process");
 
-const encodeToOracleValue = (finalReferenceValue, collateralToUSDRate) => {
+const encodeOracleValue = (finalReferenceValue, collateralToUSDRate) => {
   return new ethers.utils.AbiCoder().encode(
     ["uint256", "uint256"],
     [finalReferenceValue, collateralToUSDRate]
   );
 };
 
-const decodeTellorValue = (tellorValue) => {
+const decodeOracleValue = (tellorValue) => {
   return new ethers.utils.AbiCoder().decode(
     ["uint256", "uint256"],
     tellorValue
@@ -126,8 +126,8 @@ const getCurrentTimestampInSeconds = () => {
 };
 
 exports.advanceTime = advanceTime;
-exports.encodeToOracleValue = encodeToOracleValue;
-exports.decodeTellorValue = decodeTellorValue;
+exports.encodeOracleValue = encodeOracleValue;
+exports.decodeOracleValue = decodeOracleValue;
 exports.getQueryDataAndId = getQueryDataAndId;
 exports.calcSettlementFee = calcSettlementFee;
 exports.getExpiryInSeconds = getExpiryInSeconds;

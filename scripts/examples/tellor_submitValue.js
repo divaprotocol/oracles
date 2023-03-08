@@ -22,8 +22,8 @@ const {
 
 const {
   calcSettlementFee,
-  encodeToOracleValue,
-  decodeTellorValue,
+  encodeOracleValue,
+  decodeOracleValue,
   getQueryDataAndId,
 } = require("../../utils/utils");
 
@@ -76,8 +76,8 @@ const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
 
   // Estimate fee claim on DIVA contract after set final reference value
   const [settlementFee] = calcSettlementFee(
-    feesParams.settlementFee,
     poolParams.collateralBalance,
+    feesParams.settlementFee,
     decimals
   );
   console.log("Settlement fee: ", settlementFee.toString());
@@ -94,7 +94,9 @@ async function main() {
   } else if (tellorVersion == TELLOR_VERSION.ACTUAL) {
     tellorAddress = TELLOR_ADDRESS[network];
   } else {
-    throw Error("Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL");
+    throw Error(
+      "Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL"
+    );
   }
   const divaAddress = DIVA_ADDRESS[network];
   const divaOracleTellorAddress =
@@ -148,7 +150,7 @@ async function main() {
   // Prepare values and submit to tellor contract
   const finalReferenceValue = parseUnits("25000");
   const collateralToUSDRate = parseUnits("1.00");
-  const oracleValue = encodeToOracleValue(
+  const oracleValue = encodeOracleValue(
     finalReferenceValue,
     collateralToUSDRate
   );
@@ -168,7 +170,7 @@ async function main() {
     tellorVersion == TELLOR_VERSION.PLAYGROUND
       ? await tellor.values(queryId, tellorDataTimestamp)
       : await tellor.getCurrentValue(queryId);
-  const formattedTellorValue = decodeTellorValue(tellorValue);
+  const formattedTellorValue = decodeOracleValue(tellorValue);
 
   // Log relevant information
   console.log("DIVA address: ", diva.address);
