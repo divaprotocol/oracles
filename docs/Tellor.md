@@ -25,7 +25,7 @@ The key benefits of using the Tellor adapter for outcome reporting include:
 
 These advantages provide users with a high level of confidence in correct settlement. 
 
-<!-- The following sections provide an overview of the Tellor protocol, how the Tellor adapter works, and how it can be used. -->
+This documentation provides an overview of the Tellor Protocol, how the Tellor adapter works, and how it can be used in conjunction with DIVA Protocol. It is assumed that the reader has a basic understanding of [DIVA Protocol][diva-protocol-docs].
 
 >**Important:** Users should familiarize themselves with the potential risks and the corresponding mitigation measures outlined in the ["Risks and Mitigants"](#risks-and-mitigants) section prior to utilizing the Tellor adapter.
 
@@ -47,18 +47,16 @@ The interplay is visualized below. For the sake of simplicity, the reward claim 
 
 ![Tellor-v2 drawio (1)](https://user-images.githubusercontent.com/37043174/223677771-9c76e8a2-ee63-437e-8192-23bf9d5bd113.png)
 
-This documentation provides an overview of the Tellor protocol, how the Tellor adapter works, and how it can be used. It assumes that the reader is familiar with the mechanics of [DIVA Protocol][diva-protocol-docs].
-
 ## Contract addresses
 
 Relevant contract addresses and subgraph urls are summarized below, grouped by network:
 
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
-| Tellor contract              | Address of the contract where values are reported to and TRB is staked.                                | 
+| Tellor contract              | Address of the contract where values are reported and TRB is staked.                                | 
 | Tellor adapter contract    | Address of the contract that connects the Tellor contract with the DIVA contract and is used as data provider when creating a pool.                                |
 | DIVA contract    | Address of the DIVA contract.                                |
-| TRB token                  | Address of the TRB token needs to be staked in order to be able to report values to the Tellor contract.                                | 
+| TRB token                  | Address of the TRB token that needs to be staked in order to report values to the Tellor contract.                                | 
 | Tellor governance contract | Address of the contract that handles Tellor disputes.                                | 
 | DIVA subgraph              | Subgraph url containing DIVA pool related information. |   
 
@@ -120,7 +118,7 @@ Note that depositing a stake or or disputing a value requires prior approval for
 
 The Tellor adapter contract implements an owner which is inherited from the DIVA Ownership contract, which is the same contract that DIVA Protocol inherits their owner from. The owner is authorized to update the maximum amount of DIVA rewards that a reporter can receive, denominated in USD, as well as the recipient of any excess fee. 
 
-The update process is the same as in DIVA Protocol. The owner initiates an update of the relevant value, which only becomes effective after a pre-defined delay. In the Tellor adapter contract, this delay is fixed at 3 days and cannot be modified. However, during this delay period, the contract owner has the ability to cancel the update if needed.
+The update process is the same as in DIVA Protocol. The owner initiates an update of the relevant value, which only becomes effective after a pre-defined delay. In the Tellor adapter contract, this delay is fixed at 3 days and cannot be modified. During this delay period, the contract owner has the ability to revoke the update if needed.
 
 ## Upgradeability
 
@@ -128,28 +126,24 @@ The Tellor adapter contract is not upgradeable.
 
 # Tellor contract
 
-The Tellor contract is where reporters submit their values to be used in DIVA Protocol. In this section, we will provide an overview of the Tellor protocol is and explain how users can report values to the Tellor contract.
+The Tellor contract is where reporters submit their values to be used in DIVA Protocol. In this section, we will provide an overview of the Tellor Protocol and explain how users can report values to it.
 
 <!-- All the details about submitting DIVA related values to the Tellor contract are outlined in the [Tellor documentation][tellor-docs]. The easiest and safest way to obtain the right `queryId` for submitting values to Tellor is by using the [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract. -->
 
-## What is Tellor protocol
+## What is Tellor Protocol
 
 Tellor is a decentralized oracle protocol that allows smart contracts on EVM chains to securely and reliably access data from off-chain sources, including data from other chains. It uses a decentralized network of stakers to provide this data, and incentivizes them with the Tellor token (TRB) to maintain the integrity of the network.
 
-## How Tellor protocol works
+## How Tellor Protocol works
 
-To participate in the Tellor protocol as a reporter, users must stake TRB tokens. The amount of TRB required for one stake is equal to the minimum of $1'500 or 100 TRB. This allows a reporter to submit one value every 12 hours. If a user wishes to submit more values during the same period, they must stake additional TRB tokens in proportion to the number of values they wish to submit. For example, if a user wants to submit two values every 12 hours, they must stake twice the amount of TRB required for one stake.
+To participate in the Tellor Protocol as a reporter, users must stake TRB tokens. The amount of TRB required for one stake is equal to the minimum of $1'500 or 100 TRB. This allows a reporter to submit one value every 12 hours. If a user wishes to submit more values during the same period, they must stake additional TRB tokens in proportion to the number of values they wish to submit. For example, if a user wants to submit two values every 12 hours, they must stake twice the amount of TRB required for one stake.
 
 Assuming that the value of TRB is at least $15 (corresponding to 100 TRB required for one stake), the reporting process is as follows:
 * Reporters submit values to a specific key, also known as queryId. Only one value can be reported per queryId and block.
-* If a reported value is deemed incorrect, it can be disputed for a maximum of 12 hours from the time of reporting. Disputers pay a dispute fee starting at 10 TRB, which doubles up to a maximum of 100 TRB with each round of dispute for a given queryId.
-* If a value gets disputed, it is removed from the key-value mapping and enters Tellor's [dispute resolution process](#disputes), which takes at least 2 days. The reporting process continues uninterrupted, allowing other reporters to submit valid values.
+* If a reported value is deemed incorrect, anyone can dispute it for a maximum of 12 hours from the time of reporting. Disputers pay a dispute fee starting at 10 TRB, which doubles up to a maximum of 100 TRB with each round of dispute for a given queryId.
+* Once a dispute is submitted, the potentially malicious reporter who submitted the value is placed in a locked state for the duration of the vote. For the next two days, TRB holders vote on the validity of the reported value. All TRB holders have an incentive to maintain an honest oracle and can vote on the dispute. The disputed value is removed from the key-value store and the reporting process continues uninterrupted, allowing other reporters to submit valid values. For more information on Tellor's dispute process, refer to the official [Tellor docs](https://docs.tellor.io/tellor/disputing-data/introduction). 
 
-To ensure the reliability of reported data, only data reports that have remained undisputed for a specified duration (up to 12 hours) should be considered valid. The Tellor adapter selects a maximum duration of 12 hours and utilizes the earliest value that satisfies this criterion as the settlement value, ignoring any subsequent values that also meet the condition.
-
-## Disputes
-
-Any party can challenge data submissions of any reporters when a value is placed on-chain. A challenger must submit a dispute fee to each challenge. Once a challenge is submitted, the potentially malicious reporter who submitted the value is placed in a locked state for the duration of the vote. For the next two days, TRB holders vote on the validity of the reported value. All TRB holders have an incentive to maintain an honest oracle and can vote on the dispute. For more information, refer to the official [Tellor docs](https://docs.tellor.io/tellor/disputing-data/introduction).
+To ensure the reliability of reported data, Tellor recommends that only data reports that have remained undisputed for a specified duration (up to 12 hours) should be considered valid. The Tellor adapter implements the maximum duration of 12 hours and utilizes the earliest value that satisfies this criterion as the settlement value, ignoring any subsequent values that also meet the condition.
 
 # Tellor adapter contract
 
@@ -170,7 +164,7 @@ Refer to the [reporting software](#reporting-software) section to learn more abo
 
 ## Supported data feeds
 
-The Tellor protocol has the capability to handle any type of data. This universality extends to the Tellor adapter, which can be utilized with any data feed. To ensure high coverage by reporters, it's suggested to check with the Tellor community which data feeds are well-established and which may need extra support and communication.
+The Tellor Protocol has the capability to handle any type of data. This universality extends to the Tellor adapter, which can be utilized with any data feed. To ensure high coverage by reporters, it's suggested to check with the Tellor community which data feeds are well-established and which may need extra support and communication.
 
 ## Reporting software
 
@@ -790,7 +784,7 @@ Using the Tellor adapter as data provider for DIVA pools comes with the followin
 
 
 # Links
-* [Tellor protocol website][tellor-protocol]
+* [Tellor Protocol website][tellor-protocol]
 * [Tellor documentation regarding DIVA Protocol query type][tellor-docs]
 * [DIVA Protocol documentation][diva-protocol-docs]
 
