@@ -231,6 +231,9 @@ describe("DIVAOracleTellor", () => {
     // Set tipping amounts
     tippingAmount1 = parseUnits("1000", tippingTokenDecimals);
     tippingAmount2 = parseUnits("2000", tippingTokenDecimals);
+    expect(tippingAmount1).to.not.eq(0);
+    expect(tippingAmount2).to.not.eq(0);
+    expect(tippingAmount2).to.not.eq(tippingAmount1);
 
     // Approve tipping tokens to DIVAOracleTellor with address
     await tippingToken1
@@ -1680,9 +1683,6 @@ describe("DIVAOracleTellor", () => {
       expect(tipAmountsBefore[1]).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
-
-      expect(tippingAmount1).to.not.eq(0);
-      expect(tippingAmount2).to.not.eq(0);
 
       // ---------
       // Act: Add batch tips
