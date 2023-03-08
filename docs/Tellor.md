@@ -45,7 +45,7 @@ The DIVA Tellor integration is an interplay between three smart contracts:
 
 The interplay is visualized below. For the sake of simplicity, the reward claim process has been omitted from the illustration.
 
-![Tellor-v2 drawio (1)](https://user-images.githubusercontent.com/37043174/223348671-6072d550-ad07-4dff-aafa-99b7d048c53e.png)
+![Tellor-v2 drawio (1)](https://user-images.githubusercontent.com/37043174/223677771-9c76e8a2-ee63-437e-8192-23bf9d5bd113.png)
 
 This documentation will focus on describing the process of reporting values to the Tellor contract and passing them on into DIVA Protocol using the Tellor adapter. To learn more about DIVA Protocol and the settlement process, please refer to their official [DIVA Protocol documentation][diva-protocol-docs].
 
