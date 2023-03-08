@@ -47,7 +47,7 @@ The interplay is visualized below. For the sake of simplicity, the reward claim 
 
 ![Tellor-v2 drawio (1)](https://user-images.githubusercontent.com/37043174/223677771-9c76e8a2-ee63-437e-8192-23bf9d5bd113.png)
 
-This documentation will focus on describing the process of reporting values to the Tellor contract and passing them on into DIVA Protocol using the Tellor adapter. To learn more about DIVA Protocol and the settlement process, please refer to their official [DIVA Protocol documentation][diva-protocol-docs].
+This documentation provides an overview of the Tellor protocol, how the Tellor adapter works, and how it can be used. It assumes that the reader is familiar with the mechanics of [DIVA Protocol][diva-protocol-docs].
 
 ## Contract addresses
 
