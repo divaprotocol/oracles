@@ -21,7 +21,7 @@ const {
 } = require("../../utils/constants");
 
 const {
-  calcFee,
+  calcSettlementFee,
   encodeToOracleValue,
   decodeTellorValue,
   getQueryDataAndId,
@@ -75,7 +75,7 @@ const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
   const decimals = await collateralTokenContract.decimals();
 
   // Estimate fee claim on DIVA contract after set final reference value
-  const settlementFee = calcFee(
+  const [settlementFee] = calcSettlementFee(
     feesParams.settlementFee,
     poolParams.collateralBalance,
     decimals

@@ -32,16 +32,25 @@ const getQueryDataAndId = (poolId, divaAddress, chainId) => {
   return [queryData, queryId];
 };
 
-// Fee in collateral token decimals
-const calcFee = (
-  fee, // integer expressed with 18 decimals
-  collateralBalance, // integer expressed with collateral token decimals
-  collateralTokenDecimals
+const calcSettlementFee = (
+  collateralBalance, // Basis for fee calcuation
+  fee, // Settlement fee percent expressed as an integer with 18 decimals
+  collateralTokenDecimals,
+  collateralToUSDRate = parseUnits("0") // USD value of one unit of collateral token
 ) => {
-  const SCALING = parseUnits("1", 18 - collateralTokenDecimals);
-  const UNIT = parseUnits("1");
+  // Fee amount in collateral token decimals
+  feeAmount = collateralBalance.mul(fee).div(parseUnits("1"));
 
-  return fee.mul(collateralBalance).mul(SCALING).div(UNIT).div(SCALING);
+  // Fee amount in USD expressed as integer with 18 decimals
+  feeAmountUSD = feeAmount
+    .mul(parseUnits("1", 18 - collateralTokenDecimals))
+    .mul(collateralToUSDRate)
+    .div(parseUnits("1"));
+
+  return [
+    feeAmount, // expressed as integer with collateral token decimals
+    feeAmountUSD, // expressed as integer with 18 decimals
+  ];
 };
 
 const getExpiryInSeconds = (offsetInSeconds) => {
@@ -120,7 +129,7 @@ exports.advanceTime = advanceTime;
 exports.encodeToOracleValue = encodeToOracleValue;
 exports.decodeTellorValue = decodeTellorValue;
 exports.getQueryDataAndId = getQueryDataAndId;
-exports.calcFee = calcFee;
+exports.calcSettlementFee = calcSettlementFee;
 exports.getExpiryInSeconds = getExpiryInSeconds;
 exports.getLastBlockTimestamp = getLastBlockTimestamp;
 exports.setNextBlockTimestamp = setNextBlockTimestamp;
