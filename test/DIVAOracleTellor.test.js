@@ -166,11 +166,10 @@ describe("DIVAOracleTellor", () => {
       divaAddress,
       chainId
     );
-    const [queryDataFT, queryIdFT] = await divaOracleTellor.getQueryDataAndId(
-      latestPoolId
-    );
-    expect(queryData).to.eq(queryDataFT);
-    expect(queryId).to.eq(queryIdFT);
+    const [queryDataFromContract, queryIdFromContract] =
+      await divaOracleTellor.getQueryDataAndId(latestPoolId);
+    expect(queryData).to.eq(queryDataFromContract);
+    expect(queryId).to.eq(queryIdFromContract);
 
     // Deploy tipping tokens
     tippingToken1 = await erc20DeployFixture(
