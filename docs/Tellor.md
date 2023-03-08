@@ -16,7 +16,7 @@ This documentation outlines the functionality of the Tellor adapter for [DIVA Pr
 
 # Introduction
 
-Derivative contracts created on DIVA Protocol require one data input following expiration. The Tellor adapter offers DIVA Protocol users a decentralized oracle solution for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses) as the data provider when creating a pool.
+Derivative contracts created on DIVA Protocol require one data input following expiration. The [Tellor adapter](https://github.com/divaprotocol/oracles/blob/update-documentation/contracts/DIVAOracleTellor.sol) offers DIVA Protocol users a decentralized oracle solution for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses) as the data provider when creating a pool.
 
 The key benefits of using the Tellor adapter for outcome reporting include:
 - No single point of failure as outcome reporting is decentralized and permissionless.
@@ -41,7 +41,7 @@ The DIVA Tellor integration is an interplay between three smart contracts:
 
 * **Tellor contract:** The contract where reporters submit their values.
 * **DIVA contract:** The contract that expects outcome reporting for expired pools.
-* **Tellor adapter contract:** The contract that passes valid values from Tellor contract and to the DIVA contract for settlement.
+* **Tellor adapter contract:** The contract that passes valid values from Tellor contract to the DIVA contract for settlement.
 
 The interplay is visualized below. For the sake of simplicity, the reward claim process has been omitted from the illustration.
 
