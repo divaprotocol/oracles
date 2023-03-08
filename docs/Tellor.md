@@ -1,6 +1,6 @@
 # Tellor adapter for DIVA Protocol v1 - Documentation
 
-This documentation outlines the functionality of the Tellor adapter for [DIVA Protocol v1](https://github.com/divaprotocol/diva-contracts).
+This documentation outlines the functionality of the Tellor adapter for [DIVA Protocol v1][diva-protocol-docs].
 
 ## Table of contents
 
@@ -36,7 +36,7 @@ This documentation outlines the functionality of the Tellor adapter for [DIVA Pr
 
 # Introduction
 
-Derivative contracts created on DIVA Protocol require one data input following expiration. The [Tellor adapter][tellor-adapter-contract] offers DIVA Protocol users a decentralized oracle solution for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool.
+Derivative contracts created on DIVA Protocol require one data input following expiration. The [Tellor adapter][tellor-adapter-contract] offers DIVA Protocol users a **decentralized oracle solution** for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool.
 
 The key benefits of using the Tellor adapter for outcome reporting include:
 - No single point of failure as outcome reporting is decentralized and permissionless.
@@ -53,8 +53,8 @@ This documentation provides an overview of the Tellor Protocol, how the Tellor a
 
 In this documentation, the following terms will be used interchangeably to refer to the same concepts:
 * Derivative contract, contingent pool, and pool
-* Protocol, smart contract, contract
-* Contract owner and DIVA owner as former inherits the owner from the same contract as DIVA Protocol
+* Protocol, smart contract, and contract
+* Contract owner, DIVA owner, and owner; DIVA owner because the Tellor adapter inherits the owner from the same contract as DIVA Protocol
 
 # System overview
 
@@ -70,7 +70,7 @@ The interplay is visualized below. For the sake of simplicity, the reward claim 
 
 ## Contract addresses and subgraphs
 
-Relevant contract addresses and subgraph urls are summarized below, grouped by network:
+Relevant contract addresses and subgraphs are summarized below, grouped by network:
 
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
@@ -137,9 +137,9 @@ Note that depositing a stake or or disputing a value requires prior approval for
 
 ## Ownership and privileges
 
-The Tellor adapter contract implements an owner which is inherited from the DIVA Ownership contract, which is the same contract that DIVA Protocol inherits their owner from. The owner is authorized to update the maximum amount of DIVA rewards that a reporter can receive, denominated in USD, as well as the recipient of any excess fee. 
+The Tellor adapter contract implements an owner which is inherited from the DIVA Ownership contract, which is the same contract that DIVA Protocol inherits their owner from. The owner is authorized to [update the maximum amount of DIVA rewards](#updatemaxfeeamountusd) that a reporter can receive, denominated in USD, as well as the [recipient of any excess fee](#updateexcessfeerecipient). 
 
-The update process is the same as in DIVA Protocol. The owner initiates an update of the relevant value, which only becomes effective after a pre-defined delay. In the Tellor adapter contract, this delay is fixed at 3 days and cannot be modified. During this delay period, the contract owner has the ability to revoke the update if needed.
+The update process is the same as in DIVA Protocol. The owner initiates an update of the relevant value, which only becomes effective after a pre-defined delay. In the Tellor adapter contract, this delay is fixed at 3 days and cannot be modified. During this period, the contract owner has the ability to revoke the update if needed.
 
 ## Upgradeability
 
@@ -147,7 +147,7 @@ The Tellor adapter contract is not upgradeable.
 
 # Tellor contract
 
-The Tellor contract is where reporters submit their values to be used in DIVA Protocol. In this section, we will provide an overview of the Tellor Protocol and explain how users can report values to it.
+The Tellor contract is where reporters submit their values to be used as the final reference value in DIVA Protocol. In this section, we will provide an overview of the Tellor Protocol and explain how users can report values to it.
 
 ## What is Tellor Protocol
 
@@ -166,16 +166,16 @@ To ensure the reliability of reported data, Tellor recommends that only data rep
 
 ## How to report values to Tellor Protocol
 
-All the details about submitting DIVA related values to the Tellor contract are outlined in the [Tellor documentation][tellor-docs]. The easiest and safest way to obtain the right `queryData` and `queryId` for submitting values to the Tellor contract is by using the [`getQueryDataAndId`](#getquerydataandid) inside the Tellor adapter contract. Refer to the [Tellor adapter test script](https://github.com/divaprotocol/oracles/blob/main/test/DIVAOracleTellor.test.js) for concrete implementation examples.
+For technical details on how to submit DIVA related values to the Tellor contract, refer to the corresponding [Tellor documentation][tellor-docs]. The easiest and safest way to obtain the right `queryData` and `queryId` for submitting values to the Tellor contract is by using the [`getQueryDataAndId`](#getquerydataandid) function inside the Tellor adapter contract. Refer to the [Tellor adapter test script](https://github.com/divaprotocol/oracles/blob/main/test/DIVAOracleTellor.test.js) for code examples and explore existing [reporting software](#reporting-software) for further assistance.
 
 # Tellor adapter contract
 
-The [Tellor adapter contract][tellor-adapter-contract] serves as a bridge that retrieves values reported to the Tellor contract and forwards them to the DIVA Protocol for settlement. In this section, we will provide an overview how the Tellor adapter can be used for outcome reporting in DIVA Protocol.
+The [Tellor adapter contract][tellor-adapter-contract] serves as a bridge that retrieves values reported to the Tellor contract and forwards them to the DIVA contract for settlement. In this section, we will provide an overview how the Tellor adapter can be used for outcome reporting in DIVA Protocol.
 
 ## How to use the Tellor adapter
 
 Using the Tellor adapter for outcome reporting in DIVA Protocol is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool. The process of reporting outcomes for pools that use the Tellor adapter as the data provider consists of the following four elements: 
-1. **Monitoring:** To identify expired pools that require reporting, Tellor reporters monitor the [DIVA subgraph](#contract-addresses-and-subgraphs) or use DIVA Protocol's [`getPoolParamters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function.
+1. **Monitoring:** To identify expired pools that require reporting, Tellor reporters monitor the [DIVA subgraph](#contract-addresses-and-subgraphs) or use DIVA Protocol's [`getPoolParameters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function.
 
 1. **Reporting to Tellor contract:** When a pool expires, reporters submit their values to the Tellor contract during the applicable submission period, which lasts between 3 and 15 days. It's important to note that the effective submission period is shorter by the 12-hour dispute period. This means that any submissions made within the last 12 hours of the submission period will not be accepted due to the dispute delay that has to be respected.
 
