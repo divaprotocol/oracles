@@ -1415,12 +1415,12 @@ describe("DIVAOracleTellor", () => {
       // Arrange: Confirm params and submit values to tellorPlayground
       // ---------
 
-      // Prepare value submission to tellorPlayground
-      finalReferenceValue = parseUnits("42000");
-      collateralToUSDRate = parseUnits("1.14");
-      oracleValue = encodeOracleValue(
-        finalReferenceValue,
-        collateralToUSDRate
+      // Prepare value submission to tellorPlayground for first pool
+      const finalReferenceValue1 = parseUnits("42000");
+      const collateralToUSDRate1 = parseUnits("1.14");
+      const oracleValue1 = encodeOracleValue(
+        finalReferenceValue1,
+        collateralToUSDRate1
       );
 
       poolId1 = latestPoolId;
@@ -1433,14 +1433,22 @@ describe("DIVAOracleTellor", () => {
       await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
       await tellorPlayground
         .connect(reporter)
-        .submitValue(queryId, oracleValue, 0, queryData);
+        .submitValue(queryId, oracleValue1, 0, queryData);
 
       // Calculate settlement fee expressed in collateral token for `poolId1`
       const [settlementFeeAmount1] = calcSettlementFee(
         poolParams.collateralBalance,
         feesParams.settlementFee,
         collateralTokenDecimals,
-        collateralToUSDRate
+        collateralToUSDRate1
+      );
+
+      // Prepare value submission to tellorPlayground for second pool
+      const finalReferenceValue2 = parseUnits("43000");
+      const collateralToUSDRate2 = parseUnits("1.24");
+      const oracleValue2 = encodeOracleValue(
+        finalReferenceValue2,
+        collateralToUSDRate2
       );
 
       // Create second expired contingent pool that uses Tellor as the data provider
@@ -1463,14 +1471,14 @@ describe("DIVAOracleTellor", () => {
       await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
       await tellorPlayground
         .connect(reporter)
-        .submitValue(queryId, oracleValue, 0, queryData);
+        .submitValue(queryId, oracleValue2, 0, queryData);
 
       // Calculate settlement fee expressed in collateral token for `poolId2`
       const [settlementFeeAmount2] = calcSettlementFee(
         poolParams.collateralBalance,
         feesParams.settlementFee,
         collateralTokenDecimals,
-        collateralToUSDRate
+        collateralToUSDRate2
       );
 
       // ---------
@@ -1490,11 +1498,11 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Check that finalReferenceValue and statusFinalReferenceValue are updated in DIVA Protocol
       const poolParams1 = await diva.getPoolParameters(poolId1);
-      expect(poolParams1.finalReferenceValue).to.eq(finalReferenceValue);
+      expect(poolParams1.finalReferenceValue).to.eq(finalReferenceValue1);
       expect(poolParams1.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
 
       const poolParams2 = await diva.getPoolParameters(poolId2);
-      expect(poolParams2.finalReferenceValue).to.eq(finalReferenceValue);
+      expect(poolParams2.finalReferenceValue).to.eq(finalReferenceValue2);
       expect(poolParams2.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
 
       // Check that the fee claim was allocated to the reporter in DIVA Protocol
@@ -1672,6 +1680,9 @@ describe("DIVAOracleTellor", () => {
       expect(tipAmountsBefore[1]).to.eq(0);
       expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
       expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
+
+      expect(tippingAmount1).to.not.eq(0);
+      expect(tippingAmount2).to.not.eq(0);
 
       // ---------
       // Act: Add batch tips
