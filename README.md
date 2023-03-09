@@ -2,36 +2,16 @@
 
 Scripts:
 
-1. `yarn install` to install dependencies
-1. `yarn compile` to compile contracts
-1. `yarn hardhat test` to run tests (includes compilation of contracts)
+1. `yarn` to install dependencies
+1. `yarn c` to compile contracts
+1. `yarn t` to run tests (includes compilation of contracts). Example command for executing a specific test file, here `test/DIVAOracleTellor.test.js`: `yarn hardhat test test/DIVAOracleTellor.test.js`
 
-If you have `node` version 17 or higher installed, you may need to downgrade it to 16.13.0, for instance, to make it work.
+If your installed `node` version is 17 or higher, you may need to downgrade it to version 16.13.0, for instance, in order to ensure proper functionality. Below an example to downgrade the version using [`nvm`](https://github.com/nvm-sh/nvm):
 
 1. `node --version` to check the node version
 2. `nvm use 16.13.0` to downgrade the node version
 
-If you don't have `nvm` installed yet, check out their [repo](https://github.com/nvm-sh/nvm).
-
 # Table of Contents
-
-1.  [DIVA Oracle Tellor](#diva-oracle-tellor)
-1.  [DIVA Porter module](#diva-porter-module)
-
-# DIVA Oracle Tellor
-
-## How to run test
-
-`yarn hardhat test test/DIVAOracleTellor.test.js` to run the tests in `test/DIVAOracleTellor.test.js`
-
-## DIVA oracle data specifications
-
-| Last updated on | Key changes                                                                                                                                                                                                                                                                    | Updated by   |
-| :-------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------- |
-| 28 March 2022   | Renamings and re-orderings as per [smart contract release notes](https://github.com/divaprotocol/diva-contracts/releases/tag/v0.9.0); ABIs updated; `createdAt` field added in subgraph to indicate time of pool creation; whitelist and DIVA smart contract addresses updated | @Walodja1987 |
-| 9 February 2022 | Additional information added                                                                                                                                                                                                                                                   | @Walodja1987 |
-
-### Table of DIVA oracle
 
 1.  [Intro](##intro)
 1.  [DIVA queries](##diva-queries)
@@ -48,30 +28,79 @@ If you don't have `nvm` installed yet, check out their [repo](https://github.com
     1.  [Whitelist subgraph](##whitelist-subgraph)
 1.  [DIVA protocol addresses](##diva-protocol-addresses)
 
-## Intro
+# Intro
 
-[DIVA Protocol](https://github.com/divaprotocol/diva-contracts) is a smart contract that allows its users to create derivative contracts with a pre-defined expiration time on virtually any metric. To determine the payoffs of the long and short side of the contract, one oracle input is required following contract expiration. In DIVA Protocol, the data provider is represented by an Ethereum address and set at the time of product creation. 
+[DIVA Protocol](https://github.com/divaprotocol/diva-contracts) is a smart contract that allows its users to create derivative contracts on virtually any metric with pre-defined expiration times. To calculate the payouts for the long and short positions of the contract, an oracle input is required following the contract's expiration. In DIVA Protocol, the responsibility of outcome reporting is assigned to an Ethereum address at the time of the derivative contract's creation, which can be any EOA or smart contract.
 
-This document describes how data providers can access the relevant data and interact with the DIVA Protocol to submit values. This document provides general information that is applicable to all types of oracles. Oracle specific information is available in the `/docs` directory.
+This repository contains a collection of smart contract-based oracle adapters that can be easily plugged into DIVA Protocol by simply providing the corresponding contract address as the data provider when creating a derivative contract. 
 
-Refer to the [DIVA Protocol github](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process) to learn more about the settlement process.
+Audited adapters that can be used:
+
+1.  [Tellor adapter](https://github.com/divaprotocol/oracles/blob/main/contracts/DIVAOracleTellor.sol) (⚠️ pending audit)
+<!-- 1.  [DIVA Porter module](https://github.com/divaprotocol/oracles/blob/main/contracts/DIVAPorterModule.sol) (⚠️ unaudited) -->
+
+>**Important:** DO NOT use unaudited adapters!
+
+This document provides general information about the settlement process in DIVA Protocol and guidance for data providers how to access relevant data. Oracle adapter specific documentation is available in the `/docs` directory.
+
+# Terminology
+
+In this document, the following terms will be used interchangeably to refer to the same concepts:
+* Derivative contract, contingent pool, and pool
+* Protocol, smart contract, and contract
+
+# Settlement process in DIVA Protocol
+
+The goal of the settlement process in DIVA Protocol is to determine the value of the reference asset at the time of expiration and, as a result, the payoffs for short and long position tokens. The settlement process begins immediately after the pool expires and concludes when the final reference value attains "Confirmed" status, at which point position token holders can start redeeming their position tokens.
+
+DIVA Protocol's settlement mechanism includes an optional challenge feature that allows human oracles to correct errors made in the submission of data. For smart contract-based oracles that cannot realistically re-submit data, this feature is typically disabled. As a result, the first value submitted by the oracle to DIVA Protocol determines the payouts and users can start redeeming their position tokens.
+
+DIVA Protocol has two fallback layers:
+
+1. **Fallback data provider:** In the event that the assigned data provider fails to submit a value during the submission window, the fallback data provider will step in. It is important to confirm with the DIVA Protocol community, in which cases users can expect the fallback data provider to report.
+1. **Defaut:** If the fallback data provider also fails to submit a value, the payout will default to `gradient` for the long position and `1-gradient` for the short position token, minus applicable fees. The `gradient` is one of the parameters that determines the shape of the payoff profile and is specified during the creation of the derivative contract.
+
+For more information on DIVA's settlement process, please refer to the official [DIVA Protocol documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process).
 
 ## Function overview
-This overview covers the DIVA smart contract functions that are most relevant for data providers. All other functions can be found in the official [DIVA documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md). 
 
-TODO
+The following overview provides a list of [DIVA Protocol functions](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#function-overview-1) that are most relevant for data providers:
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| **Value submission related functions**                                                                      |                                                                                                                                                             |
+| [`setFinalReferenceValue`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#setfinalreferencevalue)                                       | Function to submit the final value of the reference asset.                                                                                                  |
+| [`challengeFinalReferenceValue`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#challengefinalreferencevalue)                           | Function to challenge the final reference value submitted by the data provider. Only relevant when centralized oracles are used.                                                                             |
+| **Reward related functions**                                                                      |                                                                                                                                                             |
+| [`transferFeeClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#transferfeeclaim)                                                   | Function to transfer a fee claim to another recipient.                                                                                                      |
+| [`claimFee`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#claimfee)                                                                   | Function to claim fee.                                                                                                                                      |
+| **Getter functions**                                                                      |                                                                                                                                                             |
+| [`getPoolParameters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters)                                                 | Function to return the pool parameters for a given pool Id.                                                                                                 |
+| [`getPoolParametersByAddress`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparametersbyaddress)                               | Function to return the pool parameters for a given position token address.                                                                                  |
+| [`getClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getclaim)                                                                   | Function to get the fee claim for a given recipient denominated in a given collateral token.                                                                |
+| [`getTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#gettip)                                                                   | Function to return the amout tipped in collateral token for a given pool.                                                                |
+|[`getFees`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getfees)|Function to return the fees applicable for a given `_indexFees`, which is returned as part of `getPoolParameters`. The settlement fee is the relevant fee for data providers.|
+|[`getSettlementPeriods`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getsettlementperiods)|Function to return the settlement periods applicable for a given `_indexSettlementPeriods`, which is returned as part of `getPoolParameters`.|
+| **Batch functions**                      |                  
+|[`batchSetFinalReferenceValue`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#batchsetfinalreferencevalue)|Batch version of `setFinalReferenceValue`|
+|[`batchChallengeFinalReferenceValue`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#batchchallengefinalreferencevalue)|Batch version of `challengeFinalReferenceValue`|
+| [`batchClaimFee`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#batchclaimfee)                                                         | Batch version of `claimFee` function.                                                                                                                       |
+| [`batchTransferFeeClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#batchtransferfeeclaim)                                         | Batch version of `transferFeeClaim` function.                                                                                                               |
 
 
-## Data request
-The creation event of a derivative contract (also referred to as a "contingent pool" or simply "pool") constitutes a request to a data provider to provide a data point at a pre-defined future point in time. It's the data provider's responsibility to set up the required listeners and notification services to not miss the reporting window.
 
-The recommended way to monitor pools is using the DIVA subgraph, which captures both data stored inside the DIVA smart contract as well as data emitted as part of events. The DIVA subgraph is available on the following networks:
+
+## Data monitoring
+
+The creation of a derivative contract, also referred to as a "contingent pool" or simply "pool", constitutes a request to a data provider to supply a data point at a predetermined future time. It is the responsibility of the data provider to set up the necessary listeners and notification services to not miss the reporting window.
+
+The monitoring pools, we recommend using the DIVA subgraph, which captures both data stored within the DIVA smart contract and data emitted as part of events. The DIVA subgraph is available on the following networks:
 * Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new
+* Sepolia: n/a
 * Polygon: n/a
 * Mainnet: n/a
 * Arbitrum: n/a
 
-Pool information can also be obtained via the `getPoolParameters` smart contract function. However, the returned information is limited to data stored inside the DIVA smart contract and does not include event data. That's why this approach is not described in detail in this document. For more information, refer to the official [DIVA documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md).
+Alternatively, you can use DIVA's [`getPoolParameters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function to access pool information. However, please note that the returned information is limited to the data stored within the DIVA smart contract and does not include event data.
 
 ### DIVA subgraph
 
@@ -658,13 +687,6 @@ function getCollateralToken(
 Whitelisted data providers, data feeds and collateral tokens can also be accessed via the whitelist subgraph.
 
 * Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-goerli
-* Polygon: n/a
-* Mainnet: n/a
-* Arbitrum: n/a
-
-## DIVA protocol addresses
-
-* Goerli: 0x2d941518E0876Fb6042bfCdB403427DC5620b2EC
 * Polygon: n/a
 * Mainnet: n/a
 * Arbitrum: n/a
