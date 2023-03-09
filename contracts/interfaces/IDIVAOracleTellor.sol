@@ -60,6 +60,21 @@ interface IDIVAOracleTellor {
     );
 
     /**
+     * @notice Emitted when the final reference value is set via the
+     * `setFinalReferenceValue` function.
+     * @param poolId The Id of the pool.
+     * @param finalValue Tellor value expressed as an integer with 18 decimals.
+     * @param expiryTime Pool expiry time as a unix timestamp in seconds.
+     * @param timestamp Tellor value timestamp.
+     */
+    event FinalReferenceValueSet(
+        uint256 indexed poolId,
+        uint256 finalValue,
+        uint256 expiryTime,
+        uint256 timestamp
+    );
+
+    /**
      * @notice Emitted when a tip is added via the `addTip` function.
      * @param poolId The Id of the tipped pool.
      * @param tippingToken Tipping token address.
@@ -88,21 +103,6 @@ interface IDIVAOracleTellor {
         address recipient,
         address tippingToken,
         uint256 amount
-    );
-
-    /**
-     * @notice Emitted when the final reference value is set via the
-     * `setFinalReferenceValue` function.
-     * @param poolId The Id of the pool.
-     * @param finalValue Tellor value expressed as an integer with 18 decimals.
-     * @param expiryTime Pool expiry time as a unix timestamp in seconds.
-     * @param timestamp Tellor value timestamp.
-     */
-    event FinalReferenceValueSet(
-        uint256 indexed poolId,
-        uint256 finalValue,
-        uint256 expiryTime,
-        uint256 timestamp
     );
 
     /**
@@ -164,6 +164,13 @@ interface IDIVAOracleTellor {
         uint256 restoredMaxDIVARewardUSD
     );
 
+    // Struct for `batchSetFinalReferenceValue` function input.
+    struct ArgsBatchSetFinalReferenceValue {
+        uint256 poolId;
+        address[] tippingTokens;
+        bool claimDIVAReward;
+    }
+
     // Struct for `batchAddTip` function input.
     struct ArgsBatchAddTip {
         uint256 poolId;
@@ -178,11 +185,11 @@ interface IDIVAOracleTellor {
         bool claimDIVAReward;
     }
 
-    // Struct for `batchSetFinalReferenceValue` function input.
-    struct ArgsBatchSetFinalReferenceValue {
+    // Struct for `getTippingTokens` function input.
+    struct ArgsGetTippingTokens {
         uint256 poolId;
-        address[] tippingTokens;
-        bool claimDIVAReward;
+        uint256 startIndex;
+        uint256 endIndex;
     }
 
     // Struct for `getTipAmounts` function input.
@@ -191,19 +198,37 @@ interface IDIVAOracleTellor {
         address[] tippingTokens;
     }
 
-    // Struct for `getTippingTokens` function input.
-    struct ArgsGetTippingTokens {
-        uint256 poolId;
-        uint256 startIndex;
-        uint256 endIndex;
-    }
-
     // Struct for `getPoolIdsForReporters` function input.
     struct ArgsGetPoolIdsForReporters {
         address reporter;
         uint256 startIndex;
         uint256 endIndex;
     }
+
+    /**
+     * @notice Function to set the final reference value for a given `_poolId`.
+     * The first value that was submitted to the Tellor contract after the pool
+     * expiration and remained undisputed for at least 12 hours will be passed
+     * on to the DIVA smart contract for settlement.
+     * @dev Function must be triggered within the submission window of the pool.
+     * @param _poolId The Id of the pool.
+     * @param _tippingTokens Array of tipping tokens to claim.
+     * @param _claimDIVAReward Flag indicating whether to claim the DIVA reward.
+     */
+    function setFinalReferenceValue(
+        uint256 _poolId,
+        address[] calldata _tippingTokens,
+        bool _claimDIVAReward
+    ) external;
+
+    /**
+     * @notice Batch version of `setFinalReferenceValue`.
+     * @param _argsBatchSetFinalReferenceValue List containing poolIds, tipping
+     * tokens, and `claimDIVAReward` flag.
+     */
+    function batchSetFinalReferenceValue(
+        ArgsBatchSetFinalReferenceValue[] calldata _argsBatchSetFinalReferenceValue
+    ) external;
 
     /**
      * @notice Function to tip a pool. Tips can be added in any
@@ -226,7 +251,7 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Batch version of `addTip`.
-     * @param _argsBatchAddTip Struct array containing poolIds, amounts
+     * @param _argsBatchAddTip List containing poolIds, amounts
      * and tipping tokens.
      */
     function batchAddTip(
@@ -256,36 +281,11 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Batch version of `claimReward`.
-     * @param _argsBatchClaimReward Struct array containing poolIds, tipping
+     * @param _argsBatchClaimReward List containing poolIds, tipping
      * tokens, and `claimDIVAReward` flag.
      */
     function batchClaimReward(
         ArgsBatchClaimReward[] calldata _argsBatchClaimReward
-    ) external;
-
-    /**
-     * @notice Function to set the final reference value for a given `_poolId`.
-     * The first value that was submitted to the Tellor contract after the pool
-     * expiration and remained undisputed for at least 12 hours will be passed
-     * on to the DIVA smart contract for settlement.
-     * @dev Function must be triggered within the submission window of the pool.
-     * @param _poolId The Id of the pool.
-     * @param _tippingTokens Array of tipping tokens to claim.
-     * @param _claimDIVAReward Flag indicating whether to claim the DIVA reward.
-     */
-    function setFinalReferenceValue(
-        uint256 _poolId,
-        address[] calldata _tippingTokens,
-        bool _claimDIVAReward
-    ) external;
-
-    /**
-     * @notice Batch version of `setFinalReferenceValue`.
-     * @param _argsBatchSetFinalReferenceValue Struct array containing poolIds, tipping
-     * tokens, and `claimDIVAReward` flag.
-     */
-    function batchSetFinalReferenceValue(
-        ArgsBatchSetFinalReferenceValue[] calldata _argsBatchSetFinalReferenceValue
     ) external;
 
     /**
@@ -335,15 +335,17 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Function to return whether the Tellor adapter's data feed
-     * is challengeable inside DIVA Protocol. In this implementation, the
-     * function always returns `false`, which means that the first value
-     * submitted to the DIVA Protocol will determine the payouts, and users
-     * can start claiming their payouts thereafter.
+     * is challengeable inside DIVA Protocol.
+     * @dev In this implementation, the function always returns `false`,
+     * which means that the first value submitted to DIVA Protocol
+     * will determine the payouts, and users can start claiming their
+     * payouts thereafter.
      */
     function getChallengeable() external view returns (bool);
 
     /**
-     * @notice Function to return the excess DIVA reward recipient info.
+     * @notice Function to return the excess DIVA reward recipient info, including
+     * the last update, its activation time and the previous value.
      * @dev The initial excess DIVA reward recipient is set when the contract is deployed.
      * The previous excess DIVA reward recipient is set to the zero address initially.
      * @return previousExcessDIVARewardRecipient Previous excess DIVA reward recipient address.
@@ -361,14 +363,8 @@ interface IDIVAOracleTellor {
         );
 
     /**
-     * @notice Function to return the minimum period (in seconds) a reported
-     * value has to remain undisputed in order to be considered valid.
-     * Hard-coded to 12 hours (= 43'200 seconds) in this implementation.
-     */
-    function getMinPeriodUndisputed() external pure returns (uint32);
-
-    /**
-     * @notice Function to return the max USD DIVA reward info.
+     * @notice Function to return the max USD DIVA reward info, including
+     * the last update, its activation time and the previous value.
      * @dev The initial value is set when the contract is deployed.
      * The previous value is set to zero initially.
      * @return previousMaxDIVARewardUSD Previous value.
@@ -386,16 +382,37 @@ interface IDIVAOracleTellor {
         );
 
     /**
-     * @notice Function to return the DIVA contract address that the oracle
-     * is linked to.
-     * @dev The address is set at contract deployment.
+     * @notice Function to return the minimum period (in seconds) a reported
+     * value has to remain undisputed in order to be considered valid.
+     * Hard-coded to 12 hours (= 43'200 seconds) in this implementation.
      */
-    function getDIVAAddress() external view returns (address);
+    function getMinPeriodUndisputed() external pure returns (uint32);
 
     /**
-     * @notice Function to return the array of tipping amounts for the given
-     * struct array of poolIds and tipping tokens.
-     * @param _argsGetTipAmounts Struct array containing poolIds and tipping
+     * @notice Function to return the number of tipping tokens for a given
+     * set of poolIds.
+     * @param _poolIds Array of poolIds.
+     */
+    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
+        external
+        view
+        returns (uint256[] memory);
+
+    /**
+     * @notice Function to return an array of tipping tokens for the given struct
+     * array of poolIds, along with start and end indices to manage the return
+     * size of the array.
+     * @param _argsGetTippingTokens List containing poolId,
+     * start index and end index.
+     */
+    function getTippingTokens(
+        ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+    ) external view returns (address[][] memory);
+
+    /**
+     * @notice Function to return the tipping amounts for a given set of poolIds
+     * and tipping tokens.
+     * @param _argsGetTipAmounts List containing poolIds and tipping
      * tokens.
      */
     function getTipAmounts(ArgsGetTipAmounts[] calldata _argsGetTipAmounts)
@@ -405,7 +422,7 @@ interface IDIVAOracleTellor {
 
     /**
      * @notice Function to return the list of reporter addresses that are entitled
-     * to receive rewards for the provided poolIds.
+     * to receive rewards for a given list of poolIds.
      * @dev If a value has been reported to the Tellor contract but hasn't been 
      * pulled into the DIVA contract via the `setFinalReferenceValue` function yet,
      * the function returns the zero address.
@@ -417,42 +434,9 @@ interface IDIVAOracleTellor {
         returns (address[] memory);
 
     /**
-     * @notice Function to return an array of tipping tokens for the given struct
-     * array of poolIds, along with start and end indices to manage the return
-     * size of the array.
-     * @param _argsGetTippingTokens Struct array containing poolId,
-     * start index and end index.
-     */
-    function getTippingTokens(
-        ArgsGetTippingTokens[] calldata _argsGetTippingTokens
-    ) external view returns (address[][] memory);
-
-    /**
-     * @notice Function to return the number of tipping tokens for the given
-     * poolIds.
-     * @param _poolIds Array of poolIds.
-     */
-    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
-        external
-        view
-        returns (uint256[] memory);
-
-    /**
-     * @notice Function to return an array of poolIds that a reporter is
-     * eligible to claim rewards for. It takes a struct array of reporter
-     * addresses, as well as the start and end indices to manage the return
-     * size of the array.
-     * @param _argsGetPoolIdsForReporters Struct array containing reporter
-     * address, start index and end index.
-     */
-    function getPoolIdsForReporters(
-        ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
-    ) external view returns (uint256[][] memory);
-
-    /**
-     * @notice Function to return the number of poolIds a given list of
+     * @notice Function to return the number of poolIds that a given list of
      * reporter addresses are eligible to claim rewards for.
-     * @param _reporters Array of reporter addresses.
+     * @param _reporters List of reporter addresses.
      */
     function getPoolIdsLengthForReporters(address[] calldata _reporters)
         external
@@ -460,20 +444,42 @@ interface IDIVAOracleTellor {
         returns (uint256[] memory);
 
     /**
+     * @notice Function to return a list of poolIds that a given list of reporters
+     * is eligible to claim rewards for.
+     * @dev It takes a list of reporter addresses, as well as the start and end
+     * indices as input to manage the return size of the array.
+     * @param _argsGetPoolIdsForReporters List containing reporter
+     * address, start index and end index.
+     */
+    function getPoolIdsForReporters(
+        ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
+    ) external view returns (uint256[][] memory);
+
+    /**
+     * @notice Function to return the DIVA contract address that the
+     * Tellor adapter is linked to.
+     * @dev The address is set at contract deployment and cannot be modified.
+     */
+    function getDIVAAddress() external view returns (address);
+
+    /**
      * @notice Returns the DIVA ownership contract address that stores
      * the contract owner.
+     * @dev The owner can be obtained by calling the `getOwner` function
+     * at the returned contract address.
      */
     function getOwnershipContract() external view returns (address);
 
     /**
-     * @notice Returns the activation delay in seconds.
-     * Hard-coded to 3 days (= 259'200 seconds).
+     * @notice Returns the activation delay (in seconds) for governance
+     * related updates. Hard-coded to 3 days (= 259'200 seconds).
      */
     function getActivationDelay() external pure returns (uint256);
 
     /**
      * @notice Function to return the query data and Id for a given poolId
-     * which are required for reporting values to the Tellor contract.
+     * which are required for reporting values via Tellor's `submitValue`
+     * function.
      * @param _poolId The Id of the pool.
      */
     function getQueryDataAndId(
