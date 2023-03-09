@@ -20,9 +20,9 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
     mapping(address => uint256[]) private _reporterToPoolIds; // mapping reporter to poolIds
 
-    uint256 private _previousMaxFeeAmountUSD; // expressed as an integer with 18 decimals, initialized to zero at contract deployment
-    uint256 private _maxFeeAmountUSD; // expressed as an integer with 18 decimals
-    uint256 private _startTimeMaxFeeAmountUSD;
+    uint256 private _previousMaxDIVARewardUSD; // expressed as an integer with 18 decimals, initialized to zero at contract deployment
+    uint256 private _maxDIVARewardUSD; // expressed as an integer with 18 decimals
+    uint256 private _startTimeMaxDIVARewardUSD;
 
     address private _previousExcessFeeRecipient; // initialized to zero address at contract deployment
     address private _excessFeeRecipient;
@@ -47,7 +47,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         address ownershipContract_,
         address payable tellorAddress_,
         address excessFeeRecipient_,
-        uint256 maxFeeAmountUSD_,
+        uint256 maxDIVARewardUSD_,
         address diva_
     ) UsingTellor(tellorAddress_) {
         if (ownershipContract_ == address(0)) {
@@ -60,7 +60,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _ownershipContract = ownershipContract_;
         _challengeable = false;
         _excessFeeRecipient = excessFeeRecipient_;
-        _maxFeeAmountUSD = maxFeeAmountUSD_;
+        _maxDIVARewardUSD = maxDIVARewardUSD_;
         _diva = IDIVA(diva_);
     }
 
@@ -219,38 +219,38 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD)
+    function updateMaxDIVARewardUSD(uint256 _newMaxDIVARewardUSD)
         external
         override
         onlyOwner
     {
-        // Confirm that there is no pending max fee amount USD update.
+        // Confirm that there is no pending max DIVA reward USD update.
         // Revoke to update pending value.
-        if (_startTimeMaxFeeAmountUSD > block.timestamp) {
-            revert PendingMaxFeeAmountUSDUpdate(
+        if (_startTimeMaxDIVARewardUSD > block.timestamp) {
+            revert PendingMaxDIVARewardUSDUpdate(
                 block.timestamp,
-                _startTimeMaxFeeAmountUSD
+                _startTimeMaxDIVARewardUSD
             );
         }
 
-        // Store current max fee amount USD in `_previousMaxFeeAmountUSD`
+        // Store current max DIVA reward USD in `_previousMaxDIVARewardUSD`
         // variable
-        _previousMaxFeeAmountUSD = _maxFeeAmountUSD;
+        _previousMaxDIVARewardUSD = _maxDIVARewardUSD;
 
-        // Set time at which the new max fee amount USD will become applicable
-        uint256 _startTimeNewMaxFeeAmountUSD = block.timestamp +
+        // Set time at which the new max DIVA reward USD will become applicable
+        uint256 _startTimeNewMaxDIVARewardUSD = block.timestamp +
             _activationDelay;
 
-        // Store start time and new max fee amount USD
-        _startTimeMaxFeeAmountUSD = _startTimeNewMaxFeeAmountUSD;
-        _maxFeeAmountUSD = _newMaxFeeAmountUSD;
+        // Store start time and new max DIVA reward USD
+        _startTimeMaxDIVARewardUSD = _startTimeNewMaxDIVARewardUSD;
+        _maxDIVARewardUSD = _newMaxDIVARewardUSD;
 
-        // Log the new max fee amount USD as well as the address that
+        // Log the new max DIVA reward USD as well as the address that
         // initiated the change
-        emit MaxFeeAmountUSDUpdated(
+        emit MaxDIVARewardUSDUpdated(
             msg.sender,
-            _newMaxFeeAmountUSD,
-            _startTimeNewMaxFeeAmountUSD
+            _newMaxDIVARewardUSD,
+            _startTimeNewMaxDIVARewardUSD
         );
     }
 
@@ -283,28 +283,28 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function revokePendingMaxFeeAmountUSDUpdate() external override onlyOwner {
-        // Confirm that new max USD fee amount is not active yet
-        if (_startTimeMaxFeeAmountUSD <= block.timestamp) {
-            revert MaxFeeAmountUSDAlreadyActive(
+    function revokePendingMaxDIVARewardUSDUpdate() external override onlyOwner {
+        // Confirm that new max USD DIVA reward is not active yet
+        if (_startTimeMaxDIVARewardUSD <= block.timestamp) {
+            revert MaxDIVARewardUSDAlreadyActive(
                 block.timestamp,
-                _startTimeMaxFeeAmountUSD
+                _startTimeMaxDIVARewardUSD
             );
         }
 
-        // Store `_maxFeeAmountUSD` value temporarily
-        uint256 _revokedMaxFeeAmountUSD = _maxFeeAmountUSD;
+        // Store `_maxDIVARewardUSD` value temporarily
+        uint256 _revokedMaxDIVARewardUSD = _maxDIVARewardUSD;
 
-        // Reset max fee amount USD related variables
-        _startTimeMaxFeeAmountUSD = block.timestamp;
-        _maxFeeAmountUSD = _previousMaxFeeAmountUSD;
+        // Reset max DIVA reward USD related variables
+        _startTimeMaxDIVARewardUSD = block.timestamp;
+        _maxDIVARewardUSD = _previousMaxDIVARewardUSD;
 
-        // Log the max fee amount USD revoked, the previous one that now
+        // Log the max DIVA reward USD revoked, the previous one that now
         // applies as well as the address that initiated the change
-        emit PendingMaxFeeAmountUSDUpdateRevoked(
+        emit PendingMaxDIVARewardUSDUpdateRevoked(
             msg.sender,
-            _revokedMaxFeeAmountUSD,
-            _previousMaxFeeAmountUSD
+            _revokedMaxDIVARewardUSD,
+            _previousMaxDIVARewardUSD
         );
     }
 
@@ -333,20 +333,20 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function getMaxFeeAmountUSDInfo()
+    function getMaxDIVARewardUSDInfo()
         external
         view
         override
         returns (
-            uint256 previousMaxFeeAmountUSD,
-            uint256 maxFeeAmountUSD,
-            uint256 startTimeMaxFeeAmountUSD
+            uint256 previousMaxDIVARewardUSD,
+            uint256 maxDIVARewardUSD,
+            uint256 startTimeMaxDIVARewardUSD
         )
     {
-        (previousMaxFeeAmountUSD, maxFeeAmountUSD, startTimeMaxFeeAmountUSD) = (
-            _previousMaxFeeAmountUSD,
-            _maxFeeAmountUSD,
-            _startTimeMaxFeeAmountUSD
+        (previousMaxDIVARewardUSD, maxDIVARewardUSD, startTimeMaxDIVARewardUSD) = (
+            _previousMaxDIVARewardUSD,
+            _maxDIVARewardUSD,
+            _startTimeMaxDIVARewardUSD
         );
     }
 
@@ -571,13 +571,13 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
                 : _excessFeeRecipient;
     }
 
-    function _getCurrentMaxFeeAmountUSD() internal view returns (uint256) {
-        // Return the new max fee amount USD if `block.timestamp` is at or past
-        // the activation time, else return the current max fee amount USD
+    function _getCurrentMaxDIVARewardUSD() internal view returns (uint256) {
+        // Return the new max DIVA reward USD if `block.timestamp` is at or past
+        // the activation time, else return the current max DIVA reward USD
         return
-            block.timestamp < _startTimeMaxFeeAmountUSD
-                ? _previousMaxFeeAmountUSD
-                : _maxFeeAmountUSD;
+            block.timestamp < _startTimeMaxDIVARewardUSD
+                ? _previousMaxDIVARewardUSD
+                : _maxDIVARewardUSD;
     }
 
     function _contractOwner() internal view returns (address) {
@@ -695,13 +695,13 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         ); // denominated in USD; integer with 18 decimals
         uint256 feeToReporter;
 
-        uint256 _currentMaxFeeAmountUSD = _getCurrentMaxFeeAmountUSD();
-        if (feeClaimUSD > _currentMaxFeeAmountUSD) {
+        uint256 _currentMaxDIVARewardUSD = _getCurrentMaxDIVARewardUSD();
+        if (feeClaimUSD > _currentMaxDIVARewardUSD) {
             // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in
             // which case it will go into the else part, hence division by zero
             // is not a problem
             feeToReporter =
-                _currentMaxFeeAmountUSD.divideDecimal(
+                _currentMaxDIVARewardUSD.divideDecimal(
                     _formattedCollateralToUSDRate
                 ) /
                 _SCALING; // integer with collateral token decimals
