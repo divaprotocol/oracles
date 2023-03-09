@@ -308,7 +308,7 @@ function batchSetFinalReferenceValue(
 
 where `ArgsBatchSetFinalReferenceValue` is given by
 
-```
+```js
 struct ArgsBatchSetFinalReferenceValue {
     uint256 poolId;             // The Id of the pool
     address[] tippingTokens;    // Array of tipping tokens to claim
@@ -355,7 +355,7 @@ function batchAddTip(
 
 where `ArgsBatchAddTip` is given by
 
-```
+```js
 struct ArgsBatchAddTip {
     uint256 poolId;         // The Id of the pool
     uint256 amount;         // The amount to tip expressed as an integer with tipping token decimals
@@ -405,7 +405,7 @@ function batchClaimReward(
 
 where `ArgsBatchClaimReward` is given by
 
-```
+```js
 struct ArgsBatchClaimReward {
     uint256 poolId;             // The Id of the pool
     address[] tippingTokens;    // Array of tipping tokens to claim
@@ -457,7 +457,8 @@ Reverts if:
 * New excess DIVA reward recipient is already active (i.e. `block.timestamp >= startTime`).
 
 ```js
-function revokePendingExcessDIVARewardRecipientUpdate() external;
+function revokePendingExcessDIVARewardRecipientUpdate()
+    external;
 ```
 
 ### revokePendingMaxDIVARewardUSDUpdate
@@ -469,7 +470,8 @@ Reverts if:
 * New amount is already active (i.e. `block.timestamp >= startTime`).
 
 ```js
-function revokePendingMaxDIVARewardUSDUpdate() external;
+function revokePendingMaxDIVARewardUSDUpdate()
+    external;
 ```
 
 ## Getter functions
@@ -694,7 +696,7 @@ All state-modifying functions, including their batch versions, implement [openze
 
 Emitted when the final reference value is set via the [`setFinalReferenceValue`](#setfinalreferencevalue) function.
 
-```
+```js
 event FinalReferenceValueSet(
     uint256 indexed poolId, // The Id of the pool
     uint256 finalValue,     // Tellor value expressed as an integer with 18 decimals
@@ -707,7 +709,7 @@ event FinalReferenceValueSet(
 
 Emitted when a tip is added via the [`addTip`](#addtip) function.
 
-```
+```js
 event TipAdded(
     uint256 poolId,         // The Id of the tipped pool
     address tippingToken,   // Tipping token address
@@ -720,7 +722,7 @@ event TipAdded(
 
 Emitted when the reward is claimed via the [`claimReward`](#claimreward) function.
 
-```
+```js
 event TipClaimed(
     uint256 poolId,         // The Id of the pool
     address recipient,      // Address of the tip recipient
@@ -733,7 +735,7 @@ event TipClaimed(
 
 Emitted when the excess DIVA reward recipient is updated via the [`updateExcessDIVARewardRecipient`](updateexcessdivarewardrecipient) function.
 
-```
+```js
 event ExcessDIVARewardRecipientUpdated(
     address indexed from,                   // Address that initiated the change (contract owner)
     address indexed excessDIVARewardRecipient,     // New excess DIVA reward recipient address
@@ -745,7 +747,7 @@ event ExcessDIVARewardRecipientUpdated(
 
 Emitted when the max USD DIVA reward is updated via the [`updateMaxDIVARewardUSD`](#updatemaxdivarewardusd) function.
 
-```
+```js
 event MaxDIVARewardUSDUpdated(
     address indexed from,               // Address that initiated the change (contract owner)
     uint256 maxDIVARewardUSD,            // New max USD DIVA reward expressed as an integer with 18 decimals
@@ -757,7 +759,7 @@ event MaxDIVARewardUSDUpdated(
 
 Emitted when a pending excess DIVA reward recipient update is revoked via the [`revokePendingExcessDIVARewardRecipientUpdate`](#revokependingexcessdivarewardrecipientupdate) function.
 
-```
+```js
 event PendingExcessDIVARewardRecipientUpdateRevoked(
     address indexed revokedBy,                  // Address that initiated the revocation
     address indexed revokedExcessDIVARewardRecipient,  // Pending excess DIVA reward recipient that was revoked
@@ -769,7 +771,7 @@ event PendingExcessDIVARewardRecipientUpdateRevoked(
 
 Emitted when a pending max USD DIVA reward update is revoked via the [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate) function.
 
-```
+```js
 event PendingMaxDIVARewardUSDUpdateRevoked(
     address indexed revokedBy,          // Address that initiated the revocation
     uint256 revokedMaxDIVARewardUSD,     // Pending max USD DIVA reward that was revoked
