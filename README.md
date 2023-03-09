@@ -204,9 +204,9 @@ Data providers are rewarded with a settlement fee of 0.05% of the total (gross) 
 
 The relevant fee related functions inside DIVA protocol are listed below. Note that some oracle integrations such as Tellor module implement an additional tipping functionality to offer reporters additional incentives, especially for smaller size pools, to report values. Refer to the oracle specific documentation in the `docs` directory for details.
 
-### Get fee claim
+### Get DIVA reward claim
 
-The claimable fee amount can be obtained by calling the following function:
+The claimable DIVA reward can be obtained by calling the following function:
 
 ```js
 function getClaim(

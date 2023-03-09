@@ -137,7 +137,7 @@ Note that depositing a stake or or disputing a value requires prior approval for
 
 ## Ownership and privileges
 
-The Tellor adapter contract implements an owner which is inherited from the DIVA Ownership contract, which is the same contract that DIVA Protocol inherits their owner from. The owner is authorized to [update the maximum amount of DIVA rewards](#updatemaxfeeamountusd) that a reporter can receive, denominated in USD, as well as the [recipient of any excess fee](#updateexcessfeerecipient). 
+The Tellor adapter contract implements an owner which is inherited from the DIVA Ownership contract, which is the same contract that DIVA Protocol inherits their owner from. The owner is authorized to [update the maximum amount of DIVA rewards](#updatemaxdivarewardusd) that a reporter can receive, denominated in USD, as well as the [recipient of any excess fee](#updateexcessfeerecipient). 
 
 The update process is the same as in DIVA Protocol. The owner initiates an update of the relevant value, which only becomes effective after a pre-defined delay. In the Tellor adapter contract, this delay is fixed at 3 days and cannot be modified. During this period, the contract owner has the ability to revoke the update if needed.
 
@@ -231,13 +231,13 @@ The following table shows the functions implemented in the [Tellor adapter contr
 | [`claimReward`](#claimreward)                                                                 | Function to claim tips and/or DIVA rewards.                                                                                                     |
 | **Governance functions** (execution is reserved for DIVA owner only)                      |                                                                                                                                                             |
 | [`updateExcessFeeRecipient`](#updateexcessfeerecipient)                                             | Function to update the excess fee recipient address.                                                                     |
-| [`updateMaxFeeAmountUSD`](#updatemaxfeeamountusd)                                             | Function to update the maximum USD fee amount that goes to the reporter.                                                                     |
-| [`revokePendingMaxFeeAmountUSDUpdate`](#revokependingmaxfeeamountusdupdate)                                             | Function to revoke a pending maximum USD fee amount update and restore the previous one.                                                                     |
+| [`updateMaxDIVARewardUSD`](#updatemaxdivarewardusd)                                             | Function to update the maximum USD DIVA reward that goes to the reporter.                                                                     |
+| [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate)                                             | Function to revoke a pending maximum USD DIVA reward update and restore the previous one.                                                                     |
 | [`revokePendingExcessFeeRecipientUpdate`](#revokependingexcessfeerecipientupdate)                                             | Function to revoke a pending excess fee recipient address update and restore the previous one.                                                                     |
 | **Getter functions**                                                                            |                                                                                                                                      |
 | [`getChallengeable`](#getchallengeable)                                                         | Function to return whether the Tellor adapter's data feed is challengeable inside DIVA Protocol. In this implementation, the function always returns `false`, which means that the first value submitted to the DIVA Protocol will determine the payouts, and users can start claiming their payouts thereafter.                                                          |
 | [`getExcessFeeRecipientInfo`](#getexcessfeerecipientinfo)                                               | Function to return the latest update of the excess fee recipient address, including the activation time and the previous value.                                                                                 |
-| [`getMaxFeeAmountUSDInfo`](#getmaxfeeamountusdinfo)                                                     | Function to return the latest update of the max USD fee amount, including the activation time and the previous value.                                                                    |
+| [`getMaxDIVARewardUSDInfo`](#getmaxdivarewardusdinfo)                                                     | Function to return the latest update of the max USD DIVA reward, including the activation time and the previous value.                                                                    |
 | [`getMinPeriodUndisputed`](#getminperiodundisputed)                                             | Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid. Hard-coded to 12 hours (= 43'200 seconds) in this implementation.     |
 | [`getTippingTokensLengthForPoolIds`](#gettippingtokenslengthforpoolids)                         | Function to return the number of tipping tokens for a given set of poolIds.                                                           |
 | [`getTippingTokens`](#gettippingtokens)                                                         | Function to return the array of tipping tokens for a given set of poolIds.                                 |
@@ -433,17 +433,17 @@ function updateExcessFeeRecipient(
     external;
 ```
 
-### updateMaxFeeAmountUSD
+### updateMaxDIVARewardUSD
 
-Function to update the maximum amount of DIVA reward that a reporter can receive, denominated in USD. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`MaxFeeAmountUSDUpdated`](#maxfeeamountusdupdated) event including the new excess fee recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingMaxFeeAmountUSDUpdate`](#revokependingmaxfeeamountusdupdate). The previous amount as well as the current one can be obtained via the [`getMaxFeeAmountUSDInfo`](#getmaxfeeamountusdinfo) function.
+Function to update the maximum amount of DIVA reward that a reporter can receive, denominated in USD. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`MaxDIVARewardUSDUpdated`](#maxdivarewardusdupdated) event including the new excess fee recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate). The previous amount as well as the current one can be obtained via the [`getMaxDIVARewardUSDInfo`](#getmaxdivarewardusdinfo) function.
 
 Reverts if:
 * `msg.sender` is not contract owner.
 * there is already a pending amount update.
 
 ```js
-function updateMaxFeeAmountUSD(
-    uint256 _newMaxFeeAmountUSD  // New amount expressed as an integer with 18 decimals
+function updateMaxDIVARewardUSD(
+    uint256 _newMaxDIVARewardUSD  // New amount expressed as an integer with 18 decimals
 )
     external;
 ```
@@ -460,16 +460,16 @@ Reverts if:
 function revokePendingExcessFeeRecipientUpdate() external;
 ```
 
-### revokePendingMaxFeeAmountUSDUpdate
+### revokePendingMaxDIVARewardUSDUpdate
 
-Function to revoke a pending max USD fee amount update and restore the previous one. On success, emits a [`PendingMaxFeeAmountUSDUpdateRevoked`](#pendingmaxfeeamountusdupdaterevoked) event including the revoked and restored amount. 
+Function to revoke a pending max USD DIVA reward update and restore the previous one. On success, emits a [`PendingMaxDIVARewardUSDUpdateRevoked`](#pendingmaxdivarewardusdupdaterevoked) event including the revoked and restored amount. 
 
 Reverts if:
 * `msg.sender` is not contract owner.
 * New amount is already active (i.e. `block.timestamp >= startTime`).
 
 ```js
-function revokePendingMaxFeeAmountUSDUpdate() external;
+function revokePendingMaxDIVARewardUSDUpdate() external;
 ```
 
 ## Getter functions
@@ -513,18 +513,18 @@ function getMinPeriodUndisputed()
     returns (uint32);
 ```
 
-### getMaxFeeAmountUSDInfo
+### getMaxDIVARewardUSDInfo
 
-Function to return the max USD fee amount info. The initial value is set when the contract is deployed. The previous value is set to zero initially.
+Function to return the max USD DIVA reward info. The initial value is set when the contract is deployed. The previous value is set to zero initially.
 
 ```js
-function getMaxFeeAmountUSDInfo()
+function getMaxDIVARewardUSDInfo()
     external
     view
     returns (
-        uint256 previousMaxFeeAmountUSD,    // Previous value
-        uint256 maxFeeAmountUSD,            // Latest update of the value
-        uint256 startTimeMaxFeeAmountUSD    // Timestamp in seconds since epoch at which `maxFeeAmountUSD` is activated
+        uint256 previousMaxDIVARewardUSD,    // Previous value
+        uint256 maxDIVARewardUSD,            // Latest update of the value
+        uint256 startTimeMaxDIVARewardUSD    // Timestamp in seconds since epoch at which `maxDIVARewardUSD` is activated
     );
 ```
 
@@ -738,15 +738,15 @@ event ExcessFeeRecipientUpdated(
 );
 ```
 
-### MaxFeeAmountUSDUpdated
+### MaxDIVARewardUSDUpdated
 
-Emitted when the max USD fee amount is updated via the [`updateMaxFeeAmountUSD`](#updatemaxfeeamountusd) function.
+Emitted when the max USD DIVA reward is updated via the [`updateMaxDIVARewardUSD`](#updatemaxdivarewardusd) function.
 
 ```
-event MaxFeeAmountUSDUpdated(
+event MaxDIVARewardUSDUpdated(
     address indexed from,               // Address that initiated the change (contract owner)
-    uint256 maxFeeAmountUSD,            // New max USD fee amount expressed as an integer with 18 decimals
-    uint256 startTimeMaxFeeAmountUSD    // Timestamp in seconds since epoch at which the new max USD fee amount will be activated
+    uint256 maxDIVARewardUSD,            // New max USD DIVA reward expressed as an integer with 18 decimals
+    uint256 startTimeMaxDIVARewardUSD    // Timestamp in seconds since epoch at which the new max USD DIVA reward will be activated
 );
 ```
 
@@ -762,15 +762,15 @@ event PendingExcessFeeRecipientUpdateRevoked(
 );
 ```
 
-### PendingMaxFeeAmountUSDUpdateRevoked
+### PendingMaxDIVARewardUSDUpdateRevoked
 
-Emitted when a pending max USD fee amount update is revoked via the [`revokePendingMaxFeeAmountUSDUpdate`](#revokependingmaxfeeamountusdupdate) function.
+Emitted when a pending max USD DIVA reward update is revoked via the [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate) function.
 
 ```
-event PendingMaxFeeAmountUSDUpdateRevoked(
+event PendingMaxDIVARewardUSDUpdateRevoked(
     address indexed revokedBy,          // Address that initiated the revocation
-    uint256 revokedMaxFeeAmountUSD,     // Pending max USD fee amount that was revoked
-    uint256 restoredMaxFeeAmountUSD     // Previous max USD fee amount that was restored
+    uint256 revokedMaxDIVARewardUSD,     // Pending max USD DIVA reward that was revoked
+    uint256 restoredMaxDIVARewardUSD     // Previous max USD DIVA reward that was restored
 );
 ```
 
@@ -786,11 +786,11 @@ The following errors may be emitted during execution of the functions, including
 | `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` | Thrown if there is no data reported after the expiry time for the underlying pool. |
 | `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` | Thrown if user tries to call `setFinalReferenceValue` before the minimum period undisputed period has passed.               |
 | `ZeroOwnershipContractAddress()`      | constructor | Thrown in constructor if zero address is provided as ownershipContract.               |
-| `NotContractOwner(address _user, address _contractOwner)`      | `updateExcessFeeRecipient` / `updateMaxFeeAmountUSD` / `revokePendingExcessFeeRecipientUpdate` / `revokePendingMaxFeeAmountUSDUpdate` | Thrown in constructor if zero address is provided as ownershipContract.               |
+| `NotContractOwner(address _user, address _contractOwner)`      | `updateExcessFeeRecipient` / `updateMaxDIVARewardUSD` / `revokePendingExcessFeeRecipientUpdate` / `revokePendingMaxDIVARewardUSDUpdate` | Thrown in constructor if zero address is provided as ownershipContract.               |
 | `PendingExcessFeeRecipientUpdate(uint256 _timestampBlock, uint256 _startTimeExcessFeeRecipient)`      | `updateExcessFeeRecipient` | Thrown if there is already a pending excess fee recipient address update.               |
-| `PendingMaxFeeAmountUSDUpdate(uint256 _timestampBlock, uint256 _startTimeMaxFeeAmountUSD)`      | `updateMaxFeeAmountUSD` | Thrown if there is already a pending max USD fee amount update.               |
+| `PendingMaxDIVARewardUSDUpdate(uint256 _timestampBlock, uint256 _startTimeMaxDIVARewardUSD)`      | `updateMaxDIVARewardUSD` | Thrown if there is already a pending max USD DIVA reward update.               |
 | `ExcessFeeRecipientAlreadyActive(uint256 _timestampBlock, uint256 _startTimeExcessFeeRecipient)`      | `revokePendingExcessFeeRecipientUpdate` | Thrown if the excess fee recipient update to be revoked is already active.               |
-| `MaxFeeAmountUSDAlreadyActive(uint256 _timestampBlock, uint256 _startTimeMaxFeeAmountUSD)`      | `revokePendingMaxFeeAmountUSDUpdate` | Thrown if the max USD fee amount update to be revoked is already active.               |
+| `MaxDIVARewardUSDAlreadyActive(uint256 _timestampBlock, uint256 _startTimeMaxDIVARewardUSD)`      | `revokePendingMaxDIVARewardUSDUpdate` | Thrown if the max USD DIVA reward update to be revoked is already active.               |
 
 ## Risks and mitigants
 

@@ -27,8 +27,8 @@ interface IDIVAOracleTellor {
     error ZeroOwnershipContractAddress();
 
     // Thrown in governance related functions including `updateExcessFeeRecipient`
-    // `updateMaxFeeAmountUSD`, `revokePendingExcessFeeRecipientUpdate`,
-    // and `revokePendingMaxFeeAmountUSDUpdate` and `msg.sender` is not contract owner.
+    // `updateMaxDIVARewardUSD`, `revokePendingExcessFeeRecipientUpdate`,
+    // and `revokePendingMaxDIVARewardUSDUpdate` and `msg.sender` is not contract owner.
     error NotContractOwner(address _user, address _contractOwner);
 
     // Thrown in `updateExcessFeeRecipient` if there is already a pending
@@ -38,11 +38,11 @@ interface IDIVAOracleTellor {
         uint256 _startTimeExcessFeeRecipient
     );
 
-    // Thrown in `updateMaxFeeAmountUSD` if there is already a pending max USD
-    // fee amount update.
-    error PendingMaxFeeAmountUSDUpdate(
+    // Thrown in `updateMaxDIVARewardUSD` if there is already a pending max USD
+    // DIVA reward update.
+    error PendingMaxDIVARewardUSDUpdate(
         uint256 _timestampBlock,
-        uint256 _startTimeMaxFeeAmountUSD
+        uint256 _startTimeMaxDIVARewardUSD
     );
 
     // Thrown in `revokePendingExcessFeeRecipientUpdate` if the excess fee
@@ -52,11 +52,11 @@ interface IDIVAOracleTellor {
         uint256 _startTimeExcessFeeRecipient
     );
 
-    // Thrown in `revokePendingMaxFeeAmountUSDUpdate` if the max USD fee amount
+    // Thrown in `revokePendingMaxDIVARewardUSDUpdate` if the max USD DIVA reward
     // update to be revoked is already active.
-    error MaxFeeAmountUSDAlreadyActive(
+    error MaxDIVARewardUSDAlreadyActive(
         uint256 _timestampBlock,
-        uint256 _startTimeMaxFeeAmountUSD
+        uint256 _startTimeMaxDIVARewardUSD
     );
 
     /**
@@ -120,18 +120,18 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when the max USD fee amount is updated via the
-     * `updateMaxFeeAmountUSD` function.
+     * @notice Emitted when the max USD DIVA reward is updated via the
+     * `updateMaxDIVARewardUSD` function.
      * @param from Address that initiated the change (contract owner).
-     * @param maxFeeAmountUSD New max USD fee amount expressed as an
+     * @param maxDIVARewardUSD New max USD DIVA reward expressed as an
      * integer with 18 decimals.
-     * @param startTimeMaxFeeAmountUSD Timestamp in seconds since epoch at
-     * which the new max USD fee amount will be activated.
+     * @param startTimeMaxDIVARewardUSD Timestamp in seconds since epoch at
+     * which the new max USD DIVA reward will be activated.
      */
-    event MaxFeeAmountUSDUpdated(
+    event MaxDIVARewardUSDUpdated(
         address indexed from,
-        uint256 maxFeeAmountUSD,
-        uint256 startTimeMaxFeeAmountUSD
+        uint256 maxDIVARewardUSD,
+        uint256 startTimeMaxDIVARewardUSD
     );
 
     /**
@@ -150,18 +150,18 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when a pending max USD fee amount update is revoked
-     * via the `revokePendingMaxFeeAmountUSDUpdate` function.
+     * @notice Emitted when a pending max USD DIVA reward update is revoked
+     * via the `revokePendingMaxDIVARewardUSDUpdate` function.
      * @param revokedBy Address that initiated the revocation.
-     * @param revokedMaxFeeAmountUSD Pending max USD fee amount that was
+     * @param revokedMaxDIVARewardUSD Pending max USD DIVA reward that was
      * revoked.
-     * @param restoredMaxFeeAmountUSD Previous max USD fee amount that was
+     * @param restoredMaxDIVARewardUSD Previous max USD DIVA reward that was
      * restored.
      */
-    event PendingMaxFeeAmountUSDUpdateRevoked(
+    event PendingMaxDIVARewardUSDUpdateRevoked(
         address indexed revokedBy,
-        uint256 revokedMaxFeeAmountUSD,
-        uint256 restoredMaxFeeAmountUSD
+        uint256 revokedMaxDIVARewardUSD,
+        uint256 restoredMaxDIVARewardUSD
     );
 
     // Struct for `batchAddTip` function input.
@@ -311,10 +311,10 @@ interface IDIVAOracleTellor {
      * Reverts if:
      * - `msg.sender` is not contract owner.
      * - there is already a pending amount update.
-     * @param _newMaxFeeAmountUSD New amount expressed as an integer with
+     * @param _newMaxDIVARewardUSD New amount expressed as an integer with
      * 18 decimals.
      */
-    function updateMaxFeeAmountUSD(uint256 _newMaxFeeAmountUSD) external;
+    function updateMaxDIVARewardUSD(uint256 _newMaxDIVARewardUSD) external;
 
     /**
      * @notice Function to revoke a pending excess fee recipient update
@@ -326,13 +326,13 @@ interface IDIVAOracleTellor {
     function revokePendingExcessFeeRecipientUpdate() external;
 
     /**
-     * @notice Function to revoke a pending max USD fee amount update
+     * @notice Function to revoke a pending max USD DIVA reward update
      * and restore the previous one. Only callable by contract owner.
      * @dev Reverts if:
      * - `msg.sender` is not contract owner.
      * - new amount is already active.
      */
-    function revokePendingMaxFeeAmountUSDUpdate() external;
+    function revokePendingMaxDIVARewardUSDUpdate() external;
 
     /**
      * @notice Function to return whether the Tellor adapter's data feed
@@ -369,21 +369,21 @@ interface IDIVAOracleTellor {
     function getMinPeriodUndisputed() external pure returns (uint32);
 
     /**
-     * @notice Function to return the max USD fee amount info.
+     * @notice Function to return the max USD DIVA reward info.
      * @dev The initial value is set when the contract is deployed.
      * The previous value is set to zero initially.
-     * @return previousMaxFeeAmountUSD Previous value.
-     * @return maxFeeAmountUSD Latest update of the value.
-     * @return startTimeMaxFeeAmountUSD Timestamp in seconds since epoch at which
-     * `maxFeeAmountUSD` is activated.
+     * @return previousMaxDIVARewardUSD Previous value.
+     * @return maxDIVARewardUSD Latest update of the value.
+     * @return startTimeMaxDIVARewardUSD Timestamp in seconds since epoch at which
+     * `maxDIVARewardUSD` is activated.
      */
-    function getMaxFeeAmountUSDInfo()
+    function getMaxDIVARewardUSDInfo()
         external
         view
         returns (
-            uint256 previousMaxFeeAmountUSD,
-            uint256 maxFeeAmountUSD,
-            uint256 startTimeMaxFeeAmountUSD
+            uint256 previousMaxDIVARewardUSD,
+            uint256 maxDIVARewardUSD,
+            uint256 startTimeMaxDIVARewardUSD
         );
 
     /**
