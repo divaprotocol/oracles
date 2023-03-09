@@ -178,7 +178,6 @@ interface IDIVAOracleTellor {
         bool claimDIVAReward;
     }
 
-    // @todo add batch functions to function overview in docs
     // Struct for `batchSetFinalReferenceValue` function input.
     struct ArgsBatchSetFinalReferenceValue {
         uint256 poolId;
