@@ -93,7 +93,7 @@ The following overview provides a list of [DIVA Protocol functions](https://gith
 
 The creation of a derivative contract, also referred to as a "contingent pool" or simply "pool", constitutes a request to a data provider to supply a data point at a predetermined future time. It is the responsibility of the data provider to set up the necessary listeners and notification services to not miss the reporting window.
 
-The monitoring pools, we recommend using the DIVA subgraph, which captures both data stored within the DIVA smart contract and data emitted as part of events. The DIVA subgraph is available on the following networks:
+For monitoring pools, we recommend using the DIVA subgraph, which captures both data stored within the DIVA smart contract and data emitted as part of events. The DIVA subgraph is available on the following networks:
 * Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new
 * Sepolia: n/a
 * Polygon: n/a
@@ -104,7 +104,7 @@ Alternatively, you can use DIVA's [`getPoolParameters`](https://github.com/divap
 
 ### DIVA subgraph
 
-Below provides an example DIVA subgraph query including the most relevant fields for data providers. The full list of available fields can be found in the [DIVA subgraph](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new).
+Below provides an example subgraph query including the most relevant fields for data providers. The full list of available fields can be found in [here](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new).
 
 ```js
 { 
@@ -145,7 +145,7 @@ Below provides an example DIVA subgraph query including the most relevant fields
 where:
 
 | Parameter          |  Description|
-| :----------------- | :------ | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| :----------------- | :------ | 
 | `id`   | Id of the contingent pool / derivative contract; incrementally increasing integer starting at 1.    
 | `referenceAsset`   | The metric or event for which reporting is required (e.g., BTC/USD, ETH/USD, etc).     
 | `expiryTime`       | The contract expiration time and the "as of time" the reference asset value has to be reported of; expressed as a unix timestamp in seconds since epoch (UTC). |
