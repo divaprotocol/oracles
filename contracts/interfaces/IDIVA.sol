@@ -95,7 +95,7 @@ interface IDIVA {
 
     /**
      * @notice Batch version of `transferFeeClaim`
-     * @param _argsBatchTransferFeeClaim Struct array containing collateral tokens,
+     * @param _argsBatchTransferFeeClaim List containing collateral tokens,
      * recipient addresses and amounts (expressed as an integer with collateral
      * token decimals)
      */
