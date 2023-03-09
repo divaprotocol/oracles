@@ -11,9 +11,9 @@ interface IDIVAOracleTellor {
     // pool.
     error AlreadyConfirmedPool();
 
-    // Thrown in `updateExcessFeeRecipient` or constructor if the zero address
-    // is passed as excess fee recipient address.
-    error ZeroExcessFeeRecipient();
+    // Thrown in `updateExcessDIVARewardRecipient` or constructor if the zero address
+    // is passed as excess DIVA reward recipient address.
+    error ZeroExcessDIVARewardRecipient();
 
     // Thrown in `setFinalReferenceValue` if there is no data reported after
     // the expiry time for the specified pool.
@@ -26,16 +26,16 @@ interface IDIVAOracleTellor {
     // Thrown in constructor if zero address is provided as ownershipContract.
     error ZeroOwnershipContractAddress();
 
-    // Thrown in governance related functions including `updateExcessFeeRecipient`
-    // `updateMaxDIVARewardUSD`, `revokePendingExcessFeeRecipientUpdate`,
+    // Thrown in governance related functions including `updateExcessDIVARewardRecipient`
+    // `updateMaxDIVARewardUSD`, `revokePendingExcessDIVARewardRecipientUpdate`,
     // and `revokePendingMaxDIVARewardUSDUpdate` and `msg.sender` is not contract owner.
     error NotContractOwner(address _user, address _contractOwner);
 
-    // Thrown in `updateExcessFeeRecipient` if there is already a pending
-    // excess fee recipient address update.
-    error PendingExcessFeeRecipientUpdate(
+    // Thrown in `updateExcessDIVARewardRecipient` if there is already a pending
+    // excess DIVA reward recipient address update.
+    error PendingExcessDIVARewardRecipientUpdate(
         uint256 _timestampBlock,
-        uint256 _startTimeExcessFeeRecipient
+        uint256 _startTimeExcessDIVARewardRecipient
     );
 
     // Thrown in `updateMaxDIVARewardUSD` if there is already a pending max USD
@@ -45,11 +45,11 @@ interface IDIVAOracleTellor {
         uint256 _startTimeMaxDIVARewardUSD
     );
 
-    // Thrown in `revokePendingExcessFeeRecipientUpdate` if the excess fee
+    // Thrown in `revokePendingExcessDIVARewardRecipientUpdate` if the excess DIVA reward
     // recipient update to be revoked is already active.
-    error ExcessFeeRecipientAlreadyActive(
+    error ExcessDIVARewardRecipientAlreadyActive(
         uint256 _timestampBlock,
-        uint256 _startTimeExcessFeeRecipient
+        uint256 _startTimeExcessDIVARewardRecipient
     );
 
     // Thrown in `revokePendingMaxDIVARewardUSDUpdate` if the max USD DIVA reward
@@ -106,17 +106,17 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when the excess fee recipient is updated via
-     * the `updateExcessFeeRecipient` function.
+     * @notice Emitted when the excess DIVA reward recipient is updated via
+     * the `updateExcessDIVARewardRecipient` function.
      * @param from Address that initiated the change (contract owner).
-     * @param excessFeeRecipient New excess fee recipient address.
-     * @param startTimeExcessFeeRecipient Timestamp in seconds since epoch at
-     * which the new excess fee recipient will be activated.
+     * @param excessDIVARewardRecipient New excess DIVA reward recipient address.
+     * @param startTimeExcessDIVARewardRecipient Timestamp in seconds since epoch at
+     * which the new excess DIVA reward recipient will be activated.
      */
-    event ExcessFeeRecipientUpdated(
+    event ExcessDIVARewardRecipientUpdated(
         address indexed from,
-        address indexed excessFeeRecipient,
-        uint256 startTimeExcessFeeRecipient
+        address indexed excessDIVARewardRecipient,
+        uint256 startTimeExcessDIVARewardRecipient
     );
 
     /**
@@ -135,18 +135,18 @@ interface IDIVAOracleTellor {
     );
 
     /**
-     * @notice Emitted when a pending excess fee recipient update is revoked
-     * via the `revokePendingExcessFeeRecipientUpdate` function.
+     * @notice Emitted when a pending excess DIVA reward recipient update is revoked
+     * via the `revokePendingExcessDIVARewardRecipientUpdate` function.
      * @param revokedBy Address that initiated the revocation.
-     * @param revokedExcessFeeRecipient Pending excess fee recipient that was
+     * @param revokedExcessDIVARewardRecipient Pending excess DIVA reward recipient that was
      * revoked.
-     * @param restoredExcessFeeRecipient Previous excess fee recipient that was
+     * @param restoredExcessDIVARewardRecipient Previous excess DIVA reward recipient that was
      * restored.
      */
-    event PendingExcessFeeRecipientUpdateRevoked(
+    event PendingExcessDIVARewardRecipientUpdateRevoked(
         address indexed revokedBy,
-        address indexed revokedExcessFeeRecipient,
-        address indexed restoredExcessFeeRecipient
+        address indexed revokedExcessDIVARewardRecipient,
+        address indexed restoredExcessDIVARewardRecipient
     );
 
     /**
@@ -290,17 +290,17 @@ interface IDIVAOracleTellor {
     ) external;
 
     /**
-     * @notice Function to update the excess fee recipient address.
+     * @notice Function to update the excess DIVA reward recipient address.
      * @dev Activation is restricted to the contract owner and subject
      * to a 3-day delay.
      *
      * Reverts if:
      * - `msg.sender` is not contract owner.
      * - provided address equals zero address.
-     * - there is already a pending excess fee recipient address update.
-     * @param _newExcessFeeRecipient New excess fee recipient address.
+     * - there is already a pending excess DIVA reward recipient address update.
+     * @param _newExcessDIVARewardRecipient New excess DIVA reward recipient address.
      */
-    function updateExcessFeeRecipient(address _newExcessFeeRecipient) external;
+    function updateExcessDIVARewardRecipient(address _newExcessDIVARewardRecipient) external;
 
     /**
      * @notice Function to update the maximum amount of DIVA reward that
@@ -317,13 +317,13 @@ interface IDIVAOracleTellor {
     function updateMaxDIVARewardUSD(uint256 _newMaxDIVARewardUSD) external;
 
     /**
-     * @notice Function to revoke a pending excess fee recipient update
+     * @notice Function to revoke a pending excess DIVA reward recipient update
      * and restore the previous one.
      * @dev Reverts if:
      * - `msg.sender` is not contract owner.
-     * - new excess fee recipient is already active.
+     * - new excess DIVA reward recipient is already active.
      */
-    function revokePendingExcessFeeRecipientUpdate() external;
+    function revokePendingExcessDIVARewardRecipientUpdate() external;
 
     /**
      * @notice Function to revoke a pending max USD DIVA reward update
@@ -344,21 +344,21 @@ interface IDIVAOracleTellor {
     function getChallengeable() external view returns (bool);
 
     /**
-     * @notice Function to return the excess fee recipient info.
-     * @dev The initial excess fee recipient is set when the contract is deployed.
-     * The previous excess fee recipient is set to the zero address initially.
-     * @return previousExcessFeeRecipient Previous excess fee recipient address.
-     * @return excessFeeRecipient Latest update of the excess fee recipient address.
-     * @return startTimeExcessFeeRecipient Timestamp in seconds since epoch at which
-     * `excessFeeRecipient` is activated.
+     * @notice Function to return the excess DIVA reward recipient info.
+     * @dev The initial excess DIVA reward recipient is set when the contract is deployed.
+     * The previous excess DIVA reward recipient is set to the zero address initially.
+     * @return previousExcessDIVARewardRecipient Previous excess DIVA reward recipient address.
+     * @return excessDIVARewardRecipient Latest update of the excess DIVA reward recipient address.
+     * @return startTimeExcessDIVARewardRecipient Timestamp in seconds since epoch at which
+     * `excessDIVARewardRecipient` is activated.
      */
-    function getExcessFeeRecipientInfo()
+    function getExcessDIVARewardRecipientInfo()
         external
         view
         returns (
-            address previousExcessFeeRecipient,
-            address excessFeeRecipient,
-            uint256 startTimeExcessFeeRecipient
+            address previousExcessDIVARewardRecipient,
+            address excessDIVARewardRecipient,
+            uint256 startTimeExcessDIVARewardRecipient
         );
 
     /**

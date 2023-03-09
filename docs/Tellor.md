@@ -137,7 +137,7 @@ Note that depositing a stake or or disputing a value requires prior approval for
 
 ## Ownership and privileges
 
-The Tellor adapter contract implements an owner which is inherited from the DIVA Ownership contract, which is the same contract that DIVA Protocol inherits their owner from. The owner is authorized to [update the maximum amount of DIVA rewards](#updatemaxdivarewardusd) that a reporter can receive, denominated in USD, as well as the [recipient of any excess fee](#updateexcessfeerecipient). 
+The Tellor adapter contract implements an owner which is inherited from the DIVA Ownership contract, which is the same contract that DIVA Protocol inherits their owner from. The owner is authorized to [update the maximum amount of DIVA rewards](#updatemaxdivarewardusd) that a reporter can receive, denominated in USD, as well as the [recipient of any excess DIVA reward](updateexcessdivarewardrecipient). 
 
 The update process is the same as in DIVA Protocol. The owner initiates an update of the relevant value, which only becomes effective after a pre-defined delay. In the Tellor adapter contract, this delay is fixed at 3 days and cannot be modified. During this period, the contract owner has the ability to revoke the update if needed.
 
@@ -230,13 +230,13 @@ The following table shows the functions implemented in the [Tellor adapter contr
 | [`addTip`](#addtip)                                                                             | Function to tip a pool in any ERC20 token.                                                                                                       |
 | [`claimReward`](#claimreward)                                                                 | Function to claim tips and/or DIVA rewards.                                                                                                     |
 | **Governance functions** (execution is reserved for DIVA owner only)                      |                                                                                                                                                             |
-| [`updateExcessFeeRecipient`](#updateexcessfeerecipient)                                             | Function to update the excess fee recipient address.                                                                     |
+| [`updateExcessDIVARewardRecipient`](updateexcessdivarewardrecipient)                                             | Function to update the excess DIVA reward recipient address.                                                                     |
 | [`updateMaxDIVARewardUSD`](#updatemaxdivarewardusd)                                             | Function to update the maximum USD DIVA reward that goes to the reporter.                                                                     |
 | [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate)                                             | Function to revoke a pending maximum USD DIVA reward update and restore the previous one.                                                                     |
-| [`revokePendingExcessFeeRecipientUpdate`](#revokependingexcessfeerecipientupdate)                                             | Function to revoke a pending excess fee recipient address update and restore the previous one.                                                                     |
+| [`revokePendingExcessDIVARewardRecipientUpdate`](#revokependingexcessdivarewardrecipientupdate)                                             | Function to revoke a pending excess DIVA reward recipient address update and restore the previous one.                                                                     |
 | **Getter functions**                                                                            |                                                                                                                                      |
 | [`getChallengeable`](#getchallengeable)                                                         | Function to return whether the Tellor adapter's data feed is challengeable inside DIVA Protocol. In this implementation, the function always returns `false`, which means that the first value submitted to the DIVA Protocol will determine the payouts, and users can start claiming their payouts thereafter.                                                          |
-| [`getExcessFeeRecipientInfo`](#getexcessfeerecipientinfo)                                               | Function to return the latest update of the excess fee recipient address, including the activation time and the previous value.                                                                                 |
+| [`getExcessDIVARewardRecipientInfo`](#getexcessdivarewardrecipientinfo)                                               | Function to return the latest update of the excess DIVA reward recipient address, including the activation time and the previous value.                                                                                 |
 | [`getMaxDIVARewardUSDInfo`](#getmaxdivarewardusdinfo)                                                     | Function to return the latest update of the max USD DIVA reward, including the activation time and the previous value.                                                                    |
 | [`getMinPeriodUndisputed`](#getminperiodundisputed)                                             | Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid. Hard-coded to 12 hours (= 43'200 seconds) in this implementation.     |
 | [`getTippingTokensLengthForPoolIds`](#gettippingtokenslengthforpoolids)                         | Function to return the number of tipping tokens for a given set of poolIds.                                                           |
@@ -264,7 +264,7 @@ The caller, which can be anyone, can trigger the claim of the rewards in the sam
 
 If no tipping tokens are provided and `_claimDIVAReward` is set to `false`, the function will not claim any rewards and users can claim them separately via the [`claimReward`](#claimreward) function.
 
-Note that the DIVA reward, which includes the settlement fee and any tip added via DIVA's `addTip` function (not to be confused with the [`addTip`](#addtip) function inside the Tellor adapter), is capped at USD 10. The remaining reward goes to the excess fee recipient address [set](#updateexcessfeerecipient) by the DIVA owner. This measure was put in place to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward. Note that tips added via the [`addTip`](#addtip) function to the Tellor adapter contract are not affected by this cap.
+Note that the DIVA reward, which includes the settlement fee and any tip added via DIVA's `addTip` function (not to be confused with the [`addTip`](#addtip) function inside the Tellor adapter), is capped at USD 10. The remaining reward goes to the excess DIVA reward recipient address [set](updateexcessdivarewardrecipient) by the DIVA owner. This measure was put in place to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward. Note that tips added via the [`addTip`](#addtip) function to the Tellor adapter contract are not affected by this cap.
 
 >**Important:** The function `setFinalReferenceValue` should be called within submission window of the pool. This window is restricted by the DIVA smart contract to a range of 3 to 15 days and can be retrieved via DIVA's `getSettlementPeriods` function by passing the `indexSettlementPeriods` obtained via `getPoolParameters`.
 
@@ -277,7 +277,7 @@ The function executes the following steps in the following order:
 * Retrieve the reporter address and store it as the eligible address to claim the reward inside the `_poolIdToReporter` mapping.
 * Add an entry to `_reporterToPoolIds` array to allow reporters to retrieve the pools that they are eligible for via [`getPoolIdsForReporters`](#getpoolidsforreporters).
 * Pass on the final reference value to the DIVA smart contract to determine the payouts. Note that DIVA's challenge feature is disabled and the first value successfully submitted will be confirmed, allowing position token holders to start claiming their payouts.
-* Calculate the USD equivalent of the collateral token, and then credit the eligible reporter with their respective amount, up to a maximum of USD 10. Any excess reward beyond USD 10 will be credited to the excess fee recipient. Please note that DIVA rewards are not claimed in this step, but rather re-allocated from the contract to the eligible reporter, as the contract acts as the data provider in the pool. DIVA rewards are claimed in the same function call if the `_claimDIVAReward` parameter is set to `true` or laster using the [`claimReward`](#claimreward) function. 
+* Calculate the USD equivalent of the collateral token, and then credit the eligible reporter with their respective amount, up to a maximum of USD 10. Any excess reward beyond USD 10 will be credited to the excess DIVA reward recipient. Please note that DIVA rewards are not claimed in this step, but rather re-allocated from the contract to the eligible reporter, as the contract acts as the data provider in the pool. DIVA rewards are claimed in the same function call if the `_claimDIVAReward` parameter is set to `true` or laster using the [`claimReward`](#claimreward) function. 
 * Emit a [`FinalReferenceValueSet`](#finalreferencevalueset) event on success.
 * If `_tippingTokens` are provided and/or the `_claimDIVAReward` parameter is set to `true`, proceed with the same steps as outlined in [`claimReward`](#claimreward).
 
@@ -417,25 +417,25 @@ struct ArgsBatchClaimReward {
 
 The execution of the following functions is reserved to the contract owner only.
 
-### updateExcessFeeRecipient
+### updateExcessDIVARewardRecipient
 
-Function to update the excess fee recipient address. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`ExcessFeeRecipientUpdated`](#excessfeerecipientupdated) event including the new excess fee recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingExcessFeeRecipientUpdate`](#revokependingexcessfeerecipientupdate). The previous excess fee recipient address as well as the current one can be obtained via the [`getExcessFeeRecipientInfo`](#getexcessfeerecipientinfo) function.
+Function to update the excess DIVA reward recipient address. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`ExcessDIVARewardRecipientUpdated`](#excessdivarewardrecipientupdated) event including the new excess DIVA reward recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingExcessDIVARewardRecipientUpdate`](#revokependingexcessdivarewardrecipientupdate). The previous excess DIVA reward recipient address as well as the current one can be obtained via the [`getExcessDIVARewardRecipientInfo`](#getexcessdivarewardrecipientinfo) function.
 
 Reverts if:
 * `msg.sender` is not contract owner.
 * provided address equals zero address.
-* there is already a pending excess fee recipient address update.
+* there is already a pending excess DIVA reward recipient address update.
 
 ```js
-function updateExcessFeeRecipient(
-    address _newExcessFeeRecipient  // New excess fee recipient address
+function updateExcessDIVARewardRecipient(
+    address _newExcessDIVARewardRecipient  // New excess DIVA reward recipient address
 )
     external;
 ```
 
 ### updateMaxDIVARewardUSD
 
-Function to update the maximum amount of DIVA reward that a reporter can receive, denominated in USD. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`MaxDIVARewardUSDUpdated`](#maxdivarewardusdupdated) event including the new excess fee recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate). The previous amount as well as the current one can be obtained via the [`getMaxDIVARewardUSDInfo`](#getmaxdivarewardusdinfo) function.
+Function to update the maximum amount of DIVA reward that a reporter can receive, denominated in USD. Activation is restricted to the contract owner and subject to a 3-day delay. On success, emits a [`MaxDIVARewardUSDUpdated`](#maxdivarewardusdupdated) event including the new excess DIVA reward recipient address as well as its activation time. A pending update can be revoked by the contract owner using the [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate). The previous amount as well as the current one can be obtained via the [`getMaxDIVARewardUSDInfo`](#getmaxdivarewardusdinfo) function.
 
 Reverts if:
 * `msg.sender` is not contract owner.
@@ -448,16 +448,16 @@ function updateMaxDIVARewardUSD(
     external;
 ```
 
-### revokePendingExcessFeeRecipientUpdate
+### revokePendingExcessDIVARewardRecipientUpdate
 
-Function to revoke a pending excess fee recipient update and restore the previous one. On success, emits a [`PendingExcessFeeRecipientUpdateRevoked`](#pendingexcessfeerecipientupdaterevoked) event including the revoked and restored excess fee recipient address. 
+Function to revoke a pending excess DIVA reward recipient update and restore the previous one. On success, emits a [`PendingExcessDIVARewardRecipientUpdateRevoked`](#pendingexcessdivarewardrecipientupdaterevoked) event including the revoked and restored excess DIVA reward recipient address. 
 
 Reverts if:
 * `msg.sender` is not contract owner.
-* New excess fee recipient is already active (i.e. `block.timestamp >= startTime`).
+* New excess DIVA reward recipient is already active (i.e. `block.timestamp >= startTime`).
 
 ```js
-function revokePendingExcessFeeRecipientUpdate() external;
+function revokePendingExcessDIVARewardRecipientUpdate() external;
 ```
 
 ### revokePendingMaxDIVARewardUSDUpdate
@@ -487,18 +487,18 @@ function getChallengeable()
     returns (bool);
 ```
 
-### getExcessFeeRecipientInfo
+### getExcessDIVARewardRecipientInfo
 
-Function to return the excess fee recipient info. The initial excess fee recipient is set when the contract is deployed. The previous excess fee recipient is set to the zero address initially.
+Function to return the excess DIVA reward recipient info. The initial excess DIVA reward recipient is set when the contract is deployed. The previous excess DIVA reward recipient is set to the zero address initially.
 
 ```js
- function getExcessFeeRecipientInfo()
+ function getExcessDIVARewardRecipientInfo()
     external
     view
     returns (
-        address previousExcessFeeRecipient, // Previous excess fee recipient address.
-        address excessFeeRecipient,         // Latest update of the excess fee recipient address.
-        uint256 startTimeExcessFeeRecipient // Timestamp in seconds since epoch at which `excessFeeRecipient` is activated.
+        address previousExcessDIVARewardRecipient, // Previous excess DIVA reward recipient address.
+        address excessDIVARewardRecipient,         // Latest update of the excess DIVA reward recipient address.
+        uint256 startTimeExcessDIVARewardRecipient // Timestamp in seconds since epoch at which `excessDIVARewardRecipient` is activated.
     );
 ```
 
@@ -726,15 +726,15 @@ event FinalReferenceValueSet(
 );
 ```
 
-### ExcessFeeRecipientUpdated
+### ExcessDIVARewardRecipientUpdated
 
-Emitted when the excess fee recipient is updated via the [`updateExcessFeeRecipient`](#updateexcessfeerecipient) function.
+Emitted when the excess DIVA reward recipient is updated via the [`updateExcessDIVARewardRecipient`](updateexcessdivarewardrecipient) function.
 
 ```
-event ExcessFeeRecipientUpdated(
+event ExcessDIVARewardRecipientUpdated(
     address indexed from,                   // Address that initiated the change (contract owner)
-    address indexed excessFeeRecipient,     // New excess fee recipient address
-    uint256 startTimeExcessFeeRecipient     // Timestamp in seconds since epoch at which the new excess fee recipient will be activated
+    address indexed excessDIVARewardRecipient,     // New excess DIVA reward recipient address
+    uint256 startTimeExcessDIVARewardRecipient     // Timestamp in seconds since epoch at which the new excess DIVA reward recipient will be activated
 );
 ```
 
@@ -750,15 +750,15 @@ event MaxDIVARewardUSDUpdated(
 );
 ```
 
-### PendingExcessFeeRecipientUpdateRevoked
+### PendingExcessDIVARewardRecipientUpdateRevoked
 
-Emitted when a pending excess fee recipient update is revoked via the [`revokePendingExcessFeeRecipientUpdate`](#revokependingexcessfeerecipientupdate) function.
+Emitted when a pending excess DIVA reward recipient update is revoked via the [`revokePendingExcessDIVARewardRecipientUpdate`](#revokependingexcessdivarewardrecipientupdate) function.
 
 ```
-event PendingExcessFeeRecipientUpdateRevoked(
+event PendingExcessDIVARewardRecipientUpdateRevoked(
     address indexed revokedBy,                  // Address that initiated the revocation
-    address indexed revokedExcessFeeRecipient,  // Pending excess fee recipient that was revoked
-    address indexed restoredExcessFeeRecipient  // Previous excess fee recipient that was restored
+    address indexed revokedExcessDIVARewardRecipient,  // Pending excess DIVA reward recipient that was revoked
+    address indexed restoredExcessDIVARewardRecipient  // Previous excess DIVA reward recipient that was restored
 );
 ```
 
@@ -782,14 +782,14 @@ The following errors may be emitted during execution of the functions, including
 | :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NotConfirmedPool()`                  | `claimReward` / `setFinalReferenceValue`| Thrown if rewards are claimed before a pool was confirmed.                                                                   |
 | `AlreadyConfirmedPool()`              | `addTip`                                                                                                                                                 | Thrown if user tries to add a tip for an already confirmed pool                                                                                 |
-| `ZeroExcessFeeRecipient()`            | `updateExcessFeeRecipient` / constructor                                                                                                                                  | Thrown if the zero address is passed as excess fee recipient address.                                                                      |
+| `ZeroExcessDIVARewardRecipient()`            | `updateExcessDIVARewardRecipient` / constructor                                                                                                                                  | Thrown if the zero address is passed as excess DIVA reward recipient address.                                                                      |
 | `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` | Thrown if there is no data reported after the expiry time for the underlying pool. |
 | `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` | Thrown if user tries to call `setFinalReferenceValue` before the minimum period undisputed period has passed.               |
 | `ZeroOwnershipContractAddress()`      | constructor | Thrown in constructor if zero address is provided as ownershipContract.               |
-| `NotContractOwner(address _user, address _contractOwner)`      | `updateExcessFeeRecipient` / `updateMaxDIVARewardUSD` / `revokePendingExcessFeeRecipientUpdate` / `revokePendingMaxDIVARewardUSDUpdate` | Thrown in constructor if zero address is provided as ownershipContract.               |
-| `PendingExcessFeeRecipientUpdate(uint256 _timestampBlock, uint256 _startTimeExcessFeeRecipient)`      | `updateExcessFeeRecipient` | Thrown if there is already a pending excess fee recipient address update.               |
+| `NotContractOwner(address _user, address _contractOwner)`      | `updateExcessDIVARewardRecipient` / `updateMaxDIVARewardUSD` / `revokePendingExcessDIVARewardRecipientUpdate` / `revokePendingMaxDIVARewardUSDUpdate` | Thrown in constructor if zero address is provided as ownershipContract.               |
+| `PendingExcessDIVARewardRecipientUpdate(uint256 _timestampBlock, uint256 _startTimeExcessDIVARewardRecipient)`      | `updateExcessDIVARewardRecipient` | Thrown if there is already a pending excess DIVA reward recipient address update.               |
 | `PendingMaxDIVARewardUSDUpdate(uint256 _timestampBlock, uint256 _startTimeMaxDIVARewardUSD)`      | `updateMaxDIVARewardUSD` | Thrown if there is already a pending max USD DIVA reward update.               |
-| `ExcessFeeRecipientAlreadyActive(uint256 _timestampBlock, uint256 _startTimeExcessFeeRecipient)`      | `revokePendingExcessFeeRecipientUpdate` | Thrown if the excess fee recipient update to be revoked is already active.               |
+| `ExcessDIVARewardRecipientAlreadyActive(uint256 _timestampBlock, uint256 _startTimeExcessDIVARewardRecipient)`      | `revokePendingExcessDIVARewardRecipientUpdate` | Thrown if the excess DIVA reward recipient update to be revoked is already active.               |
 | `MaxDIVARewardUSDAlreadyActive(uint256 _timestampBlock, uint256 _startTimeMaxDIVARewardUSD)`      | `revokePendingMaxDIVARewardUSDUpdate` | Thrown if the max USD DIVA reward update to be revoked is already active.               |
 
 ## Risks and mitigants

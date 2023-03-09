@@ -24,9 +24,9 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     uint256 private _maxDIVARewardUSD; // expressed as an integer with 18 decimals
     uint256 private _startTimeMaxDIVARewardUSD;
 
-    address private _previousExcessFeeRecipient; // initialized to zero address at contract deployment
-    address private _excessFeeRecipient;
-    uint256 private _startTimeExcessFeeRecipient;
+    address private _previousExcessDIVARewardRecipient; // initialized to zero address at contract deployment
+    address private _excessDIVARewardRecipient;
+    uint256 private _startTimeExcessDIVARewardRecipient;
 
     address private immutable _ownershipContract;
     bool private immutable _challengeable;
@@ -46,20 +46,20 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     constructor(
         address ownershipContract_,
         address payable tellorAddress_,
-        address excessFeeRecipient_,
+        address excessDIVARewardRecipient_,
         uint256 maxDIVARewardUSD_,
         address diva_
     ) UsingTellor(tellorAddress_) {
         if (ownershipContract_ == address(0)) {
             revert ZeroOwnershipContractAddress();
         }
-        if (excessFeeRecipient_ == address(0)) {
-            revert ZeroExcessFeeRecipient();
+        if (excessDIVARewardRecipient_ == address(0)) {
+            revert ZeroExcessDIVARewardRecipient();
         }
 
         _ownershipContract = ownershipContract_;
         _challengeable = false;
-        _excessFeeRecipient = excessFeeRecipient_;
+        _excessDIVARewardRecipient = excessDIVARewardRecipient_;
         _maxDIVARewardUSD = maxDIVARewardUSD_;
         _diva = IDIVA(diva_);
     }
@@ -178,44 +178,44 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         }
     }
 
-    function updateExcessFeeRecipient(address _newExcessFeeRecipient)
+    function updateExcessDIVARewardRecipient(address _newExcessDIVARewardRecipient)
         external
         override
         onlyOwner
     {
-        // Confirm that provided excess fee recipient address
+        // Confirm that provided excess DIVA reward recipient address
         // is not zero address
-        if (_newExcessFeeRecipient == address(0)) {
-            revert ZeroExcessFeeRecipient();
+        if (_newExcessDIVARewardRecipient == address(0)) {
+            revert ZeroExcessDIVARewardRecipient();
         }
 
-        // Confirm that there is no pending excess fee recipient update.
+        // Confirm that there is no pending excess DIVA reward recipient update.
         // Revoke to update pending value.
-        if (_startTimeExcessFeeRecipient > block.timestamp) {
-            revert PendingExcessFeeRecipientUpdate(
+        if (_startTimeExcessDIVARewardRecipient > block.timestamp) {
+            revert PendingExcessDIVARewardRecipientUpdate(
                 block.timestamp,
-                _startTimeExcessFeeRecipient
+                _startTimeExcessDIVARewardRecipient
             );
         }
 
-        // Store current excess fee recipient in `_previousExcessFeeRecipient`
+        // Store current excess DIVA reward recipient in `_previousExcessDIVARewardRecipient`
         // variable
-        _previousExcessFeeRecipient = _excessFeeRecipient;
+        _previousExcessDIVARewardRecipient = _excessDIVARewardRecipient;
 
-        // Set time at which the new excess fee recipient will become applicable
-        uint256 _startTimeNewExcessFeeRecipient = block.timestamp +
+        // Set time at which the new excess DIVA reward recipient will become applicable
+        uint256 _startTimeNewExcessDIVARewardRecipient = block.timestamp +
             _activationDelay;
 
-        // Store start time and new excess fee recipient
-        _startTimeExcessFeeRecipient = _startTimeNewExcessFeeRecipient;
-        _excessFeeRecipient = _newExcessFeeRecipient;
+        // Store start time and new excess DIVA reward recipient
+        _startTimeExcessDIVARewardRecipient = _startTimeNewExcessDIVARewardRecipient;
+        _excessDIVARewardRecipient = _newExcessDIVARewardRecipient;
 
-        // Log the new excess fee recipient as well as the address that
+        // Log the new excess DIVA reward recipient as well as the address that
         // initiated the change
-        emit ExcessFeeRecipientUpdated(
+        emit ExcessDIVARewardRecipientUpdated(
             msg.sender,
-            _newExcessFeeRecipient,
-            _startTimeNewExcessFeeRecipient
+            _newExcessDIVARewardRecipient,
+            _startTimeNewExcessDIVARewardRecipient
         );
     }
 
@@ -254,32 +254,32 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function revokePendingExcessFeeRecipientUpdate()
+    function revokePendingExcessDIVARewardRecipientUpdate()
         external
         override
         onlyOwner
     {
-        // Confirm that new excess fee recipient is not active yet
-        if (_startTimeExcessFeeRecipient <= block.timestamp) {
-            revert ExcessFeeRecipientAlreadyActive(
+        // Confirm that new excess DIVA reward recipient is not active yet
+        if (_startTimeExcessDIVARewardRecipient <= block.timestamp) {
+            revert ExcessDIVARewardRecipientAlreadyActive(
                 block.timestamp,
-                _startTimeExcessFeeRecipient
+                _startTimeExcessDIVARewardRecipient
             );
         }
 
-        // Store `_excessFeeRecipient` value temporarily
-        address _revokedExcessFeeRecipient = _excessFeeRecipient;
+        // Store `_excessDIVARewardRecipient` value temporarily
+        address _revokedExcessDIVARewardRecipient = _excessDIVARewardRecipient;
 
-        // Reset excess fee recipient related variables
-        _startTimeExcessFeeRecipient = block.timestamp;
-        _excessFeeRecipient = _previousExcessFeeRecipient;
+        // Reset excess DIVA reward recipient related variables
+        _startTimeExcessDIVARewardRecipient = block.timestamp;
+        _excessDIVARewardRecipient = _previousExcessDIVARewardRecipient;
 
-        // Log the excess fee recipient revoked, the previous one that now
+        // Log the excess DIVA reward recipient revoked, the previous one that now
         // applies as well as the address that initiated the change
-        emit PendingExcessFeeRecipientUpdateRevoked(
+        emit PendingExcessDIVARewardRecipientUpdateRevoked(
             msg.sender,
-            _revokedExcessFeeRecipient,
-            _previousExcessFeeRecipient
+            _revokedExcessDIVARewardRecipient,
+            _previousExcessDIVARewardRecipient
         );
     }
 
@@ -312,24 +312,24 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return _challengeable;
     }
 
-    function getExcessFeeRecipientInfo()
+    function getExcessDIVARewardRecipientInfo()
         external
         view
         override
         returns (
-            address previousExcessFeeRecipient,
-            address excessFeeRecipient,
-            uint256 startTimeExcessFeeRecipient
+            address previousExcessDIVARewardRecipient,
+            address excessDIVARewardRecipient,
+            uint256 startTimeExcessDIVARewardRecipient
         )
     {
         (
-            previousExcessFeeRecipient,
-            excessFeeRecipient,
-            startTimeExcessFeeRecipient
+            previousExcessDIVARewardRecipient,
+            excessDIVARewardRecipient,
+            startTimeExcessDIVARewardRecipient
         ) = (
-            _previousExcessFeeRecipient,
-            _excessFeeRecipient,
-            _startTimeExcessFeeRecipient
+            _previousExcessDIVARewardRecipient,
+            _excessDIVARewardRecipient,
+            _startTimeExcessDIVARewardRecipient
         );
     }
 
@@ -561,14 +561,14 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         queryId = keccak256(queryData);
     }
 
-    function _getCurrentExcessFeeRecipient() internal view returns (address) {
-        // Return the new excess fee recipient if `block.timestamp` is at or
-        // past the activation time, else return the current excess fee
+    function _getCurrentExcessDIVARewardRecipient() internal view returns (address) {
+        // Return the new excess DIVA reward recipient if `block.timestamp` is at or
+        // past the activation time, else return the current excess DIVA reward
         // recipient
         return
-            block.timestamp < _startTimeExcessFeeRecipient
-                ? _previousExcessFeeRecipient
-                : _excessFeeRecipient;
+            block.timestamp < _startTimeExcessDIVARewardRecipient
+                ? _previousExcessDIVARewardRecipient
+                : _excessDIVARewardRecipient;
     }
 
     function _getCurrentMaxDIVARewardUSD() internal view returns (uint256) {
@@ -674,7 +674,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _poolIdToReporter[_poolId] = _reporter;
         _reporterToPoolIds[_reporter].push(_poolId);
 
-        // Forward final value to DIVA contract. Allocates the fee as part of that process.
+        // Forward final value to DIVA contract. Credits the DIVA reward to `this`
+        // contract as part of that process. DIVA reward claim is transferred to
+        // the corresponding reporter via the `batchTransferFeeClaim` function
+        // further down below.
         _diva.setFinalReferenceValue(
             _poolId,
             _formattedFinalReferenceValue,
@@ -684,50 +687,52 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         uint256 _SCALING = uint256(
             10**(18 - IERC20Metadata(_params.collateralToken).decimals())
         );
-        // Get the current fee claim allocated to this contract address (msg.sender)
-        uint256 feeClaim = _diva.getClaim(
+        
+        // Get the current DIVA reward claim allocated to this contract address (msg.sender)
+        uint256 divaRewardClaim = _diva.getClaim(
             _params.collateralToken,
             address(this)
         ); // denominated in collateral token; integer with collateral token decimals
 
-        uint256 feeClaimUSD = (feeClaim * _SCALING).multiplyDecimal(
+        uint256 divaRewardClaimUSD = (divaRewardClaim * _SCALING).multiplyDecimal(
             _formattedCollateralToUSDRate
         ); // denominated in USD; integer with 18 decimals
-        uint256 feeToReporter;
+        uint256 divaRewardToReporter;
 
         uint256 _currentMaxDIVARewardUSD = _getCurrentMaxDIVARewardUSD();
-        if (feeClaimUSD > _currentMaxDIVARewardUSD) {
-            // if _formattedCollateralToUSDRate = 0, then feeClaimUSD = 0 in
+        if (divaRewardClaimUSD > _currentMaxDIVARewardUSD) {
+            // if _formattedCollateralToUSDRate = 0, then divaRewardClaimUSD = 0 in
             // which case it will go into the else part, hence division by zero
             // is not a problem
-            feeToReporter =
+            divaRewardToReporter =
                 _currentMaxDIVARewardUSD.divideDecimal(
                     _formattedCollateralToUSDRate
                 ) /
                 _SCALING; // integer with collateral token decimals
         } else {
-            feeToReporter = feeClaim;
+            divaRewardToReporter = divaRewardClaim;
         }
 
-        // Transfer fee claim to reporter and excessFeeRecipient. Note that the
-        // transfer takes place internally inside the DIVA smart contract and the
-        // reward has to be claimed separately either by setting the `_claimDIVAReward`
-        // parameter to `true` or later by calling the `claimReward` function. 
+        // Transfer DIVA reward claim to reporter and excess DIVA reward recipient.
+        // Note that the transfer takes place internally inside the DIVA smart contract
+        // and the reward has to be claimed separately either by setting the `_claimDIVAReward`
+        // parameter to `true` when calling `setFinalReferenceValue` inside this contract
+        // or later by calling the `claimReward` function. 
         IDIVA.ArgsBatchTransferFeeClaim[]
-            memory _feeClaimTransfers = new IDIVA.ArgsBatchTransferFeeClaim[](
+            memory _divaRewardClaimTransfers = new IDIVA.ArgsBatchTransferFeeClaim[](
                 2
             );
-        _feeClaimTransfers[0] = IDIVA.ArgsBatchTransferFeeClaim(
+        _divaRewardClaimTransfers[0] = IDIVA.ArgsBatchTransferFeeClaim(
             _reporter,
             _params.collateralToken,
-            feeToReporter
+            divaRewardToReporter
         );
-        _feeClaimTransfers[1] = IDIVA.ArgsBatchTransferFeeClaim(
-            _getCurrentExcessFeeRecipient(),
+        _divaRewardClaimTransfers[1] = IDIVA.ArgsBatchTransferFeeClaim(
+            _getCurrentExcessDIVARewardRecipient(),
             _params.collateralToken,
-            feeClaim - feeToReporter // integer with collateral token decimals
+            divaRewardClaim - divaRewardToReporter // integer with collateral token decimals
         );
-        _diva.batchTransferFeeClaim(_feeClaimTransfers);
+        _diva.batchTransferFeeClaim(_divaRewardClaimTransfers);
 
         // Log event including reported information
         emit FinalReferenceValueSet(
