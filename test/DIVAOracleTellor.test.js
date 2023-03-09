@@ -4,6 +4,10 @@ const { parseUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const {
+  calcSettlementFee,
+  encodeOracleValue,
+  decodeOracleValue,
+  getQueryDataAndId,
   getLastBlockTimestamp,
   setNextBlockTimestamp,
 } = require("../utils/utils");
@@ -20,55 +24,6 @@ const { erc20DeployFixture } = require("./fixtures/MockERC20Fixture");
 const network = "goerli"; // for tellorPlayground address; should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
 const tippingTokenDecimals = 6;
-
-const calcSettlementFee = (
-  collateralBalance, // Basis for fee calcuation
-  fee, // Settlement fee percent expressed as an integer with 18 decimals
-  collateralTokenDecimals,
-  collateralToUSDRate = parseUnits("0") // USD value of one unit of collateral token
-) => {
-  // Fee amount in collateral token decimals
-  feeAmount = collateralBalance.mul(fee).div(parseUnits("1"));
-
-  // Fee amount in USD expressed as integer with 18 decimals
-  feeAmountUSD = feeAmount
-    .mul(parseUnits("1", 18 - collateralTokenDecimals))
-    .mul(collateralToUSDRate)
-    .div(parseUnits("1"));
-
-  return [
-    feeAmount, // expressed as integer with collateral token decimals
-    feeAmountUSD, // expressed as integer with 18 decimals
-  ];
-};
-
-const encodeOracleValue = (finalReferenceValue, collateralToUSDRate) => {
-  return new ethers.utils.AbiCoder().encode(
-    ["uint256", "uint256"],
-    [finalReferenceValue, collateralToUSDRate]
-  );
-};
-
-const decodeOracleValue = (tellorValue) => {
-  return new ethers.utils.AbiCoder().decode(
-    ["uint256", "uint256"],
-    tellorValue
-  );
-};
-
-const getQueryDataAndId = (latestPoolId, divaAddress, chainId) => {
-  const abiCoder = new ethers.utils.AbiCoder();
-  const queryDataArgs = abiCoder.encode(
-    ["uint256", "address", "uint256"],
-    [latestPoolId, divaAddress, chainId]
-  );
-  const queryData = abiCoder.encode(
-    ["string", "bytes"],
-    ["DIVAProtocol", queryDataArgs]
-  );
-  const queryId = ethers.utils.keccak256(queryData);
-  return [queryData, queryId];
-};
 
 describe("DIVAOracleTellor", () => {
   let collateralTokenInstance;
@@ -211,6 +166,10 @@ describe("DIVAOracleTellor", () => {
       divaAddress,
       chainId
     );
+    const [queryDataFromContract, queryIdFromContract] =
+      await divaOracleTellor.getQueryDataAndId(latestPoolId);
+    expect(queryData).to.eq(queryDataFromContract);
+    expect(queryId).to.eq(queryIdFromContract);
 
     // Deploy tipping tokens
     tippingToken1 = await erc20DeployFixture(
