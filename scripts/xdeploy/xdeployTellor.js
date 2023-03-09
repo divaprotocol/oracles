@@ -13,9 +13,9 @@
  * If you have already used it, you will be notified in the deployment failure message.
  *
  * IMPORTANT:
- * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasuy address.
+ * - Set `EXCESS_DIVA_REWARD_RECIPIENT` in `.env` file to the initial DIVA treasuy address.
  * - Set `tellorVersion` on line 22 of `_generateTellorArgs.js` file to the correct one you want link to.
- * - Set `MAX_FEE_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
+ * - Set `MAX_DIVA_REWARD_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
  *
  * Run: `yarn xdeploy:divaTellor`
  */

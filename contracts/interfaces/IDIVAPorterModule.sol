@@ -74,7 +74,7 @@ interface IDIVAPorterModule {
 
     /**
      * @dev Returns whether the oracle's data feed is challengeable or not.
-     * Will return false in that implementation.
+     * Will return `false` in that implementation.
      */
     function getChallengeable() external view returns (bool);
 

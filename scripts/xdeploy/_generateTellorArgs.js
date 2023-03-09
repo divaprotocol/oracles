@@ -14,8 +14,8 @@ const {
 } = require("../../utils/constants");
 
 // Load relevant variables from `.env` file
-const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
-const MAX_FEE_AMOUNT_USD = process.env.MAX_FEE_AMOUNT_USD || "";
+const EXCESS_DIVA_REWARD_RECIPIENT = process.env.EXCESS_DIVA_REWARD_RECIPIENT || "";
+const MAX_DIVA_REWARD_AMOUNT_USD = process.env.MAX_DIVA_REWARD_AMOUNT_USD || "";
 
 const main = async () => {
   // INPUT: tellor version
@@ -45,8 +45,8 @@ const main = async () => {
     module.exports = [
       "${divaOwnershipAddress}",
       "${tellorAddress}",
-      "${EXCESS_FEE_RECIPIENT}",
-      "${MAX_FEE_AMOUNT_USD}",
+      "${EXCESS_DIVA_REWARD_RECIPIENT}",
+      "${MAX_DIVA_REWARD_AMOUNT_USD}",
       "${divaAddress}"
     ];
   `;

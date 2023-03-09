@@ -51,7 +51,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: process.env.RPC_URL_GOERLI,
-        blockNumber: 8508421, // keep it aligned with the one in DIVAOracleTellor.test.js
+        blockNumber: 8508421,
       },
       accounts: {
         mnemonic: MNEMONIC,
