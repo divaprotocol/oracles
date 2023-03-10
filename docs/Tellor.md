@@ -208,7 +208,7 @@ Reporters receive rewards from two different sources:
 ### DIVA rewards
 
 DIVA rewards are derived from two different sources:
-* **Settlement fee:** DIVA Protocol pays a settlement fee of 0.05% of the gross collateral deposited into the pool over time to the data provider in the pool's collateral token. For example, reporting for a pool that has had USDC 100k in liquidity added over its lifetime would yield a settlement fee of USDC 50.
+* **Settlement fee:** DIVA Protocol pays a settlement fee of 0.05% (updateable by DIVA owner) of the gross collateral deposited into the pool over time to the data provider in the pool's collateral token. For example, reporting for a pool that has had USDC 100k in liquidity added over its lifetime would yield a settlement fee of USDC 50.
 * **Tips:** In addition to the settlement fee, users can add a tip using DIVA Protocol's [`addTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function to incentivize reporting. This can be particularly useful when the gross collateral of the pool is relatively small and the settlement fee alone would not justify the [gas cost for reporting](#reporting-costs). Note that in DIVA Protocol, the tip can only be given in the collateral token of the respective pool. Use the [tipping functionality inside the Tellor adapter](#tips) for more flexibility in that regard.
 
 >**Important:** The DIVA reward is **capped at USD 10 per pool**, with any excess fee going to the recipient specified by the contract owner. This measure was recommended by the Tellor team to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward.

@@ -13,20 +13,18 @@ If your installed `node` version is 17 or higher, you may need to downgrade it t
 
 # Table of Contents
 
-1.  [Intro](##intro)
-1.  [DIVA queries](##diva-queries)
-    1.  [DIVA smart contract](##diva-smart-contract)
-    1.  [DIVA subgraph](##diva-subgraph)
-1.  [Submit final reference value](##submit-final-reference-value)
-1.  [Challenges](##challenges)
-1.  [Settlement fees](##settlement-fees)
-    1.  [Get fee claim](##get-fee-claim)
-    1.  [Claim fees](##claim-fees)
-    1.  [Transfer fee claim](##transfer-fee-claim)
-1.  [Whitelist queries](##whitelist-queries)
-    1.  [Whitelist smart contract](##whitelist-smart-contract)
-    1.  [Whitelist subgraph](##whitelist-subgraph)
-1.  [DIVA protocol addresses](##diva-protocol-addresses)
+1. [Intro](##intro)
+2. [Terminology](#terminology)
+3. [Settlement process in DIVA Protocol](#settlement-process-in-diva-protocol)
+4. [Relevant functions](#relevant-functions)
+5. [Data monitoring](#data-monitoring) \
+   5.1 [DIVA subgraph](#diva-subgraph) \
+   5.2 [General guidance for implementing listeners](#general-guidance-for-implementing-listeners)
+6. [Data submission](#data-submission)
+7. [Reporting rewards](#reporting-rewards) \
+   7.1 [Query rewards from subgraph](#query-rewards-from-subgraph) \
+   7.2. [Query rewards from contract](#query-rewards-from-contract) \
+   7.3 [Transfer reward](#transfer-reward)
 
 # Intro
 
@@ -36,10 +34,14 @@ This repository contains a collection of smart contract-based oracle adapters th
 
 Audited adapters that can be used:
 
-1.  [Tellor adapter](https://github.com/divaprotocol/oracles/blob/main/contracts/DIVAOracleTellor.sol) (⚠️ pending audit)
-<!-- 1.  [DIVA Porter module](https://github.com/divaprotocol/oracles/blob/main/contracts/DIVAPorterModule.sol) (⚠️ unaudited) -->
+1. [Tellor adapter][tellor-adapter]
 
->**Important:** DO NOT use unaudited adapters!
+Other adapters currently in development:
+1. [Shamba adapter][shamba-adapter] (⚠️ centralized setup)
+1. [Arbor adapter][arbor-adapter] (⚠️ unaudited)
+<!-- 1. [GoPlugin adapter][...] -->
+
+>**Important:** DO NOT use unaudited adapters! Use centralized oracles at your own risk!
 
 This document provides general information about the settlement process in DIVA Protocol and guidance for data providers how to access relevant data. Oracle adapter specific documentation is available in the `/docs` directory.
 
@@ -57,12 +59,12 @@ DIVA Protocol's settlement mechanism includes an optional challenge feature that
 
 DIVA Protocol has two fallback layers:
 
-1. **Fallback data provider:** In the event that the assigned data provider fails to submit a value during the submission window, the fallback data provider will step in. It is important to confirm with the DIVA Protocol community, in which cases users can expect the fallback data provider to report.
-1. **Defaut:** If the fallback data provider also fails to submit a value, the payout will default to `gradient` for the long position and `1-gradient` for the short position token, minus applicable fees. The `gradient` is one of the parameters that determines the shape of the payoff profile and is specified during the creation of the derivative contract.
+1. **Fallback data provider:** In the event that the assigned data provider fails to submit a value during the submission window, the fallback data provider will step in. It is important to confirm with the DIVA Protocol community, under which circumstances users can expect the fallback data provider to step in.
+1. **Defaut:** If the fallback data provider also fails to submit a value, the payout will default to `gradient` for the long position and `1-gradient` for the short position token, minus applicable fees. The `gradient` is one of the parameters that determines the shape of the payoff profile and is specified at the time of derivative contract creation.
 
 For more information on DIVA's settlement process, please refer to the official [DIVA Protocol documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#settlement-process).
 
-## Function overview
+# Relevant functions
 
 The following overview provides a list of [DIVA Protocol functions](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#function-overview-1) that are most relevant for data providers:
 | Name                       |                                                                             |                        
@@ -86,10 +88,7 @@ The following overview provides a list of [DIVA Protocol functions](https://gith
 | [`batchClaimFee`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#batchclaimfee)                                                         | Batch version of `claimFee` function.                                                                                                                       |
 | [`batchTransferFeeClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#batchtransferfeeclaim)                                         | Batch version of `transferFeeClaim` function.                                                                                                               |
 
-
-
-
-## Data monitoring
+# Data monitoring
 
 The creation of a derivative contract, also referred to as a "contingent pool" or simply "pool", constitutes a request to a data provider to supply a data point at a predetermined future time. It is the responsibility of the data provider to set up the necessary listeners and notification services to not miss the reporting window.
 
@@ -100,11 +99,11 @@ For monitoring pools, we recommend using the DIVA subgraph, which captures both 
 * Mainnet: n/a
 * Arbitrum: n/a
 
-Alternatively, you can use DIVA's [`getPoolParameters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function to access pool information. However, please note that the returned information is limited to the data stored within the DIVA smart contract and does not include event data.
+Alternatively, reporters can use DIVA's [`getPoolParameters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function to access pool information. However, please note that the returned information is limited to the data stored within the DIVA smart contract and does not include event data.
 
-### DIVA subgraph
+## DIVA subgraph
 
-Below provides an example subgraph query including the most relevant fields for data providers. The full list of available fields can be found in [here](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new).
+Below provides an example subgraph query including the most relevant pool information for data providers. The full list of available fields can be found in [here](https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-goerli-new).
 
 ```js
 { 
@@ -120,6 +119,7 @@ Below provides an example subgraph query including the most relevant fields for 
         dataProvider
         finalReferenceValue
         statusFinalReferenceValue
+        statusTimestamp
         collateralToken {
           id
           name
@@ -128,7 +128,6 @@ Below provides an example subgraph query including the most relevant fields for 
         }
         collateralBalanceGross
         settlementFee
-        challengedBy
         challenges {
           challengedBy
           proposedFinalReferenceValue
@@ -146,38 +145,64 @@ where:
 
 | Parameter          |  Description|
 | :----------------- | :------ | 
-| `id`   | Id of the contingent pool / derivative contract; incrementally increasing integer starting at 1.    
+| `id`   | Id of the contingent pool; incrementally increasing integer starting at 1.    
 | `referenceAsset`   | The metric or event for which reporting is required (e.g., BTC/USD, ETH/USD, etc).     
-| `expiryTime`       | The contract expiration time and the "as of time" the reference asset value has to be reported of; expressed as a unix timestamp in seconds since epoch (UTC). |
-| `dataProvider`     |  Ethereum account (EOA or smart contract) that will report the final reference value.                                                                            
-| `finalReferenceValue`     | Current reference asset value stored in the DIVA smart contract for the corresponding pool, expressed as an integer with 18 decimals. Set to 0 at pool creation.                                        |
-| `statusFinalReferenceValue`     | Status of final reference value (Open, Submitted, Challenged, Confirmed). "Open" at pool creation.                                       |
-| `collateralToken.id`     | Address of the ERC20 collateral token.                                       |
-| `collateralToken.name`     |  Name of `collateralToken`.                                       |
-| `collateralToken.symbol`     |  Symbol of `collateralToken`.                                       |
-| `collateralToken.decimals`     |  Number of decimals of `collateralToken`.                                       |
+| `expiryTime`       | Expiration time of the pool expressed as a unix timestamp in seconds since epoch (UTC). |
+| `dataProvider`     | Ethereum account (EOA or smart contract) that was assigned to report the final reference value.                                                                            
+| `finalReferenceValue`     | Current reference asset value stored in the DIVA smart contract for the corresponding pool, expressed as an integer with 18 decimals. Set to 0 at pool creation. Update when a value is Submitted or Confirmed. Not updated when a submission was challenged.                                        |
+| `statusFinalReferenceValue`     | Status of final reference value (0 = Open, 1 = Submitted, 2 = Challenged, 3 = Confirmed). "Open" at pool creation.                                       |
+| `statusTimestamp`     | Status timestamp expressed as a unix timestamp in seconds since epoch (UTC). Updated when the `statusFinalReferenceValue` changes. Equal to time of creation initially.                                       |
+| `collateralToken.id`     | Address of the ERC20 token used as collateral in the pool. Payouts are denominated in that asset.                                       |
+| `collateralToken.name`     |  Name of collateral token.                                       |
+| `collateralToken.symbol`     |  Symbol of collateral token.                                       |
+| `collateralToken.decimals`     |  Number of decimals of collateral token.                                       |
 | `collateralBalanceGross`     |  Total collateral added to the pool during its lifetime. Used as the basis to estimate fee rewards.                                       |
 | `settlementFee`     | Fee that goes to the data provider when users remove liquidity / redeem, in % of the collateral amount being removed/redeemed; expressed as an integer with 18 decimals (e.g., 500000000000000 = 0.05%).                                       |
 | `challenges.challengedBy`     |  Address that submitted a challenge for the submitted value. Only relevant if the possibility to challenge was enabled by the data provider in the first place.                                       |
-| `challenges.proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals. IMPORTANT: Those values DO NOT overwrite `finalReferenceValue`. Only relevant if the possibility to challenge was enabled by the data provider in the first place.                                       |
+| `challenges.proposedFinalReferenceValue`     |  Final value proposed by challenger; expressed as an integer with 18 decimals. IMPORTANT: Those values DO NOT overwrite `finalReferenceValue` but are only emitted as part of the event. Only relevant if the possibility to challenge was enabled by the data provider in the first place.                                       |
 | `submissionPeriod`     | Submission period in seconds applicable to the corresponding pool.                                       |
 | `challengePeriod`     | Challenge period in seconds applicable to the corresponding pool.                                       |
 | `reviewPeriod`     | Review period in seconds applicable to the corresponding pool.                                       |
 | `createdAt`     |  Timestamp of pool creation in seconds since epoch (UTC).                                       |
 | `createdBy`     |  Address that created the pool.                                       |
 
-**Comments:**
-* If the possibility to challenge is enabled by the data provider, the data provider needs to monitor all challenges using `statusFinalReferenceValue: "Challenged"` as the query condition. As challenges may be valid, data providers SHOULD NOT automatically report when a challenge occurs but rather handle them manually. Challenges are typically enabled when a centralized party acts as the oracle. Challenges are disabled for decentralized oracles like Tellor which have their own dispute resolution mechanisms.
-* By default, the subgraph query will return a maximum of 1000 entries. To ensure that all pools are captured, we recommend implementing a loop using `id_gt` as is described [here](https://thegraph.com/docs/en/querying/graphql-api/#example-using-and-2).
-* Make sure that the timezone of the `expiryTime` and your off-chain data source are in sync.
-* The settlement fee as well as the settlement related periods (`submissionPeriod`, `challengePeriod` and `reviewPeriod`) are pool specific and should be read from the subgraph data.
+## General guidance for implementing listeners
 
+### Handling challenges
 
-## Data submission
+If an oracle adapter enables DIVA's [challenge functionality](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#challenge), they should monitor all challenges using a separate script with `statusFinalReferenceValue: "Challenged"` as the query condition. As challenges may be valid, data providers should **handle them manually** rather than reporting them automatically on dispute. 
 
-Data is submitted to the DIVA smart contract by calling the `setFinalReferenceValue` function. This function is callable only by the data provider assigned to the specific pool being reported during the 7d submission window following pool expiration. If a value is challenged, the data provider has a 5d review window starting at the time of the first challenge to re-submit a value calling the same function. 
+Challenges are typically enabled when a centralized party acts as the data provider. Challenges are disabled for decentralized oracles like [Tellor](https://tellor.io/) that come with their own dispute resolution mechanisms.
 
-Once a value has been submitted, `statusFinalReferenceValue` switches from `0` (Open) to `1` (Submitted) or `3` (Confirmed) depending on whether the [challenge mechanism](##optional-challenge-mechanism) was activated or not. The data provider cannot submit a second value unless the status changes to `2` (Challenged) which is only possible when DIVA's challenge mechanism was activated. Once the value reaches "Confirmed" stage, the value is considered final and no changes can be made anymore. Refer to the official [DIVA documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#set-final-reference-value) for details.
+### Capturing all pools
+
+By default, the subgraph query returns a maximum of 1000 entries. To ensure that all pools are captured by the listener, it is recommended to implement a loop using `id_gt` as is described in the [Graph Protocol docs](https://thegraph.com/docs/en/querying/graphql-api/#example-using-and-2).
+
+### Fees and settlement periods
+
+The settlement fee and the settlement-related periods (`submissionPeriod`, `challengePeriod` and `reviewPeriod`) are specific to each pool. The fee ranges between 0% and 1.5% and the settlement related periods can be between 3 and 15 days.
+
+### Timezones
+
+Ensure that the timezone of the `expiryTime` and your off-chain data source are using the same timezone (UTC).
+
+### Fallback data source
+
+As the subgraph is an off-chain process that reads and aggregates data emitted on the blockchain, there is a risk that it may go down for various reasons. Reporters are recommended to also implement a fallback option using DIVA's [`getPoolParameter`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function.
+
+### Testing
+
+The most important thing: **Test your oracle adapter extensively before using it in production.** The DIVA Protocol team is happy to review your implementation. Please reach out in the oracles channel in their [Discord](https://discord.gg/8fAvUspmv3).
+
+# Data submission
+
+To submit data to the DIVA smart contract, the assigned data provider must call the [`setFinalReferenceValue`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#setfinalreferencevalue) function within the submission window.
+
+After the data provider submits a value, the `statusFinalReferenceValue` parameter switches from "Open" (0) to either "Submitted" (1) or "Confirmed" (3), depending on whether the optional [challenge mechanism](##optional-challenge-mechanism) was activated or not. If the challenge mechanism is activated and a challenge is initiated, the status changes from "Submitted" to "Challenged" (2), and the data provider has a chance to resubmit a new value within the review window or confirm the previous one by re-submitting the previous value again or not submitting at all.
+
+Once the value reaches "Confirmed" stage, it is considered final and no further submissions can be made. Refer to the official [DIVA Protocol documentation](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#set-final-reference-value) for more details.
+
+The `setFinalReferenceValue` function can be either called directly or wrapped into another smart contract, as done in the [Tellor adapter][tellor-adapter], for instance.
 
 ```js
 function setFinalReferenceValue(
@@ -187,6 +212,8 @@ function setFinalReferenceValue(
 )
     external;
 ```
+
+>**Important:** The submitted value has to be represented as an **integer with 18 decimals**, e.g., `18500000000000000000` for `18.5`. Further, DIVA Protocol **does not accept negative values**. If the underlying metric can go negative, it is recommended to apply a shift or normalization to render it positive.
 
 ABI:
 
@@ -216,26 +243,42 @@ ABI:
 }
 ```
 
-The `setFinalReferenceValue` function can be either called directly or wrapped into another smart contract (as done in the case of Tellor).
+# Reporting rewards
 
->**Note:** DIVA Protocol does not accept negative values. If the underlying metric can go negative, it is recommended to apply a shift or normalization to render it positive.
+DIVA Protocol rewards reporters in two ways:
+* **Settlement fee:** DIVA Protocol pays a settlement fee of 0.05% (updateable by DIVA owner) of the gross collateral deposited into the pool over time to the data provider in the pool's collateral token. For example, reporting for a pool that has had USDC 100k in liquidity added over its lifetime would yield a settlement fee of USDC 50.
+* **Tips:** In addition to the settlement fee, users can add a tip using DIVA Protocol's [`addTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function to incentivize reporting. This can be particularly useful when the gross collateral of the pool is relatively small and the settlement fee alone would not justify the [gas cost for reporting](#reporting-costs). Note that in DIVA Protocol, the tip can only be given in the collateral token of the respective pool. 
 
+Additional incentives and tipping features can be implemented in the adapter contract. For instance, check out the [Tellor adapter][tellor-adapter] that enables users to tip using any ERC20 token.
 
-## Challenges
+## Query rewards from subgraph
 
-DIVA integrates an optional dispute/challenge mechanism which can be activated by setting the`_allowChallenge` parameter to `true` when a data provider calls the `setFinalReferenceValue` function. This is particularly useful when manual oracles such as a human reporters are used. To avoid surprises for users, data providers are encouraged to wrap the `setFinalReferenceValue` function into a separate smart contract and hard-code the `_allowChallenge` value so that pool creators know the data provider's challenge policy at the time of pool creation.
+Claimable rewards are stored inside the `FeeRecipient` entity in the DIVA subgraph. Note that settlement fees and tips are only reflected in claimable rewards when a pool moves to "Confirmed" stage. Below is an example subgraph query to retrieve the claimable amount for a given data provider address (`id`). 
 
-Each position token holder of a pool can submit a challenge including a value that they deem correct. This value is not stored inside the DIVA smart contract but emitted as part of the `StatusChanged` event and indexed in the DIVA subgraph. Data providers should leverage this information as part of their review process in case of a challenge.
+>**Note:** The address in the `where` condition should be in **lowercase**.
 
-## Settlement fees
+```js
+{
+  feeRecipients(where: {id: "0x9adefeb576dcf52f5220709c1b267d89d5208d78"}) {
+    id
+    collateralTokens {
+      amount
+      collateralToken {
+        id
+        name
+        symbol
+        decimals
+      }
+    }
+  }
+}
+```
 
-Data providers are rewarded with a settlement fee of 0.05% of the total (gross) collateral that was deposited into the pool over time (fee parameter is updateable by DIVA governance). The fee is retained within the DIVA smart contract when users withdraw collateral from the pool (via remove liquidity or redeem) and can be claimed by the corresponding data provider at any point in time. The entitled data provider can also transfer the fee claim to another recipient. This is particularly useful when the `setFinalReferenceValue` function is wrapped into a smart contract (as the middleware smart contract acts as the data provider; see Tellor module for example).
+## Query rewards from contract
 
-The relevant fee related functions inside DIVA protocol are listed below. Note that some oracle integrations such as Tellor module implement an additional tipping functionality to offer reporters additional incentives, especially for smaller size pools, to report values. Refer to the oracle specific documentation in the `docs` directory for details.
+To check the claimable rewards from the DIVA smart contract, reporters can use the [`getClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#claimfee) function. If a pool is in "Confirmed" stage, the returned amount includes both settlement fees and tips.
 
-### Get DIVA reward claim
-
-The claimable DIVA reward can be obtained by calling the following function:
+If a pool has not yet been confirmed, reporters can retrieve the tips using the [`getTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function. For confirmed pools, the function will return zero as the tip is already included in the claimable amount.
 
 ```js
 function getClaim(
@@ -247,41 +290,13 @@ function getClaim(
     returns (uint256);
 ```
 
-ABI:
-
-```json
-{
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_collateralToken",
-        "type": "address"
-      },
-      { "internalType": "address",
-        "name": "_recipient",
-        "type": "address"
-      }
-    ],
-    "name": "getClaim",
-    "outputs": [{
-      "internalType": "uint256",
-      "name": "",
-      "type": "uint256"
-    }],
-    "stateMutability": "view",
-    "type": "function"
-  }
-```
-
-### Claim fees
-
-The settlement fee is paid in collateral token and can be claimed by the entitled data provider by calling the following function:
-
 ```js
-function claimFee(
-    address _collateralToken,   // Collateral token address
-    address _recipient          // Recipient address
-) external;
+function getTip(
+    uint256 _poolId     // Id of pool
+)
+    external
+    view
+    returns (uint256);
 ```
 
 ABI:
@@ -293,37 +308,42 @@ ABI:
       "internalType": "address",
       "name": "_collateralToken",
       "type": "address"
+    },
+    { "internalType": "address",
+      "name": "_recipient",
+      "type": "address" }
+  ],
+  "name": "getClaim",
+  "outputs": [{
+    "internalType": "uint256",
+    "name": "",
+    "type": "uint256" 
+  }],
+  "stateMutability": "view",
+  "type": "function"
+},
+{
+  "inputs": [
+    {
+      "internalType": "uint256",
+      "name": "_poolId",
+      "type": "uint256"
     }
   ],
-  "name": "claimFees",
-  "outputs": [],
-  "stateMutability": "nonpayable",
+  "name": "getTip",
+  "outputs": [{
+    "internalType": "uint256",
+    "name": "",
+    "type": "uint256"
+  }],
+  "stateMutability": "view",
   "type": "function"
 }
 ```
 
-Batch version of `claimFee` function:
+## Transfer reward
 
-```js
-function batchClaimFee(
-    ArgsBatchClaimFee[] calldata _argsBatchClaimFee
-) external;
-```
-
-where
-
-```js
-struct ArgsBatchClaimFee {
-    address collateralToken;    // Collateral token address
-    address recipient;          // Recipient address
-}
-```
-
-
-
-### Transfer fee claim
-
-By default, the data provider is entitled to claim the fee. If the data provider is a smart contract, it may be desireable to transfer the fee claim to another recipient using the `transferFeeClaim` function:
+By default, the assigned data provider is entitled to claim the reward. If the data provider is a smart contract, it may be desireable to transfer the fee claim to another recipient using the [`transferFeeClaim`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function:
 
 ```js
 function transferFeeClaim(
@@ -359,79 +379,7 @@ ABI:
   }
 ```
 
-Batch version of `transferFeeClaim` to transfer multiple fee claims to multiple recipient addresses in one single transaction.
-
-```js
-function batchTransferFeeClaim(
-    ArgsBatchTransferFeeClaim[] calldata _argsBatchTransferFeeClaim
-)
-    external;
-```
-
-where
-
-```js
-struct ArgsBatchTransferFeeClaim {
-    address recipient;          // Address of fee claim recipient
-    address collateralToken;    // Collateral token address
-    uint256 amount;             // Amount (expressed as an integer with collateral token decimals) to transfer to recipient
-}
-```
-
-ABI:
-```json
-{
-  "inputs": [
-    {
-      "components": [
-        { "internalType": "address",
-          "name": "recipient",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "collateralToken",
-          "type": "address"
-        },
-        { "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "internalType": "struct IClaim.ArgsBatchTransferFeeClaim[]",
-      "name": "_argsBatchTransferFeeClaim",
-      "type": "tuple[]"
-    }
-  ],
-  "name": "batchTransferFeeClaim",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
-  }
-```
-
-### Query fee information from subgraph
-
-All fee information is stored in the DIVA subgraph inside the `FeeRecipient` entity. Example subgraph query to get the fees claims for a given data provider address (user lower case for the address in the where condition):
-
-```js
-{
-  feeRecipients(where: {id: "0x9adefeb576dcf52f5220709c1b267d89d5208d78"}) {
-    id
-    collateralTokens {
-      amount
-      collateralToken {
-        id
-        name
-        symbol
-        decimals
-      }
-    }
-  }
-}
-```
-
-## Whitelist queries
+<!-- ## Whitelist queries
 
 **TODO Remove?**
 
@@ -689,6 +637,8 @@ Whitelisted data providers, data feeds and collateral tokens can also be accesse
 * Goerli: https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-whitelist-goerli
 * Polygon: n/a
 * Mainnet: n/a
-* Arbitrum: n/a
+* Arbitrum: n/a -->
 
-
+[tellor-adapter]: https://github.com/divaprotocol/oracles/blob/main/contracts/DIVAOracleTellor.sol
+[shamba-adapter]: https://github.com/shambadynamic/Shamba-Diva-Middleware
+[arbor-adapter]: https://github.com/divaprotocol/oracles/blob/main/contracts/DIVAPorterModule.sol
