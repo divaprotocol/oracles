@@ -64,9 +64,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _diva = IDIVA(diva_);
     }
 
-    // @todo add batch version of setFinalReferenceValue
-
-    // @todo add test for batch function
     function addTip(
         uint256 _poolId,
         uint256 _amount,
@@ -107,7 +104,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
     }
 
-    // @todo add test
     function batchAddTip(
         ArgsBatchAddTip[] calldata _argsBatchAddTip
     ) external override nonReentrant {
@@ -159,7 +155,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _claimReward(_poolId, _tippingTokens, _claimDIVAReward);
     }
 
-    // @todo add test
     function batchSetFinalReferenceValue(
         ArgsBatchSetFinalReferenceValue[] calldata _argsBatchSetFinalReferenceValue
     ) external override nonReentrant {
@@ -543,7 +538,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return _activationDelay;
     }
 
-    // @todo rename in tests
     function getQueryDataAndId(uint256 _poolId)
         public
         view
@@ -687,7 +681,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         uint256 _SCALING = uint256(
             10**(18 - IERC20Metadata(_params.collateralToken).decimals())
         );
-        
+
         // Get the current DIVA reward claim allocated to this contract address (msg.sender)
         uint256 divaRewardClaim = _diva.getClaim(
             _params.collateralToken,

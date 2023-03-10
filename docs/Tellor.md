@@ -36,7 +36,9 @@ This documentation outlines the functionality of the Tellor adapter for [DIVA Pr
 
 # Introduction
 
-Derivative contracts created on DIVA Protocol require one data input following expiration. The [Tellor adapter][tellor-adapter-contract] offers DIVA Protocol users a **decentralized oracle solution** for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool.
+[DIVA Protocol](https://github.com/divaprotocol/diva-contracts) is a smart contract that allows its users to create derivative contracts on virtually any metric with pre-defined expiration times. To calculate the payouts for the long and short positions of the contract, an oracle input is required following the contract's expiration. 
+
+The [Tellor adapter][tellor-adapter-contract] offers DIVA Protocol users a **decentralized oracle solution** for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool.
 
 The key benefits of using the Tellor adapter for outcome reporting include:
 - No single point of failure as outcome reporting is decentralized and permissionless.
@@ -206,7 +208,7 @@ Reporters receive rewards from two different sources:
 ### DIVA rewards
 
 DIVA rewards are derived from two different sources:
-* **Settlement fee:** DIVA Protocol pays a settlement fee of 0.05% of the gross collateral deposited into the pool over time to the data provider in the pool's collateral token. For example, reporting for a pool that has had USDC 100k in liquidity added over its lifetime would yield a settlement fee of USDC 50.
+* **Settlement fee:** DIVA Protocol pays a settlement fee of 0.05% (updateable by DIVA owner) of the gross collateral deposited into the pool over time to the data provider in the pool's collateral token. For example, reporting for a pool that has had USDC 100k in liquidity added over its lifetime would yield a settlement fee of USDC 50.
 * **Tips:** In addition to the settlement fee, users can add a tip using DIVA Protocol's [`addTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function to incentivize reporting. This can be particularly useful when the gross collateral of the pool is relatively small and the settlement fee alone would not justify the [gas cost for reporting](#reporting-costs). Note that in DIVA Protocol, the tip can only be given in the collateral token of the respective pool. Use the [tipping functionality inside the Tellor adapter](#tips) for more flexibility in that regard.
 
 >**Important:** The DIVA reward is **capped at USD 10 per pool**, with any excess fee going to the recipient specified by the contract owner. This measure was recommended by the Tellor team to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward.
@@ -232,27 +234,27 @@ The following table shows the functions implemented in the [Tellor adapter contr
 | **Governance functions** (execution is reserved for DIVA owner only)                      |                                                                                                                                                             |
 | [`updateExcessDIVARewardRecipient`](updateexcessdivarewardrecipient)                                             | Function to update the excess DIVA reward recipient address.                                                                     |
 | [`updateMaxDIVARewardUSD`](#updatemaxdivarewardusd)                                             | Function to update the maximum USD DIVA reward that goes to the reporter.                                                                     |
-| [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate)                                             | Function to revoke a pending maximum USD DIVA reward update and restore the previous one.                                                                     |
 | [`revokePendingExcessDIVARewardRecipientUpdate`](#revokependingexcessdivarewardrecipientupdate)                                             | Function to revoke a pending excess DIVA reward recipient address update and restore the previous one.                                                                     |
+| [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate)                                             | Function to revoke a pending maximum USD DIVA reward update and restore the previous one.                                                                     |
 | **Getter functions**                                                                            |                                                                                                                                      |
-| [`getChallengeable`](#getchallengeable)                                                         | Function to return whether the Tellor adapter's data feed is challengeable inside DIVA Protocol. In this implementation, the function always returns `false`, which means that the first value submitted to the DIVA Protocol will determine the payouts, and users can start claiming their payouts thereafter.                                                          |
-| [`getExcessDIVARewardRecipientInfo`](#getexcessdivarewardrecipientinfo)                                               | Function to return the latest update of the excess DIVA reward recipient address, including the activation time and the previous value.                                                                                 |
-| [`getMaxDIVARewardUSDInfo`](#getmaxdivarewardusdinfo)                                                     | Function to return the latest update of the max USD DIVA reward, including the activation time and the previous value.                                                                    |
+| [`getChallengeable`](#getchallengeable)                                                         | Function to return whether the Tellor adapter's data feed is challengeable inside DIVA Protocol. In this implementation, the function always returns `false`, which means that the first value submitted to DIVA Protocol will determine the payouts, and users can start claiming their payouts thereafter.                                                          |
+| [`getExcessDIVARewardRecipientInfo`](#getexcessdivarewardrecipientinfo)                                               | Function to return the excess DIVA reward recipient info, including the last update, its activation time and the previous value.                                                                                 |
+| [`getMaxDIVARewardUSDInfo`](#getmaxdivarewardusdinfo)                                                     | Function to return the max USD DIVA reward info, including the last update, its activation time and the previous value.                                                                    |
 | [`getMinPeriodUndisputed`](#getminperiodundisputed)                                             | Function to return the minimum period (in seconds) a reported value has to remain undisputed in order to be considered valid. Hard-coded to 12 hours (= 43'200 seconds) in this implementation.     |
 | [`getTippingTokensLengthForPoolIds`](#gettippingtokenslengthforpoolids)                         | Function to return the number of tipping tokens for a given set of poolIds.                                                           |
 | [`getTippingTokens`](#gettippingtokens)                                                         | Function to return the array of tipping tokens for a given set of poolIds.                                 |
 | [`getTipAmounts`](#gettipamounts)                                                               | Function to return the tipping amounts for a given set of poolIds and tipping tokens.                                      |
+| [`getReporters`](#getreporters)                                                                 | Function to return the list of reporter addresses that are entitled to receive rewards for a given list of poolIds.                                                         |
+| [`getPoolIdsLengthForReporters`](#getpoolidslengthforreporters)                                 | Function to return the number of poolIds that a given list of reporter addresses are eligible to claim rewards for. Useful before calling [`getPoolIdsForReporters`](#getpoolidsforreporters).                                        |
+| [`getPoolIdsForReporters`](#getpoolidsforreporters)                                             | Function to return a list of poolIds that a given list of reporters is eligible to claim rewards for.           |
 | [`getDIVAAddress`](#getdivaaddress)                                                             | Function to return the DIVA address that the oracle is linked to.                                                                    |
-| [`getReporters`](#getreporters)                                                                 | Function to return the array of reporter addresses for a given list of poolIds.                                                         |
-| [`getPoolIdsLengthForReporters`](#getpoolidslengthforreporters)                                 | Function to return the number of poolIds reported by a reporter for a given set of reporters. Includes useful information for populating the argument for `getPoolIdsForReporters`.                                        |
-| [`getPoolIdsForReporters`](#getpoolidsforreporters)                                             | Function to return the array of poolIds reported by reporters for a given set of reporter addresses.           |
-| [`getOwnershipContract`](#getownershipcontract)                                                                         | Function to return the address of the ownership contract that stores the owner variable. The owner can be obtained by calling the `getOwner` function on the returned contract address.                                                                                                |
+| [`getOwnershipContract`](#getownershipcontract)                                                                         | Function to return the DIVA ownership contract contract address that stores the contract owner. The owner can be obtained by calling the `getOwner` function at the returned contract address.                                                                                                |
 | [`getActivationDelay`](#getactivationdelay)                                                                 | Function to return the activation delay (in seconds) for governance related updates. Hard-coded to 3 days (= 259'200 seconds).                                                        |
-| [`getQueryDataAndId`](#getquerydataandid)                                                                     | Function to return the query data and Id for a given poolId which are required for reporting values to the Tellor contract.                                                                               |
+| [`getQueryDataAndId`](#getquerydataandid)                                                                     | Function to return the query data and Id for a given poolId which are required for reporting values via Tellor's `submitValue` function.                                                                               |
 | **Batch functions**                                                                             |
+| [`batchSetFinalReferenceValue`](#batchsetfinalreferencevalue)                                                       | Batch version of `setFinalReferenceValue` function.                                                                                                     |
 | [`batchClaimReward`](#batchclaimreward)                                                       | Batch version of `claimReward` function.                                                                                                     |
 | [`batchAddTip`](#batchaddtip)                                                       | Batch version of `addTip` function.                                                                                                     |
-| [`batchSetFinalReferenceValue`](#batchsetfinalreferencevalue)                                                       | Batch version of `setFinalReferenceValue` function.                                                                                                     |
 
 ## Core functions
 
@@ -308,7 +310,7 @@ function batchSetFinalReferenceValue(
 
 where `ArgsBatchSetFinalReferenceValue` is given by
 
-```
+```js
 struct ArgsBatchSetFinalReferenceValue {
     uint256 poolId;             // The Id of the pool
     address[] tippingTokens;    // Array of tipping tokens to claim
@@ -355,7 +357,7 @@ function batchAddTip(
 
 where `ArgsBatchAddTip` is given by
 
-```
+```js
 struct ArgsBatchAddTip {
     uint256 poolId;         // The Id of the pool
     uint256 amount;         // The amount to tip expressed as an integer with tipping token decimals
@@ -405,7 +407,7 @@ function batchClaimReward(
 
 where `ArgsBatchClaimReward` is given by
 
-```
+```js
 struct ArgsBatchClaimReward {
     uint256 poolId;             // The Id of the pool
     address[] tippingTokens;    // Array of tipping tokens to claim
@@ -457,7 +459,8 @@ Reverts if:
 * New excess DIVA reward recipient is already active (i.e. `block.timestamp >= startTime`).
 
 ```js
-function revokePendingExcessDIVARewardRecipientUpdate() external;
+function revokePendingExcessDIVARewardRecipientUpdate()
+    external;
 ```
 
 ### revokePendingMaxDIVARewardUSDUpdate
@@ -469,16 +472,17 @@ Reverts if:
 * New amount is already active (i.e. `block.timestamp >= startTime`).
 
 ```js
-function revokePendingMaxDIVARewardUSDUpdate() external;
+function revokePendingMaxDIVARewardUSDUpdate()
+    external;
 ```
 
 ## Getter functions
 
-DIVAOracleTellor implements the following getter functions.
+The Tellor adapter implements the following getter functions.
 
 ### getChallengeable
 
-Function to return whether the Tellor adapter's data feed is challengeable inside DIVA Protocol. In this implementation, the function always returns `false`, which means that the first value submitted to the DIVA Protocol will determine the payouts, and users can start claiming their payouts thereafter.
+Function to return whether the Tellor adapter's data feed is challengeable inside DIVA Protocol. In this implementation, the function always returns `false`, which means that the first value submitted to DIVA Protocol will determine the payouts, and users can start claiming their payouts thereafter.
 
 ```js
 function getChallengeable()
@@ -489,7 +493,7 @@ function getChallengeable()
 
 ### getExcessDIVARewardRecipientInfo
 
-Function to return the excess DIVA reward recipient info. The initial excess DIVA reward recipient is set when the contract is deployed. The previous excess DIVA reward recipient is set to the zero address initially.
+Function to return the excess DIVA reward recipient info, including the last update, its activation time and the previous value. The initial excess DIVA reward recipient is set when the contract is deployed. The previous excess DIVA reward recipient is set to the zero address initially.
 
 ```js
  function getExcessDIVARewardRecipientInfo()
@@ -499,6 +503,21 @@ Function to return the excess DIVA reward recipient info. The initial excess DIV
         address previousExcessDIVARewardRecipient, // Previous excess DIVA reward recipient address.
         address excessDIVARewardRecipient,         // Latest update of the excess DIVA reward recipient address.
         uint256 startTimeExcessDIVARewardRecipient // Timestamp in seconds since epoch at which `excessDIVARewardRecipient` is activated.
+    );
+```
+
+### getMaxDIVARewardUSDInfo
+
+Function to return the max USD DIVA reward info, including the last update, its activation time and the previous value. The initial value is set when the contract is deployed. The previous value is set to zero initially.
+
+```js
+function getMaxDIVARewardUSDInfo()
+    external
+    view
+    returns (
+        uint256 previousMaxDIVARewardUSD,    // Previous value
+        uint256 maxDIVARewardUSD,            // Latest update of the value
+        uint256 startTimeMaxDIVARewardUSD    // Timestamp in seconds since epoch at which `maxDIVARewardUSD` is activated
     );
 ```
 
@@ -513,70 +532,9 @@ function getMinPeriodUndisputed()
     returns (uint32);
 ```
 
-### getMaxDIVARewardUSDInfo
-
-Function to return the max USD DIVA reward info. The initial value is set when the contract is deployed. The previous value is set to zero initially.
-
-```js
-function getMaxDIVARewardUSDInfo()
-    external
-    view
-    returns (
-        uint256 previousMaxDIVARewardUSD,    // Previous value
-        uint256 maxDIVARewardUSD,            // Latest update of the value
-        uint256 startTimeMaxDIVARewardUSD    // Timestamp in seconds since epoch at which `maxDIVARewardUSD` is activated
-    );
-```
-
-### getDIVAAddress
-
-Function to return the DIVA contract address that the oracle is linked to. The address is set in the constructor at contract deployment.
-
-```js
-function getDIVAAddress()
-    external
-    view
-    returns (address);
-```
-
-### getTipAmounts
-
-Function to return the array of tipping amounts for a given struct array of poolIds and tipping tokens.
-
-```js
-function getTipAmounts(
-    ArgsBatchInput[] calldata _argsBatchInputs // Struct array containing poolIds and tipping tokens
-)
-    external
-    view
-    returns (uint256[][] memory);
-```
-
-where `ArgsBatchInput` struct is defined as
-
-```js
-struct ArgsBatchInput {
-    uint256 poolId;
-    address[] tippingTokens;
-}
-```
-
-### getReporters
-
-Function to return the list of reporter addresses that are entitled to receive rewards for the provided poolIds. If a value has been reported to the Tellor contract but hasn't been pulled into the DIVA contract via the [`setFinalReferenceValue`](#setfinalreferencevalue) function yet, the function returns the zero address.
-
-```js
-function getReporters(
-    uint256[] calldata _poolIds // Array of poolIds
-)
-    external
-    view
-    returns (address[] memory);
-```
-
 ### getTippingTokensLengthForPoolIds
 
-Function to return the number of tipping tokens for a set of given poolIds. It can be helpful when calling [`getTippingTokens`](#gettippingtokens).
+Function to return the number of tipping tokens for a given set of poolIds. Useful before calling [`getTippingTokens`](#gettippingtokens).
 
 ```js
 function getTippingTokensLengthForPoolIds(
@@ -589,11 +547,11 @@ function getTippingTokensLengthForPoolIds(
 
 ### getTippingTokens
 
-Function to return an array of tipping tokens for a given struct array of poolIds, along with start and end indices to manage the return size of the array. It can be helpful when calling [`claimReward`](#claimreward) or [`setFinalReferenceValue`](#setfinalreferencevalue).
+Function to return an array of tipping tokens for a given list of poolIds, along with start and end indices to manage the return size of the array. Useful before calling [`claimReward`](#claimreward) or [`setFinalReferenceValue`](#setfinalreferencevalue).
 
 ```js
 function getTippingTokens(
-    ArgsGetTippingTokens[] calldata _argsGetTippingTokens
+    ArgsGetTippingTokens[] calldata _argsGetTippingTokens  // List containing poolId, start index and end index
 )
     external
     view
@@ -610,13 +568,48 @@ struct ArgsGetTippingTokens {
 }
 ```
 
+### getTipAmounts
+
+Function to return the tipping amounts for a given set of poolIds and tipping tokens.
+
+```js
+function getTipAmounts(
+    ArgsGetTipAmounts[] calldata _argsGetTipAmounts
+)
+    external
+    view
+    returns (uint256[][] memory);
+```
+
+where `ArgsGetTipAmounts` struct is defined as
+
+```js
+struct ArgsGetTipAmounts {
+    uint256 poolId;           // The Id of the pool
+    address[] tippingTokens;  // List of tipping token addresses
+}
+```
+
+### getReporters
+
+Function to return the list of reporter addresses that are entitled to receive rewards for a given list of poolIds. If a value has been reported to the Tellor contract but hasn't been pulled into the DIVA contract via the [`setFinalReferenceValue`](#setfinalreferencevalue) function yet, the function returns the zero address.
+
+```js
+function getReporters(
+    uint256[] calldata _poolIds // List of poolIds
+)
+    external
+    view
+    returns (address[] memory);
+```
+
 ### getPoolIdsLengthForReporters
 
-Function to return the number of poolIds a given list of reporter addresses are eligible to claim rewards for. It can be helpful when calling [`getPoolIdsForReporters`](#getpoolidsforreporters).
+Function to return the number of poolIds that a given list of reporter addresses are eligible to claim rewards for. Useful before calling [`getPoolIdsForReporters`](#getpoolidsforreporters).
 
 ```js
 function getPoolIdsLengthForReporters(
-    address[] calldata _reporters // Array of reporter address
+    address[] calldata _reporters // List of reporter address
 )
     external
     view
@@ -625,11 +618,11 @@ function getPoolIdsLengthForReporters(
 
 ### getPoolIdsForReporters
 
-Function to return an array of poolIds that a reporter is eligible to claim rewards for. It takes a struct array of reporter addresses, as well as the start and end indices to manage the return size of the array. it can be helpful when calling [`claimReward`](#claimreward) or its batch version.
+Function to return a list of poolIds that a given list of reporters are eligible to claim rewards for. It takes a list of reporter addresses, as well as the start and end indices as input to manage the return size of the array. Useful before calling [`claimReward`](#claimreward) or its batch version.
 
 ```js
 function getPoolIdsForReporters(
-    ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
+    ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReportersindex
 )
     external
     view
@@ -646,9 +639,20 @@ struct ArgsGetPoolIdsForReporters {
 }
 ```
 
+### getDIVAAddress
+
+Function to return the DIVA contract address that the Tellor adapter is linked to. The address is set in the constructor at contract deployment and cannot be modified.
+
+```js
+function getDIVAAddress()
+    external
+    view
+    returns (address);
+```
+
 ### getOwnershipContract
 
-Function to return the DIVA ownership contract address that stores the contract owner.
+Function to return the DIVA ownership contract address that stores the contract owner. The owner can be obtained by calling the `getOwner` function at the returned contract address.
 
 ```js
 function getOwnershipContract()
@@ -659,7 +663,7 @@ function getOwnershipContract()
 
 ### getActivationDelay
 
-Function to return the activation delay in seconds. Hard-coded to 3 days (= 259'200 seconds).
+Function to return the activation delay (in seconds) for governance related updates. Hard-coded to 3 days (= 259'200 seconds).
 
 ```js
 function getActivationDelay()
@@ -670,7 +674,7 @@ function getActivationDelay()
 
 ### getQueryDataAndId
 
-Function to return the query data and Id for a given poolId which are required for reporting values to the Tellor contract. Read more about it in the [Tellor docs][tellor-docs].
+Function to return the query data and Id for a given poolId which are required for reporting values via Tellor's `submitValue` function. Read more about it in the [Tellor docs][tellor-docs].
 
 ```js
 function getQueryDataAndId(
@@ -678,7 +682,10 @@ function getQueryDataAndId(
 )
     external
     view
-    returns (bytes memory, bytes32);
+    returns (
+        bytes memory,   // queryData
+        bytes32         // queryId
+    );
 ```
 
 ## Reentrancy protection
@@ -687,11 +694,24 @@ All state-modifying functions, including their batch versions, implement [openze
 
 ## Events
 
+### FinalReferenceValueSet
+
+Emitted when the final reference value is set via the [`setFinalReferenceValue`](#setfinalreferencevalue) function.
+
+```js
+event FinalReferenceValueSet(
+    uint256 indexed poolId, // The Id of the pool
+    uint256 finalValue,     // Tellor value expressed as an integer with 18 decimals
+    uint256 expiryTime,     // Pool expiry time as a unix timestamp in seconds
+    uint256 timestamp       // Tellor value timestamp
+);
+```
+
 ### TipAdded
 
 Emitted when a tip is added via the [`addTip`](#addtip) function.
 
-```
+```js
 event TipAdded(
     uint256 poolId,         // The Id of the tipped pool
     address tippingToken,   // Tipping token address
@@ -704,7 +724,7 @@ event TipAdded(
 
 Emitted when the reward is claimed via the [`claimReward`](#claimreward) function.
 
-```
+```js
 event TipClaimed(
     uint256 poolId,         // The Id of the pool
     address recipient,      // Address of the tip recipient
@@ -713,24 +733,11 @@ event TipClaimed(
 );
 ```
 
-### FinalReferenceValueSet
-
-Emitted when the final reference value is set via the [`setFinalReferenceValue`](#setfinalreferencevalue) function.
-
-```
-event FinalReferenceValueSet(
-    uint256 indexed poolId, // The Id of the pool
-    uint256 finalValue,     // Tellor value expressed as an integer with 18 decimals
-    uint256 expiryTime,     // Pool expiry time as a unix timestamp in seconds
-    uint256 timestamp       // Tellor value timestamp
-);
-```
-
 ### ExcessDIVARewardRecipientUpdated
 
 Emitted when the excess DIVA reward recipient is updated via the [`updateExcessDIVARewardRecipient`](updateexcessdivarewardrecipient) function.
 
-```
+```js
 event ExcessDIVARewardRecipientUpdated(
     address indexed from,                   // Address that initiated the change (contract owner)
     address indexed excessDIVARewardRecipient,     // New excess DIVA reward recipient address
@@ -742,7 +749,7 @@ event ExcessDIVARewardRecipientUpdated(
 
 Emitted when the max USD DIVA reward is updated via the [`updateMaxDIVARewardUSD`](#updatemaxdivarewardusd) function.
 
-```
+```js
 event MaxDIVARewardUSDUpdated(
     address indexed from,               // Address that initiated the change (contract owner)
     uint256 maxDIVARewardUSD,            // New max USD DIVA reward expressed as an integer with 18 decimals
@@ -754,7 +761,7 @@ event MaxDIVARewardUSDUpdated(
 
 Emitted when a pending excess DIVA reward recipient update is revoked via the [`revokePendingExcessDIVARewardRecipientUpdate`](#revokependingexcessdivarewardrecipientupdate) function.
 
-```
+```js
 event PendingExcessDIVARewardRecipientUpdateRevoked(
     address indexed revokedBy,                  // Address that initiated the revocation
     address indexed revokedExcessDIVARewardRecipient,  // Pending excess DIVA reward recipient that was revoked
@@ -766,7 +773,7 @@ event PendingExcessDIVARewardRecipientUpdateRevoked(
 
 Emitted when a pending max USD DIVA reward update is revoked via the [`revokePendingMaxDIVARewardUSDUpdate`](#revokependingmaxdivarewardusdupdate) function.
 
-```
+```js
 event PendingMaxDIVARewardUSDUpdateRevoked(
     address indexed revokedBy,          // Address that initiated the revocation
     uint256 revokedMaxDIVARewardUSD,     // Pending max USD DIVA reward that was revoked
