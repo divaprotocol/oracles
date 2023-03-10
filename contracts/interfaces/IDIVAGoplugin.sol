@@ -44,9 +44,9 @@ interface IDIVAGoplugin {
      * for a given `_poolId`.
      * @param _poolId The unique identifier of the pool.
      */
-    function requestFinalReferenceValue(uint256 _poolId)
-        external
-        returns (bytes32);
+    function requestFinalReferenceValue(
+        uint256 _poolId
+    ) external returns (bytes32);
 
     /**
      * @dev Function to set the final reference value for a given `_poolId`.
@@ -75,10 +75,9 @@ interface IDIVAGoplugin {
      * @dev Returns the last requested blocktimestamp.
      * @param _poolId The unique identifier of the pool.
      */
-    function getLastRequestedBlocktimestamp(uint256 _poolId)
-        external
-        view
-        returns (uint256);
+    function getLastRequestedBlocktimestamp(
+        uint256 _poolId
+    ) external view returns (uint256);
 
     /**
      * @dev Returns the DIVA protocol contract address that the oracle is linked to.

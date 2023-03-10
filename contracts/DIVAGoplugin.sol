@@ -21,8 +21,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     IDIVA private immutable _diva;
     IERC20Metadata private immutable _pli;
 
-    uint256 private constant FEE_PER_REQUEST = 0.1 * 10**18;
-    uint256 private constant GOPLUGIN_PRICE_DECIMALS = 4;
+    uint256 private constant FEE_PER_REQUEST = 0.1 * 10 ** 18;
 
     modifier onlyOwner() {
         address _owner = _diva.getOwner();
@@ -45,13 +44,16 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         _pli = IERC20Metadata(pli_);
     }
 
-    function requestFinalReferenceValue(uint256 _poolId)
-        external
-        override
-        returns (bytes32)
-    {
-        if (_pli.balanceOf(address(this)) < FEE_PER_REQUEST) {
-            _pli.safeTransferFrom(msg.sender, address(this), FEE_PER_REQUEST);
+    function requestFinalReferenceValue(
+        uint256 _poolId
+    ) external override returns (bytes32) {
+        uint256 _pliBalance = _pli.balanceOf(address(this));
+        if (_pliBalance < FEE_PER_REQUEST) {
+            _pli.safeTransferFrom(
+                msg.sender,
+                address(this),
+                FEE_PER_REQUEST - _pliBalance
+            );
         }
 
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
@@ -66,11 +68,9 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return _requestId;
     }
 
-    function setFinalReferenceValue(uint256 _poolId)
-        external
-        override
-        nonReentrant
-    {
+    function setFinalReferenceValue(
+        uint256 _poolId
+    ) external override nonReentrant {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         uint256 _lastRequestedBlocktimestamp = _lastRequestedBlocktimestamps[
@@ -89,7 +89,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         // Format values (18 decimals)
         uint256 _formattedFinalReferenceValue = IInvokeOracle(
             _stringToAddress(_params.referenceAsset)
-        ).showPrice() * 10**(18 - GOPLUGIN_PRICE_DECIMALS);
+        ).showPrice() * 10 ** 14;
 
         // Forward final value to DIVA contract.
         //Allocates the fee as part of that process.
@@ -119,26 +119,20 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return address(_pli);
     }
 
-    function getLastRequestedBlocktimestamp(uint256 _poolId)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function getLastRequestedBlocktimestamp(
+        uint256 _poolId
+    ) external view override returns (uint256) {
         return _lastRequestedBlocktimestamps[_poolId];
     }
 
-    function getGopluginValue(uint256 _poolId)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function getGopluginValue(
+        uint256 _poolId
+    ) external view override returns (uint256) {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         return
             IInvokeOracle(_stringToAddress(_params.referenceAsset))
-                .showPrice() * 10**(18 - GOPLUGIN_PRICE_DECIMALS);
+                .showPrice() * 10 ** 14;
     }
 
     function getFeePerRequest() external pure override returns (uint256) {
@@ -148,11 +142,9 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     /**
      * @notice Function to convert string to address.
      */
-    function _stringToAddress(string memory _a)
-        internal
-        pure
-        returns (address)
-    {
+    function _stringToAddress(
+        string memory _a
+    ) internal pure returns (address) {
         bytes memory tmp = bytes(_a);
         require(tmp.length == 42, "DIVAGoplugin: invalid address");
         uint160 iaddr = 0;

@@ -129,17 +129,39 @@ describe("DIVAGoplugin", () => {
   };
 
   describe("requestFinalReferenceValue", async () => {
-    it("Should request final reference value to DIVAGoplugin", async () => {
+    let user2PLIBalanceBefore;
+
+    // ---------
+    // Functionality
+    // ---------
+
+    it("Should request final reference value to DIVAGoplugin (No enough PLI token on DIVAGoplugin contract)", async () => {
       // ---------
       // Arrange: Check that there's no final reference value request
       // ---------
       expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
         0
       );
+
+      // Set amount of PLI token to transfer to DIVAGoplugin contract
+      const transferAmount = feePerRequest.div(2);
+      expect(transferAmount).to.be.lt(feePerRequest);
+      // Transfer PLI token from user2 to DIVAGoplugin
+      await pliToken
+        .connect(user2)
+        .transfer(divaGoplugin.address, transferAmount);
+      // Check PLI token balance of DIVAGoplugin contract
+      expect(await pliToken.balanceOf(divaGoplugin.address)).to.be.lt(
+        feePerRequest
+      );
+
       // Approve PLI token of user2 to DIVAGoplugin
       await pliToken
         .connect(user2)
-        .approve(divaGoplugin.address, feePerRequest);
+        .approve(divaGoplugin.address, feePerRequest.sub(transferAmount));
+
+      // Get PLI token balance of user2 before request final reference value
+      user2PLIBalanceBefore = await pliToken.balanceOf(user2.address);
 
       // ---------
       // Act: Call `requestFinalReferenceValue` function
@@ -152,7 +174,64 @@ describe("DIVAGoplugin", () => {
       expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
         await getLastBlockTimestamp()
       );
+      // Confirm that PLI token balance of user2 has been reduced
+      expect(await pliToken.balanceOf(user2.address)).to.eq(
+        user2PLIBalanceBefore.sub(feePerRequest).add(transferAmount)
+      );
+      // Confirm that PLI token balance of DIVAGoplugin is zero
+      // expect(await pliToken.balanceOf(divaGoplugin.address)).to.eq(0);
     });
+
+    it("Should request final reference value to DIVAGoplugin (DIVAGoplugin contract has enough PLI token on itself)", async () => {
+      // ---------
+      // Arrange: Check that there's no final reference value request
+      // ---------
+      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
+        0
+      );
+
+      // Transfer PLI token from user2 to DIVAGoplugin
+      await pliToken
+        .connect(user2)
+        .transfer(divaGoplugin.address, feePerRequest);
+
+      // Check PLI token balance of DIVAGoplugin contract
+      const divaGopluginPLIBalanceBefore = await pliToken.balanceOf(
+        divaGoplugin.address
+      );
+      expect(divaGopluginPLIBalanceBefore).to.be.gte(feePerRequest);
+
+      // Get PLI token balance of user2 before request final reference value
+      user2PLIBalanceBefore = await pliToken.balanceOf(user2.address);
+
+      // ---------
+      // Act: Call `requestFinalReferenceValue` function
+      // ---------
+      await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
+
+      // ---------
+      // Assert: Check that final reference value is requested
+      // ---------
+      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
+        await getLastBlockTimestamp()
+      );
+      // Confirm that PLI token balance of user2 hasn't been changed
+      expect(await pliToken.balanceOf(user2.address)).to.eq(
+        user2PLIBalanceBefore
+      );
+      // Confirm that PLI token balance of DIVAGoplugin has been reduced
+      // expect(await pliToken.balanceOf(divaGoplugin.address)).to.eq(
+      //   divaGopluginPLIBalanceBefore.sub(feePerRequest)
+      // );
+    });
+
+    // ---------
+    // Reverts
+    // ---------
+
+    // ---------
+    // Events
+    // ---------
   });
 
   describe("setFinalReferenceValue", async () => {
