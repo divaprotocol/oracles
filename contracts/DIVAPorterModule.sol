@@ -136,7 +136,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         _bondFactoryAddress = _newBondFactoryAddress;
     }
 
-    function challengeable() external view override returns (bool) {
+    function getChallengeable() external view override returns (bool) {
         return _challengeable;
     }
 

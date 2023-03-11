@@ -3,6 +3,8 @@
  * Run: `yarn diva:createContingentPool`
  */
 
+// @todo move Tellor related example scripts into a separate folder and update scripts in package.json
+
 const { ethers } = require("hardhat");
 const { parseUnits } = require("@ethersproject/units");
 

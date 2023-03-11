@@ -119,14 +119,14 @@ async function main() {
   // Get decimals of collateral token
   const decimals = await collateralToken.decimals();
 
-  // Get collateral token balance of reporter before claiming the fee
+  // Get collateral token balance of reporter before claiming the DIVA reward
   const collateralTokenBalanceReporterBefore = formatUnits(
     await collateralToken.balanceOf(reporter),
     decimals
   );
 
-  // Get fee claim before claiming the fee
-  const divaFeeBefore = formatUnits(
+  // Get DIVA reward claim before claiming it
+  const divaRewardBefore = formatUnits(
     await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
   );
 
@@ -170,14 +170,14 @@ async function main() {
     })
   );
 
-  // Get collateral token balance of reporter after claiming the fee
+  // Get collateral token balance of reporter after claiming the DIVA reward
   const collateralTokenBalanceReporterAfter = formatUnits(
     await collateralToken.balanceOf(reporter),
     decimals
   );
 
-  // Get fee claim after claiming the fee
-  const divaFeeAfter = formatUnits(
+  // Get DIVA reward claim after claiming it
+  const divaRewardAfter = formatUnits(
     await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
   );
 
@@ -185,14 +185,14 @@ async function main() {
   console.log("DIVA address: ", diva.address);
   console.log("PoolId: ", poolId);
   console.log("Reporter address: ", reporter);
-  console.log("Get fee claim BEFORE claiming DIVA fee: ", divaFeeBefore);
-  console.log("Get fee claim AFTER claiming DIVA fee: ", divaFeeAfter);
+  console.log("Get DIVA reward claim BEFORE claim: ", divaRewardBefore);
+  console.log("Get DIVA reward claim AFTER claim: ", divaRewardAfter);
   console.log(
-    "Collateral token balance of reporter BEFORE claim DIVA fee: ",
+    "Collateral token balance of reporter BEFORE claim DIVA reward: ",
     collateralTokenBalanceReporterBefore
   );
   console.log(
-    "Collateral token balance of reporter AFTER claim DIVA fee: ",
+    "Collateral token balance of reporter AFTER claim DIVA reward: ",
     collateralTokenBalanceReporterAfter
   );
 }

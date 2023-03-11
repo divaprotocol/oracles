@@ -51,8 +51,33 @@ module.exports = {
     hardhat: {
       forking: {
         url: process.env.RPC_URL_GOERLI,
-        blockNumber: 8508421, // keep it aligned with the one in DIVAOracleTellor.test.js
+        blockNumber: 8508421,
       },
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    ethereum: {
+      url: process.env.RPC_URL_MAINNET,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+      gasPrice: 8000000000,
+    },
+    sepolia: {
+      url: process.env.RPC_URL_SEPOLIA,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    goerli: {
+      url: process.env.RPC_URL_GOERLI,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    polygon: {
+      url: process.env.RPC_URL_POLYGON,
       accounts: {
         mnemonic: MNEMONIC,
       },
@@ -64,8 +89,14 @@ module.exports = {
       },
       gasPrice: 8000000000,
     },
-    goerli: {
-      url: process.env.RPC_URL_GOERLI,
+    gnosis: {
+      url: process.env.RPC_URL_GNOSIS,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    chiado: {
+      url: process.env.RPC_URL_CHIADO,
       accounts: {
         mnemonic: MNEMONIC,
       },

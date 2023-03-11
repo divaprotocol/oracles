@@ -4,9 +4,12 @@ const { parseUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const {
+  calcSettlementFee,
+  encodeOracleValue,
+  decodeOracleValue,
+  getQueryDataAndId,
   getLastBlockTimestamp,
   setNextBlockTimestamp,
-  getCurrentTimestampInSeconds,
 } = require("../utils/utils");
 const {
   ONE_HOUR,
@@ -22,58 +25,15 @@ const network = "goerli"; // for tellorPlayground address; should be the same as
 const collateralTokenDecimals = 6;
 const tippingTokenDecimals = 6;
 
-const calcSettlementFee = (
-  collateralBalance, // Basis for fee calcuation
-  fee, // Settlement fee percent expressed as an integer with 18 decimals
-  collateralTokenDecimals,
-  collateralToUSDRate = parseUnits("0") // USD value of one unit of collateral token
-) => {
-  // Fee amount in collateral token decimals
-  feeAmount = collateralBalance.mul(fee).div(parseUnits("1"));
-
-  // Fee amount in USD expressed as integer with 18 decimals
-  feeAmountUSD = feeAmount
-    .mul(parseUnits("1", 18 - collateralTokenDecimals))
-    .mul(collateralToUSDRate)
-    .div(parseUnits("1"));
-
-  return [
-    feeAmount, // expressed as integer with collateral token decimals
-    feeAmountUSD, // expressed as integer with 18 decimals
-  ];
-};
-
-const encodeOracleValue = (finalReferenceValue, collateralToUSDRate) => {
-  return new ethers.utils.AbiCoder().encode(
-    ["uint256", "uint256"],
-    [finalReferenceValue, collateralToUSDRate]
-  );
-};
-
-const decodeOracleValue = (tellorValue) => {
-  return new ethers.utils.AbiCoder().decode(
-    ["uint256", "uint256"],
-    tellorValue
-  );
-};
-
-const getQueryDataAndId = (latestPoolId, divaAddress, chainId) => {
-  const abiCoder = new ethers.utils.AbiCoder();
-  const queryDataArgs = abiCoder.encode(
-    ["uint256", "address", "uint256"],
-    [latestPoolId, divaAddress, chainId]
-  );
-  const queryData = abiCoder.encode(
-    ["string", "bytes"],
-    ["DIVAProtocol", queryDataArgs]
-  );
-  const queryId = ethers.utils.keccak256(queryData);
-  return [queryData, queryId];
-};
-
 describe("DIVAOracleTellor", () => {
   let collateralTokenInstance;
-  let user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2;
+  let user1,
+    user2,
+    user3,
+    divaOracleTellorOwner,
+    reporter,
+    excessDIVARewardRecipient,
+    tipper;
 
   let divaOracleTellor;
   let tellorPlayground;
@@ -82,7 +42,7 @@ describe("DIVAOracleTellor", () => {
   let divaOwnershipAddress;
 
   let activationDelay;
-  let maxFeeAmountUSD = parseUnits("10");
+  let maxDIVARewardUSD = parseUnits("10");
 
   let minPeriodUndisputed;
 
@@ -100,12 +60,20 @@ describe("DIVAOracleTellor", () => {
   let queryData, queryId, oracleValue;
 
   let nextBlockTimestamp;
-  let excessFeeRecipientInfo;
-  let maxFeeAmountUSDInfo;
+  let excessDIVARewardRecipientInfo;
+  let maxDIVARewardUSDInfo;
+  let poolId1, poolId2;
 
   before(async () => {
-    [user1, user2, user3, reporter, excessFeeRecipient, tipper1, tipper2] =
-      await ethers.getSigners();
+    [
+      user1,
+      user2,
+      user3,
+      divaOracleTellorOwner,
+      reporter,
+      excessDIVARewardRecipient,
+      tipper,
+    ] = await ethers.getSigners();
 
     // Reset block
     await hre.network.provider.request({
@@ -114,10 +82,7 @@ describe("DIVAOracleTellor", () => {
         {
           forking: {
             jsonRpcUrl: hre.config.networks.hardhat.forking.url,
-            // blockNumber: Choose a value after the block timestamp where contracts used in these tests (DIVA and Tellor) were deployed; align blocknumber accordingly in test script
-            // blockNumber: 10932590, // Rinkeby
-            // blockNumber: 12750642, // Ropsten
-            blockNumber: 8508421, // Goerli
+            blockNumber: hre.config.networks.hardhat.forking.blockNumber,
           },
         },
       ],
@@ -146,12 +111,12 @@ describe("DIVAOracleTellor", () => {
     divaOracleTellor = await divaOracleTellorFactory.deploy(
       divaOwnershipAddress,
       tellorPlaygroundAddress,
-      excessFeeRecipient.address,
-      maxFeeAmountUSD,
+      excessDIVARewardRecipient.address,
+      maxDIVARewardUSD,
       divaAddress
     );
     // Check challengeable
-    expect(await divaOracleTellor.challengeable()).to.eq(false);
+    expect(await divaOracleTellor.getChallengeable()).to.eq(false);
 
     // Check ownership contract address
     expect(await divaOracleTellor.getOwnershipContract()).to.eq(
@@ -198,33 +163,40 @@ describe("DIVAOracleTellor", () => {
       divaAddress,
       chainId
     );
+    const [queryDataFromContract, queryIdFromContract] =
+      await divaOracleTellor.getQueryDataAndId(latestPoolId);
+    expect(queryData).to.eq(queryDataFromContract);
+    expect(queryId).to.eq(queryIdFromContract);
 
     // Deploy tipping tokens
     tippingToken1 = await erc20DeployFixture(
       "TippingToken1",
       "TPT1",
       userStartTokenBalance,
-      tipper1.address,
+      tipper.address,
       tippingTokenDecimals
     );
     tippingToken2 = await erc20DeployFixture(
       "TippingToken2",
       "TPT2",
       userStartTokenBalance,
-      tipper2.address,
+      tipper.address,
       tippingTokenDecimals
     );
 
     // Set tipping amounts
     tippingAmount1 = parseUnits("1000", tippingTokenDecimals);
     tippingAmount2 = parseUnits("2000", tippingTokenDecimals);
+    expect(tippingAmount1).to.not.eq(0);
+    expect(tippingAmount2).to.not.eq(0);
+    expect(tippingAmount2).to.not.eq(tippingAmount1);
 
-    // Approve tipping tokens to DIVAOracleTellor with tipper1, tipper2 addresses
+    // Approve tipping tokens to DIVAOracleTellor with address
     await tippingToken1
-      .connect(tipper1)
+      .connect(tipper)
       .approve(divaOracleTellor.address, ethers.constants.MaxUint256);
     await tippingToken2
-      .connect(tipper2)
+      .connect(tipper)
       .approve(divaOracleTellor.address, ethers.constants.MaxUint256);
   });
 
@@ -267,12 +239,18 @@ describe("DIVAOracleTellor", () => {
   describe("setFinalReferenceValue", async () => {
     beforeEach(async () => {
       // Add tips on DIVAOracleTellor
-      await divaOracleTellor
-        .connect(tipper1)
-        .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
-      await divaOracleTellor
-        .connect(tipper2)
-        .addTip(latestPoolId, tippingAmount2, tippingToken2.address);
+      await divaOracleTellor.connect(tipper).batchAddTip([
+        {
+          poolId: latestPoolId,
+          amount: tippingAmount1,
+          tippingToken: tippingToken1.address,
+        },
+        {
+          poolId: latestPoolId,
+          amount: tippingAmount2,
+          tippingToken: tippingToken2.address,
+        },
+      ]);
     });
 
     describe("Only set final reference value", async () => {
@@ -312,7 +290,7 @@ describe("DIVAOracleTellor", () => {
         expect(formattedTellorValue[1]).to.eq(collateralToUSDRate);
       });
 
-      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and leave tips and fee claims in DIVA unclaimed", async () => {
+      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and leave tips and DIVA reward claims unclaimed", async () => {
         // ---------
         // Arrange: Confirm params and submit values to tellorPlayground
         // ---------
@@ -386,7 +364,7 @@ describe("DIVAOracleTellor", () => {
           .setFinalReferenceValue(latestPoolId, [], false);
 
         // ---------
-        // Assert: Confirm that finalReferenceValue, statusFinalReferenceValue and feeClaim in DIVA Protocol are updated
+        // Assert: Confirm that finalReferenceValue, statusFinalReferenceValue and reward claim in DIVA Protocol are updated
         // but tipping token and collateral token balances remain unchanged
         // ---------
         // Check that finalReferenceValue and statusFinalReferenceValue are updated in DIVA Protocol
@@ -394,7 +372,7 @@ describe("DIVAOracleTellor", () => {
         expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue);
         expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
 
-        // Check that the fee claim was allocated to the reporter in DIVA Protocol
+        // Check that the DIVA reward claim was allocated to the reporter in DIVA Protocol
         expect(
           await diva.getClaim(
             collateralTokenInstance.address,
@@ -402,7 +380,7 @@ describe("DIVAOracleTellor", () => {
           )
         ).to.eq(settlementFeeAmount);
 
-        // Check that tips and balances for tippinToken1 are unchanged
+        // Check that tips and balances for tippingToken1 are unchanged
         expect(
           (
             await divaOracleTellor.getTipAmounts([
@@ -415,7 +393,7 @@ describe("DIVAOracleTellor", () => {
         );
         expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
 
-        // Check that tips and balances for tippinToken2 are unchanged
+        // Check that tips and balances for tippingToken2 are unchanged
         expect(
           (
             await divaOracleTellor.getTipAmounts([
@@ -428,12 +406,12 @@ describe("DIVAOracleTellor", () => {
         );
         expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-        // Check that the reporter's collateral token balance is unchanged (as the DIVA fee claim resides inside DIVA Protocol)
+        // Check that the reporter's collateral token balance is unchanged (as the DIVA reward claim resides inside DIVA Protocol)
         expect(
           await collateralTokenInstance.balanceOf(reporter.address)
         ).to.eq(0);
 
-        // Check that pool id is added to `reporterToPoolIds`
+        // Check that poolId is added to `reporterToPoolIds`
         expect(
           (
             await divaOracleTellor.getPoolIdsLengthForReporters([
@@ -557,11 +535,11 @@ describe("DIVAOracleTellor", () => {
         );
       });
 
-      it("Allocates all the settlement fee to reporter if it is below maxFeeAmountUSD", async () => {
+      it("Allocates all the DIVA reward to reporter if it is below maxDIVARewardUSD", async () => {
         // ---------
-        // Arrange: Confirm that user1's fee claim balance is zero, report value and calculate USD denominated fee
+        // Arrange: Confirm that user1's DIVA reward claim balance is zero, report value and calculate USD denominated DIVA reward
         // ---------
-        // Confirm that user1's fee claim balance is zero
+        // Confirm that user1's DIVA reward claim balance is zero
         expect(
           await diva.getClaim(collateralTokenInstance.address, user1.address)
         ).to.eq(0);
@@ -589,7 +567,7 @@ describe("DIVAOracleTellor", () => {
             collateralTokenDecimals,
             collateralToUSDRate
           );
-        expect(settlementFeeAmountUSD).to.be.lte(maxFeeAmountUSD);
+        expect(settlementFeeAmountUSD).to.be.lte(maxDIVARewardUSD);
 
         // ---------
         // Act: Call `setFinalReferenceValue` function inside DIVAOracleTellor contract after `minPeriodUndisputed`
@@ -602,7 +580,7 @@ describe("DIVAOracleTellor", () => {
           .setFinalReferenceValue(latestPoolId, [], false);
 
         // ---------
-        // Assert: Confirm that the reporter receives the full settlement fee payment (in collateral asset) and 0 goes to excess fee recipient
+        // Assert: Confirm that the reporter receives the full DIVA reward payment (in collateral asset) and 0 goes to excess DIVA reward recipient
         // ---------
         expect(
           await diva.getClaim(
@@ -613,14 +591,14 @@ describe("DIVAOracleTellor", () => {
         expect(
           await diva.getClaim(
             collateralTokenInstance.address,
-            excessFeeRecipient.address
+            excessDIVARewardRecipient.address
           )
         ).to.eq(0);
       });
 
-      it("Should split the fee between reporter and excess fee recipient if fee amount exceeds maxFeeAmountUSD", async () => {
+      it("Should split the DIVA reward between reporter and excess DIVA reward recipient if DIVA reward exceeds maxDIVARewardUSD", async () => {
         // ---------
-        // Arrange: Create a contingent pool where settlement fee exceeds maxFeeAmountUSD
+        // Arrange: Create a contingent pool where DIVA reward exceeds maxDIVARewardUSD
         // ---------
         const tx = await createContingentPool({
           collateralAmount: 100000,
@@ -654,7 +632,8 @@ describe("DIVAOracleTellor", () => {
           .connect(reporter)
           .submitValue(queryId, oracleValue, 0, queryData);
 
-        // Calculate settlement fee expressed in both collateral token and USD
+        // Calculate settlement fee expressed in both collateral token and USD.
+        // Note that DIVA reward = settlement fee as no tips are added in this test case.
         const [feeAmount, feeAmountUSD] = calcSettlementFee(
           poolParams.collateralBalance,
           feesParams.settlementFee,
@@ -662,35 +641,35 @@ describe("DIVAOracleTellor", () => {
           collateralToUSDRate
         ); // feeAmount is expressed as an integer with collateral token decimals and feeAmountUSD with 18 decimals
 
-        // Confirm that implied USD value of fee exceeds maxFeeAmountUSD
-        expect(feeAmountUSD).to.be.gte(maxFeeAmountUSD);
+        // Confirm that implied USD value of fee exceeds maxDIVARewardUSD
+        expect(feeAmountUSD).to.be.gte(maxDIVARewardUSD);
 
-        // Calc max fee amount in collateral token
-        const maxFeeAmount = maxFeeAmountUSD
+        // Calc max DIVA reward in collateral token
+        const maxDIVAReward = maxDIVARewardUSD
           .mul(parseUnits("1"))
           .div(collateralToUSDRate)
           .div(parseUnits("1", 18 - collateralTokenDecimals)); // in collateral token decimals
 
-        // Get reporter's and excess fee recipient's fee claim before the final reference value is set
-        const feeClaimReporterBefore = await diva.getClaim(
+        // Get reporter's and excess recipient's DIVA reward claim before the final reference value is set
+        const divaRewardClaimReporterBefore = await diva.getClaim(
           collateralTokenInstance.address,
           reporter.address
         );
-        const feeClaimExcessFeeRecipientBefore = await diva.getClaim(
+        const divaRewardClaimExcessDIVARewardRecipientBefore = await diva.getClaim(
           collateralTokenInstance.address,
-          excessFeeRecipient.address
+          excessDIVARewardRecipient.address
         );
-        expect(feeClaimReporterBefore).to.eq(0);
-        expect(feeClaimExcessFeeRecipientBefore).to.eq(0);
+        expect(divaRewardClaimReporterBefore).to.eq(0);
+        expect(divaRewardClaimExcessDIVARewardRecipientBefore).to.eq(0);
 
-        // Set random user that is going to trigger the `setFinalReferenceValue` function after the value has been submitted to the Tellor oracle
-        // and confirm that the diva claim balance is zero
+        // Set random user that is going to trigger the `setFinalReferenceValue` function after the value
+        // has been submitted to the Tellor contract and confirm that the DIVA reward claim balance is zero
         const randomUser = user3;
-        const feeClaimRandomUserBefore = await diva.getClaim(
+        const divaRewardClaimRandomUserBefore = await diva.getClaim(
           collateralTokenInstance.address,
           randomUser.address
         );
-        expect(feeClaimRandomUserBefore).to.eq(0);
+        expect(divaRewardClaimRandomUserBefore).to.eq(0);
 
         // Confirm that the random user is not the DIVA treasury address
         const governanceParameters = await diva.getGovernanceParameters();
@@ -708,30 +687,30 @@ describe("DIVAOracleTellor", () => {
           .setFinalReferenceValue(latestPoolId, [], false); // triggered by a random user
 
         // ---------
-        // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and
-        // user2 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not
-        // allocated any fees
+        // Assert: Confirm that the reporter and excess recipient are allocated the correct amount of rewards and
+        // user2 (who triggered the `setFinalReferenceValue` function) and the DIVAOracleTellor contract are not
+        // allocated any rewards
         // ---------
-        const feeClaimReporterAfter = await diva.getClaim(
+        const divaRewardClaimReporterAfter = await diva.getClaim(
           collateralTokenInstance.address,
           reporter.address
         );
-        const feeClaimExcessFeeRecipientAfter = await diva.getClaim(
+        const divaRewardClaimExcessDIVARewardRecipientAfter = await diva.getClaim(
           collateralTokenInstance.address,
-          excessFeeRecipient.address
+          excessDIVARewardRecipient.address
         );
-        const feeClaimRandomUserAfter = await diva.getClaim(
+        const divaRewardClaimRandomUserAfter = await diva.getClaim(
           collateralTokenInstance.address,
           randomUser.address
         );
 
-        expect(feeClaimReporterAfter).to.eq(
-          feeClaimReporterBefore.add(maxFeeAmount)
+        expect(divaRewardClaimReporterAfter).to.eq(
+          divaRewardClaimReporterBefore.add(maxDIVAReward)
         );
-        expect(feeClaimExcessFeeRecipientAfter).to.eq(
-          feeClaimExcessFeeRecipientBefore.add(feeAmount.sub(maxFeeAmount))
+        expect(divaRewardClaimExcessDIVARewardRecipientAfter).to.eq(
+          divaRewardClaimExcessDIVARewardRecipientBefore.add(feeAmount.sub(maxDIVAReward))
         );
-        expect(feeClaimRandomUserAfter).to.eq(0);
+        expect(divaRewardClaimRandomUserAfter).to.eq(0);
         expect(
           await diva.getClaim(
             collateralTokenInstance.address,
@@ -759,7 +738,8 @@ describe("DIVAOracleTellor", () => {
           .connect(reporter)
           .submitValue(queryId, oracleValue, 0, queryData);
 
-        // Calculate settlement fee expressed in both collateral token and USD
+        // Calculate settlement fee expressed in both collateral token and USD.
+        // DIVA reward = settlement fee as no tips are added in this test case.
         const [feeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
           feesParams.settlementFee,
@@ -767,26 +747,26 @@ describe("DIVAOracleTellor", () => {
           collateralToUSDRate
         ); // feeAmount is expressed as an integer with collateral token decimals and feeAmountUSD with 18 decimals
 
-        // Get reporter's and excess fee recipient's fee claim before the final reference value is set
-        const feeClaimReporterBefore = await diva.getClaim(
+        // Get reporter's and excess recipient's DIVA reward claim before the final reference value is set
+        const divaRewardClaimReporterBefore = await diva.getClaim(
           collateralTokenInstance.address,
           reporter.address
         );
-        const feeClaimExcessFeeRecipientBefore = await diva.getClaim(
+        const divaRewardClaimExcessDIVARewardRecipientBefore = await diva.getClaim(
           collateralTokenInstance.address,
-          excessFeeRecipient.address
+          excessDIVARewardRecipient.address
         );
-        expect(feeClaimReporterBefore).to.eq(0);
-        expect(feeClaimExcessFeeRecipientBefore).to.eq(0);
+        expect(divaRewardClaimReporterBefore).to.eq(0);
+        expect(divaRewardClaimExcessDIVARewardRecipientBefore).to.eq(0);
 
-        // Set random user that is going to trigger the `setFinalReferenceValue` function after the value has been submitted to the Tellor oracle
-        // and confirm that the diva claim balance is zero
+        // Set random user that is going to trigger the `setFinalReferenceValue` function after the value
+        // has been submitted to the Tellor contract and confirm that the DIVA reward claim balance is zero
         const randomUser = user3;
-        const feeClaimRandomUserBefore = await diva.getClaim(
+        const divaRewardClaimRandomUserBefore = await diva.getClaim(
           collateralTokenInstance.address,
           randomUser.address
         );
-        expect(feeClaimRandomUserBefore).to.eq(0);
+        expect(divaRewardClaimRandomUserBefore).to.eq(0);
 
         // Confirm that the random user is not the DIVA treasury address
         const governanceParameters = await diva.getGovernanceParameters();
@@ -804,26 +784,26 @@ describe("DIVAOracleTellor", () => {
           .setFinalReferenceValue(latestPoolId, [], false); // triggered by a random user
 
         // ---------
-        // Assert: Confirm that the reporter and excess fee recipient are allocated the correct amount of fees and
-        // user2 (who triggered the setFinalReferenceFunction) and the divaOracleTellor contract are not
-        // allocated any fees
+        // Assert: Confirm that the reporter and excess recipient are allocated the correct amount of rewards and
+        // user2 (who triggered the `setFinalReferenceValue` function) and the DIVAOracleTellor contract are not
+        // allocated any rewards
         // ---------
-        const feeClaimReporterAfter = await diva.getClaim(
+        const divaRewardClaimReporterAfter = await diva.getClaim(
           collateralTokenInstance.address,
           reporter.address
         );
-        const feeClaimExcessFeeRecipientAfter = await diva.getClaim(
+        const divaRewardClaimExcessDIVARewardRecipientAfter = await diva.getClaim(
           collateralTokenInstance.address,
-          excessFeeRecipient.address
+          excessDIVARewardRecipient.address
         );
-        const feeClaimRandomUserAfter = await diva.getClaim(
+        const divaRewardClaimRandomUserAfter = await diva.getClaim(
           collateralTokenInstance.address,
           randomUser.address
         );
 
-        expect(feeClaimReporterAfter).to.eq(feeAmount);
-        expect(feeClaimExcessFeeRecipientAfter).to.eq(0);
-        expect(feeClaimRandomUserAfter).to.eq(0);
+        expect(divaRewardClaimReporterAfter).to.eq(feeAmount);
+        expect(divaRewardClaimExcessDIVARewardRecipientAfter).to.eq(0);
+        expect(divaRewardClaimRandomUserAfter).to.eq(0);
         expect(
           await diva.getClaim(
             collateralTokenInstance.address,
@@ -924,8 +904,8 @@ describe("DIVAOracleTellor", () => {
       });
     });
 
-    describe("Set final reference value and claim tips and DIVA fee", async () => {
-      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim tips and DIVA fee", async () => {
+    describe("Set final reference value and claim tips and DIVA reward", async () => {
+      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim tips and DIVA reward", async () => {
         // ---------
         // Arrange: Confirm params and submit values to tellorPlayground
         // ---------
@@ -979,7 +959,8 @@ describe("DIVAOracleTellor", () => {
           .connect(reporter)
           .submitValue(queryId, oracleValue, 0, queryData);
 
-        // Calculate settlement fee expressed in collateral token
+        // Calculate settlement fee expressed in collateral token.
+        // Note that DIVA reward = settlement fee as no tips are added in this test case.
         const [settlementFeeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
           feesParams.settlementFee,
@@ -1011,7 +992,7 @@ describe("DIVAOracleTellor", () => {
         expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue);
         expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
 
-        // Check that tips and balances for tippinToken1 are updated correctly
+        // Check that tips and balances for tippingToken1 are updated correctly
         expect(
           (
             await divaOracleTellor.getTipAmounts([
@@ -1026,7 +1007,7 @@ describe("DIVAOracleTellor", () => {
           tippingAmount1
         );
 
-        // Check that tips and balances for tippinToken2 are updated correctly
+        // Check that tips and balances for tippingToken2 are updated correctly
         expect(
           (
             await divaOracleTellor.getTipAmounts([
@@ -1041,12 +1022,12 @@ describe("DIVAOracleTellor", () => {
           tippingAmount2
         );
 
-        // Check that reporter received the DIVA fee
+        // Check that reporter received the DIVA reward
         expect(
           await collateralTokenInstance.balanceOf(reporter.address)
         ).to.eq(settlementFeeAmount);
 
-        // Check that reporter's fee claim on DIVA Protocol dropped to zero
+        // Check that reporter's DIVA reward claim in DIVA Protocol dropped to zero
         expect(
           await diva.getClaim(
             collateralTokenInstance.address,
@@ -1133,8 +1114,8 @@ describe("DIVAOracleTellor", () => {
       });
     });
 
-    describe("Set final reference value and claim DIVA fee", async () => {
-      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim DIVA fee but leave tips unchanged", async () => {
+    describe("Set final reference value and claim DIVA reward", async () => {
+      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim DIVA reward but leave tips unchanged", async () => {
         // ---------
         // Arrange: Confirm params and submit values to tellorPlayground
         // ---------
@@ -1188,7 +1169,8 @@ describe("DIVAOracleTellor", () => {
           .connect(reporter)
           .submitValue(queryId, oracleValue, 0, queryData);
 
-        // Calculate settlement fee expressed in collateral token
+        // Calculate settlement fee expressed in collateral token.
+        // Note that DIVA reward = settlement fee as no tips are added in this test case.
         const [settlementFeeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
           feesParams.settlementFee,
@@ -1209,14 +1191,14 @@ describe("DIVAOracleTellor", () => {
 
         // ---------
         // Assert: Confirm that finalReferenceValue and statusFinalReferenceValue are updated accordingly in DIVA Protocol
-        // the fee claim is transferred to the reporter but fees remain unclaimed
+        // the DIVA reward claim is transferred to the reporter but it remains unclaimed
         // ---------
         // Check that finalReferenceValue and statusFinalReferenceValue are updated in DIVA Protocol
         poolParams = await diva.getPoolParameters(latestPoolId);
         expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue);
         expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
 
-        // Check that reporter's fee claim on DIVA Protocol dropped to zero
+        // Check that reporter's DIVA reward claim in DIVA Protocol dropped to zero
         expect(
           await diva.getClaim(
             collateralTokenInstance.address,
@@ -1229,7 +1211,7 @@ describe("DIVAOracleTellor", () => {
           await collateralTokenInstance.balanceOf(reporter.address)
         ).to.eq(settlementFeeAmount);
 
-        // Check tips and balances for tippinToken1 are unchanged
+        // Check tips and balances for tippingToken1 are unchanged
         expect(
           (
             await divaOracleTellor.getTipAmounts([
@@ -1242,7 +1224,7 @@ describe("DIVAOracleTellor", () => {
         );
         expect(await tippingToken1.balanceOf(reporter.address)).to.eq(0);
 
-        // Check tips and balances for tippinToken2  are unchanged
+        // Check tips and balances for tippingToken2  are unchanged
         expect(
           (
             await divaOracleTellor.getTipAmounts([
@@ -1258,7 +1240,7 @@ describe("DIVAOracleTellor", () => {
     });
 
     describe("Set final reference value and claim tips", async () => {
-      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim tips but not DIVA fee", async () => {
+      it("Should set a reported Tellor value as the final reference value in DIVA Protocol and claim tips but not DIVA reward", async () => {
         // ---------
         // Arrange: Confirm params and submit values to tellorPlayground
         // ---------
@@ -1312,7 +1294,8 @@ describe("DIVAOracleTellor", () => {
           .connect(reporter)
           .submitValue(queryId, oracleValue, 0, queryData);
 
-        // Calculate settlement fee expressed in collateral token
+        // Calculate settlement fee expressed in collateral token.
+        // Note that DIVA reward = settlement fee as no tips are added in this test case.
         const [settlementFeeAmount] = calcSettlementFee(
           poolParams.collateralBalance,
           feesParams.settlementFee,
@@ -1337,14 +1320,14 @@ describe("DIVAOracleTellor", () => {
 
         // ---------
         // Assert: Confirm that finalReferenceValue and statusFinalReferenceValue are updated accordingly in DIVA Protocol,
-        // claims are transferred to reporter but DIVA fee remains unclaimed in the DIVA Protocol
+        // claims are transferred to reporter but DIVA reward remains unclaimed in the DIVA Protocol
         // ---------
         // Check finalReferenceValue and statusFinalReferenceValue
         poolParams = await diva.getPoolParameters(latestPoolId);
         expect(poolParams.finalReferenceValue).to.eq(finalReferenceValue);
         expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
 
-        // Check tips and balances for tippinToken1 were updated correctly
+        // Check tips and balances for tippingToken1 were updated correctly
         expect(
           (
             await divaOracleTellor.getTipAmounts([
@@ -1359,7 +1342,7 @@ describe("DIVAOracleTellor", () => {
           tippingAmount1
         );
 
-        // Check that tips and balances for tippinToken2 were updated correctly
+        // Check that tips and balances for tippingToken2 were updated correctly
         expect(
           (
             await divaOracleTellor.getTipAmounts([
@@ -1374,7 +1357,7 @@ describe("DIVAOracleTellor", () => {
           tippingAmount2
         );
 
-        // Check the reporter's fee claim on DIVA Protocol is unchanged
+        // Check the reporter's DIVA reward claim in DIVA Protocol is unchanged
         expect(
           await diva.getClaim(
             collateralTokenInstance.address,
@@ -1387,6 +1370,127 @@ describe("DIVAOracleTellor", () => {
           await collateralTokenInstance.balanceOf(reporter.address)
         ).to.eq(0);
       });
+    });
+  });
+
+  describe("batchSetFinalReferenceValue", async () => {
+    it("Should set a reported Tellor value as the final reference value in DIVA Protocol and leave tips and DIVA reward claims unclaimed", async () => {
+      // ---------
+      // Arrange: Confirm params and submit values to tellorPlayground
+      // ---------
+
+      // Prepare value submission to tellorPlayground for first pool
+      const finalReferenceValue1 = parseUnits("42000");
+      const collateralToUSDRate1 = parseUnits("1.14");
+      const oracleValue1 = encodeOracleValue(
+        finalReferenceValue1,
+        collateralToUSDRate1
+      );
+
+      poolId1 = latestPoolId;
+      // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol for `poolId1`
+      expect(poolParams.finalReferenceValue).to.eq(0);
+      expect(poolParams.statusFinalReferenceValue).to.eq(0);
+
+      // Submit value to Tellor playground contract for `poolId1`
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue1, 0, queryData);
+
+      // Calculate settlement fee expressed in collateral token for `poolId1`.
+      // Note that DIVA reward = settlement fee as no tips are added in this test case.
+      const [settlementFeeAmount1] = calcSettlementFee(
+        poolParams.collateralBalance,
+        feesParams.settlementFee,
+        collateralTokenDecimals,
+        collateralToUSDRate1
+      );
+
+      // Prepare value submission to tellorPlayground for second pool
+      const finalReferenceValue2 = parseUnits("43000");
+      const collateralToUSDRate2 = parseUnits("1.24");
+      const oracleValue2 = encodeOracleValue(
+        finalReferenceValue2,
+        collateralToUSDRate2
+      );
+
+      // Create second expired contingent pool that uses Tellor as the data provider
+      const tx = await createContingentPool();
+      const receipt = await tx.wait();
+      poolId2 = receipt.events?.find((x) => x.event === "PoolIssued")?.args
+        ?.poolId;
+      poolParams = await diva.getPoolParameters(poolId2);
+      feesParams = await diva.getFees(poolParams.indexFees);
+
+      // Check finalReferenceValue and statusFinalReferenceValue in DIVA Protocol for `poolId2`
+      expect(poolParams.finalReferenceValue).to.eq(0);
+      expect(poolParams.statusFinalReferenceValue).to.eq(0);
+
+      // Prepare Tellor value submission for `poolId2`
+      [queryData, queryId] = getQueryDataAndId(poolId2, divaAddress, chainId);
+
+      // Submit value to Tellor playground contract for `poolId2`
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await tellorPlayground
+        .connect(reporter)
+        .submitValue(queryId, oracleValue2, 0, queryData);
+
+      // Calculate settlement fee expressed in collateral token for `poolId2`.
+      // Note that DIVA reward = settlement fee as no tips are added in this test case.
+      const [settlementFeeAmount2] = calcSettlementFee(
+        poolParams.collateralBalance,
+        feesParams.settlementFee,
+        collateralTokenDecimals,
+        collateralToUSDRate2
+      );
+
+      // ---------
+      // Act: Call `batchSetFinalReferenceValue` function inside DIVAOracleTellor
+      // contract after exactly `minPeriodUndisputed` period has passed
+      // ---------
+      nextBlockTimestamp =
+        (await getLastBlockTimestamp()) + minPeriodUndisputed;
+      await setNextBlockTimestamp(nextBlockTimestamp);
+      await divaOracleTellor.connect(user2).batchSetFinalReferenceValue([
+        { poolId: poolId1, tippingTokens: [], claimDIVAReward: false },
+        { poolId: poolId2, tippingTokens: [], claimDIVAReward: false },
+      ]);
+
+      // ---------
+      // Assert: Confirm that finalReferenceValue, statusFinalReferenceValue and reward claim in DIVA Protocol are updated
+      // ---------
+      // Check that finalReferenceValue and statusFinalReferenceValue are updated in DIVA Protocol
+      const poolParams1 = await diva.getPoolParameters(poolId1);
+      expect(poolParams1.finalReferenceValue).to.eq(finalReferenceValue1);
+      expect(poolParams1.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
+
+      const poolParams2 = await diva.getPoolParameters(poolId2);
+      expect(poolParams2.finalReferenceValue).to.eq(finalReferenceValue2);
+      expect(poolParams2.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
+
+      // Check that the DIVA reward claim was allocated to the reporter in DIVA Protocol
+      expect(
+        await diva.getClaim(collateralTokenInstance.address, reporter.address)
+      ).to.eq(settlementFeeAmount1.add(settlementFeeAmount2));
+
+      // Check that `poolId1` and `poolId2` are added to `reporterToPoolIds`
+      expect(
+        (
+          await divaOracleTellor.getPoolIdsLengthForReporters([
+            reporter.address,
+          ])
+        )[0]
+      ).to.eq(2);
+      const poolIds = (
+        await divaOracleTellor.getPoolIdsForReporters([
+          { reporter: reporter.address, startIndex: 0, endIndex: 2 },
+        ])
+      )[0];
+      expect(poolIds[0]).to.eq(poolId1);
+      expect(poolIds[1]).to.eq(poolId2);
     });
   });
 
@@ -1408,7 +1512,7 @@ describe("DIVAOracleTellor", () => {
       // Act: Add tip
       // ---------
       await divaOracleTellor
-        .connect(tipper1)
+        .connect(tipper)
         .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
 
       // ---------
@@ -1431,7 +1535,7 @@ describe("DIVAOracleTellor", () => {
       // Arrange: Add first tip and set second tipping amount
       // ---------
       await divaOracleTellor
-        .connect(tipper1)
+        .connect(tipper)
         .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
 
       const secondTippingAmount = parseUnits("3000", tippingTokenDecimals);
@@ -1440,7 +1544,7 @@ describe("DIVAOracleTellor", () => {
       // Act: Add second tip in the same tipping token as the first tip
       // ---------
       await divaOracleTellor
-        .connect(tipper1)
+        .connect(tipper)
         .addTip(latestPoolId, secondTippingAmount, tippingToken1.address);
 
       // ---------
@@ -1494,7 +1598,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       await expect(
         divaOracleTellor
-          .connect(tipper1)
+          .connect(tipper)
           .addTip(latestPoolId, tippingAmount1, tippingToken1.address)
       ).to.be.revertedWith("AlreadyConfirmedPool()");
     });
@@ -1508,7 +1612,7 @@ describe("DIVAOracleTellor", () => {
       // Act: Add tip
       // ---------
       const tx = await divaOracleTellor
-        .connect(tipper1)
+        .connect(tipper)
         .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
       const receipt = await tx.wait();
 
@@ -1521,19 +1625,81 @@ describe("DIVAOracleTellor", () => {
       expect(tipAddedEvent.args.poolId).to.eq(latestPoolId);
       expect(tipAddedEvent.args.tippingToken).to.eq(tippingToken1.address);
       expect(tipAddedEvent.args.amount).to.eq(tippingAmount1);
-      expect(tipAddedEvent.args.tipper).to.eq(tipper1.address);
+      expect(tipAddedEvent.args.tipper).to.eq(tipper.address);
+    });
+  });
+
+  describe("batchAddTip", async () => {
+    it("Should add batch tips to DIVAOracleTellor", async () => {
+      // ---------
+      // Arrange: Check that there's no tip added for latestPoolId
+      // ---------
+      const tipAmountsBefore = (
+        await divaOracleTellor.getTipAmounts([
+          {
+            poolId: latestPoolId,
+            tippingTokens: [tippingToken1.address, tippingToken2.address],
+          },
+        ])
+      )[0];
+      expect(tipAmountsBefore[0]).to.eq(0);
+      expect(tipAmountsBefore[1]).to.eq(0);
+      expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(0);
+      expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(0);
+
+      // ---------
+      // Act: Add batch tips
+      // ---------
+      await divaOracleTellor.connect(tipper).batchAddTip([
+        {
+          poolId: latestPoolId,
+          amount: tippingAmount1,
+          tippingToken: tippingToken1.address,
+        },
+        {
+          poolId: latestPoolId,
+          amount: tippingAmount2,
+          tippingToken: tippingToken2.address,
+        },
+      ]);
+
+      // ---------
+      // Assert: Check that tip is added on divaOracleTellor correctly
+      // ---------
+      const tipAmountsAfter = (
+        await divaOracleTellor.getTipAmounts([
+          {
+            poolId: latestPoolId,
+            tippingTokens: [tippingToken1.address, tippingToken2.address],
+          },
+        ])
+      )[0];
+      expect(tipAmountsAfter[0]).to.eq(tippingAmount1);
+      expect(tipAmountsAfter[1]).to.eq(tippingAmount2);
+      expect(await tippingToken1.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount1
+      );
+      expect(await tippingToken2.balanceOf(divaOracleTellor.address)).to.eq(
+        tippingAmount2
+      );
     });
   });
 
   describe("claimReward", async () => {
     beforeEach(async () => {
       // Add tips
-      await divaOracleTellor
-        .connect(tipper1)
-        .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
-      await divaOracleTellor
-        .connect(tipper2)
-        .addTip(latestPoolId, tippingAmount2, tippingToken2.address);
+      await divaOracleTellor.connect(tipper).batchAddTip([
+        {
+          poolId: latestPoolId,
+          amount: tippingAmount1,
+          tippingToken: tippingToken1.address,
+        },
+        {
+          poolId: latestPoolId,
+          amount: tippingAmount2,
+          tippingToken: tippingToken2.address,
+        },
+      ]);
 
       // Prepare Tellor value submission
       [queryData, queryId] = getQueryDataAndId(
@@ -1594,7 +1760,8 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Calculate settlement fee expressed in collateral token
+      // Calculate settlement fee expressed in collateral token.
+      // Note that DIVA reward = settlement fee as no tips are added in this test case.
       const [settlementFeeAmount] = calcSettlementFee(
         poolParams.collateralBalance,
         feesParams.settlementFee,
@@ -1602,7 +1769,7 @@ describe("DIVAOracleTellor", () => {
         collateralToUSDRate
       );
 
-      // Check fee claim in DIVA
+      // Check DIVA reward claim in DIVA
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
@@ -1617,7 +1784,7 @@ describe("DIVAOracleTellor", () => {
       );
 
       // ---------
-      // Assert: Check tips are paid to reporter but DIVA fee claims remain untouched
+      // Assert: Check tips are paid to reporter but DIVA reward claims remain untouched
       // ---------
       // Check that tips are paid out to reporter
       expect(
@@ -1643,13 +1810,13 @@ describe("DIVAOracleTellor", () => {
         tippingAmount2
       );
 
-      // Confirm that DIVA fee remains unchanged
+      // Confirm that DIVA reward remains unchanged
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
     });
 
-    it("Should claim DIVA fee only after final reference value is set", async () => {
+    it("Should claim DIVA reward only after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value and calc settlementFeeAmount
       // ---------
@@ -1687,7 +1854,8 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Calculate settlement fee expressed in collateral token
+      // Calculate settlement fee expressed in collateral token.
+      // Note that DIVA reward = settlement fee as no tips are added in this test case.
       const [settlementFeeAmount] = calcSettlementFee(
         poolParams.collateralBalance,
         feesParams.settlementFee,
@@ -1695,7 +1863,7 @@ describe("DIVAOracleTellor", () => {
         collateralToUSDRate
       );
 
-      // Check fee claim in DIVA
+      // Check DIVA reward claim in DIVA
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
@@ -1706,9 +1874,9 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor.claimReward(latestPoolId, [], true);
 
       // ---------
-      // Assert: Check that DIVA fee was claimed but tips remain untouched
+      // Assert: Check that DIVA reward was claimed but tips remain untouched
       // ---------
-      // Check that DIVA fee was claimed and sent to reporter
+      // Check that DIVA reward was claimed and sent to reporter
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount
       );
@@ -1743,9 +1911,9 @@ describe("DIVAOracleTellor", () => {
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
     });
 
-    it("Should claim tips and DIVA fee after final reference value is set", async () => {
+    it("Should claim tips and DIVA reward after final reference value is set", async () => {
       // ---------
-      // Arrange: Set final reference value and check tips and DIVA fee
+      // Arrange: Set final reference value and check tips and DIVA reward
       // ---------
       // Call `setFinalReferenceValue` function inside DIVAOracleTellor contract after exactly `minPeriodUndisputed` period has passed
       nextBlockTimestamp =
@@ -1781,7 +1949,8 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Calculate settlement fee expressed in collateral token
+      // Calculate settlement fee expressed in collateral token.
+      // Note that DIVA reward = settlement fee as no tips are added in this test case.
       const [settlementFeeAmount] = calcSettlementFee(
         poolParams.collateralBalance,
         feesParams.settlementFee,
@@ -1789,7 +1958,7 @@ describe("DIVAOracleTellor", () => {
         collateralToUSDRate
       );
 
-      // Check fee claim in DIVA
+      // Check DIVA reward claim in DIVA
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
@@ -1804,7 +1973,7 @@ describe("DIVAOracleTellor", () => {
       );
 
       // ---------
-      // Assert: Check that tips and DIVA fees were paid out to the reporter
+      // Assert: Check that tips and DIVA rewards were paid out to the reporter
       // ---------
       // Confirm that tips were paid out to the reporter
       expect(
@@ -1830,7 +1999,7 @@ describe("DIVAOracleTellor", () => {
         tippingAmount2
       );
 
-      // Confirm that DIVA fee were paid out to the reporter
+      // Confirm that DIVA reward were paid out to the reporter
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount
       );
@@ -1839,9 +2008,9 @@ describe("DIVAOracleTellor", () => {
       ).to.eq(0);
     });
 
-    it("Should not change anything if `claimReward` function is called with an empty `_tippingTokens` array and `false` as `_claimDIVAFee` value", async function () {
+    it("Should not change anything if `claimReward` function is called with an empty `_tippingTokens` array and `false` as `_claimDIVAReward` value", async function () {
       // ---------
-      // Arrange: Set final reference value and check tips and DIVA fee
+      // Arrange: Set final reference value and check tips and DIVA reward
       // ---------
       // Call `setFinalReferenceValue` function inside DIVAOracleTellor contract after exactly `minPeriodUndisputed` period has passed
       nextBlockTimestamp =
@@ -1877,7 +2046,8 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Calculate settlement fee expressed in collateral token
+      // Calculate settlement fee expressed in collateral token.
+      // Note that DIVA reward = settlement fee as no tips are added in this test case.
       const [settlementFeeAmount] = calcSettlementFee(
         poolParams.collateralBalance,
         feesParams.settlementFee,
@@ -1885,7 +2055,7 @@ describe("DIVAOracleTellor", () => {
         collateralToUSDRate
       );
 
-      // Check fee claim in DIVA
+      // Check DIVA reward claim in DIVA
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount);
@@ -1896,7 +2066,7 @@ describe("DIVAOracleTellor", () => {
       await divaOracleTellor.claimReward(latestPoolId, [], false);
 
       // ---------
-      // Assert: Confirm that tips, DIVA fee and relevant variables remain unchanged
+      // Assert: Confirm that tips, DIVA reward and relevant variables remain unchanged
       // ---------
       // Confirm that tips hasn't been changed
       expect(
@@ -1922,7 +2092,7 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Confirm that DIVA fee hasn't been changed
+      // Confirm that DIVA reward hasn't been changed
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         0
       );
@@ -1935,7 +2105,7 @@ describe("DIVAOracleTellor", () => {
     // Revert
     // ---------
 
-    it("Should revert if users try to claim tips and DIVA fee for not confirmed pool", async () => {
+    it("Should revert if users try to claim tips and DIVA reward for not confirmed pool", async () => {
       // ---------
       // Act & Assert: Confirm that `claimReward` function will fail if called before `setFinalReferenceValue` function is called
       // ---------
@@ -1996,7 +2166,6 @@ describe("DIVAOracleTellor", () => {
   });
 
   describe("batchClaimReward", async () => {
-    let poolId1, poolId2;
     let tippingAmount1ForPoolId1, tippingAmount2ForPoolId1;
     let tippingAmount1ForPoolId2, tippingAmount2ForPoolId2;
     let poolParams1, poolParams2;
@@ -2024,21 +2193,29 @@ describe("DIVAOracleTellor", () => {
       poolParams2 = await diva.getPoolParameters(poolId2);
       feesParams2 = await diva.getFees(poolParams2.indexFees);
 
-      // Add tips for poolId1
-      await divaOracleTellor
-        .connect(tipper1)
-        .addTip(poolId1, tippingAmount1ForPoolId1, tippingToken1.address);
-      await divaOracleTellor
-        .connect(tipper2)
-        .addTip(poolId1, tippingAmount2ForPoolId1, tippingToken2.address);
-
-      // Add tips for poolId2
-      await divaOracleTellor
-        .connect(tipper1)
-        .addTip(poolId2, tippingAmount1ForPoolId2, tippingToken1.address);
-      await divaOracleTellor
-        .connect(tipper2)
-        .addTip(poolId2, tippingAmount2ForPoolId2, tippingToken2.address);
+      // Add tips for poolId1 and poolId2
+      await divaOracleTellor.connect(tipper).batchAddTip([
+        {
+          poolId: poolId1,
+          amount: tippingAmount1ForPoolId1,
+          tippingToken: tippingToken1.address,
+        },
+        {
+          poolId: poolId1,
+          amount: tippingAmount2ForPoolId1,
+          tippingToken: tippingToken2.address,
+        },
+        {
+          poolId: poolId2,
+          amount: tippingAmount1ForPoolId2,
+          tippingToken: tippingToken1.address,
+        },
+        {
+          poolId: poolId2,
+          amount: tippingAmount2ForPoolId2,
+          tippingToken: tippingToken2.address,
+        },
+      ]);
 
       // Prepare Tellor value submission for poolId1
       const [queryData1, queryId1] = getQueryDataAndId(
@@ -2141,12 +2318,12 @@ describe("DIVAOracleTellor", () => {
         {
           poolId: poolId1,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
-          claimDIVAFee: false,
+          claimDIVAReward: false,
         },
         {
           poolId: poolId2,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
-          claimDIVAFee: false,
+          claimDIVAReward: false,
         },
       ]);
 
@@ -2191,7 +2368,7 @@ describe("DIVAOracleTellor", () => {
       );
     });
 
-    it("Should batch claim DIVA fee only after final reference value is set", async () => {
+    it("Should batch claim DIVA reward only after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value and calc settlementFeeAmount
       // ---------
@@ -2246,7 +2423,8 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Calculate settlement fee expressed in collateral token
+      // Calculate settlement fee expressed in collateral token.
+      // Note that DIVA reward = settlement fee as no tips are added in this test case.
       const [settlementFeeAmount1] = calcSettlementFee(
         poolParams1.collateralBalance,
         feesParams1.settlementFee,
@@ -2260,7 +2438,7 @@ describe("DIVAOracleTellor", () => {
         collateralToUSDRate
       );
 
-      // Check fee claim in DIVA
+      // Check DIVA reward claim in DIVA
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount1.add(settlementFeeAmount2));
@@ -2272,19 +2450,19 @@ describe("DIVAOracleTellor", () => {
         {
           poolId: poolId1,
           tippingTokens: [],
-          claimDIVAFee: true,
+          claimDIVAReward: true,
         },
         {
           poolId: poolId2,
           tippingTokens: [],
-          claimDIVAFee: true,
+          claimDIVAReward: true,
         },
       ]);
 
       // ---------
-      // Assert: Check that DIVA fee was claimed but tips remain untouched
+      // Assert: Check that DIVA reward was claimed but tips remain untouched
       // ---------
-      // Check that DIVA fee was claimed and sent to reporter
+      // Check that DIVA reward was claimed and sent to reporter
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount1.add(settlementFeeAmount2)
       );
@@ -2333,7 +2511,7 @@ describe("DIVAOracleTellor", () => {
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
     });
 
-    it("Should batch claim tips and DIVA fee after final reference value is set", async () => {
+    it("Should batch claim tips and DIVA reward after final reference value is set", async () => {
       // ---------
       // Arrange: Set final reference value and check tips
       // ---------
@@ -2388,7 +2566,8 @@ describe("DIVAOracleTellor", () => {
       );
       expect(await tippingToken2.balanceOf(reporter.address)).to.eq(0);
 
-      // Calculate settlement fee expressed in collateral token
+      // Calculate settlement fee expressed in collateral token.
+      // Note that DIVA reward = settlement fee as no tips are added in this test case.
       const [settlementFeeAmount1] = calcSettlementFee(
         poolParams1.collateralBalance,
         feesParams1.settlementFee,
@@ -2402,7 +2581,7 @@ describe("DIVAOracleTellor", () => {
         collateralToUSDRate
       );
 
-      // Check fee claim in DIVA
+      // Check DIVA reward claim in DIVA
       expect(
         await diva.getClaim(collateralTokenInstance.address, reporter.address)
       ).to.eq(settlementFeeAmount1.add(settlementFeeAmount2));
@@ -2414,17 +2593,17 @@ describe("DIVAOracleTellor", () => {
         {
           poolId: poolId1,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
-          claimDIVAFee: true,
+          claimDIVAReward: true,
         },
         {
           poolId: poolId2,
           tippingTokens: [tippingToken1.address, tippingToken2.address],
-          claimDIVAFee: true,
+          claimDIVAReward: true,
         },
       ]);
 
       // ---------
-      // Assert: Check that tips and DIVA fees were paid out to the reporter
+      // Assert: Check that tips and DIVA rewards were paid out to the reporter
       // ---------
       // Confirm that tips were paid out to the reporter
       expect(
@@ -2464,7 +2643,7 @@ describe("DIVAOracleTellor", () => {
         tippingAmount2ForPoolId1.add(tippingAmount2ForPoolId2)
       );
 
-      // Confirm that DIVA fee were paid out to the reporter
+      // Confirm that DIVA reward were paid out to the reporter
       expect(await collateralTokenInstance.balanceOf(reporter.address)).to.eq(
         settlementFeeAmount1.add(settlementFeeAmount2)
       );
@@ -2480,12 +2659,18 @@ describe("DIVAOracleTellor", () => {
 
     beforeEach(async () => {
       // Add tips
-      await divaOracleTellor
-        .connect(tipper1)
-        .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
-      await divaOracleTellor
-        .connect(tipper2)
-        .addTip(latestPoolId, tippingAmount2, tippingToken2.address);
+      await divaOracleTellor.connect(tipper).batchAddTip([
+        {
+          poolId: latestPoolId,
+          amount: tippingAmount1,
+          tippingToken: tippingToken1.address,
+        },
+        {
+          poolId: latestPoolId,
+          amount: tippingAmount2,
+          tippingToken: tippingToken2.address,
+        },
+      ]);
     });
 
     it("Should get tipping tokens with correct start and end index", async () => {
@@ -2575,7 +2760,7 @@ describe("DIVAOracleTellor", () => {
         .setFinalReferenceValue(latestPoolId, [], false);
     });
 
-    it("Should get pool ids with correct start and end index", async () => {
+    it("Should get poolIds with correct start and end index", async () => {
       // ---------
       // Arrange: Set start, end index and reporter
       // ---------
@@ -2587,7 +2772,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Assert: Check that params are correct
       // ---------
-      // Get pool ids for reporter
+      // Get poolIds for reporter
       const poolIdsForReporter = (
         await divaOracleTellor.getPoolIdsForReporters([
           {
@@ -2601,7 +2786,7 @@ describe("DIVAOracleTellor", () => {
       expect(poolIdsForReporter[0]).to.eq(latestPoolId);
     });
 
-    it("Should get pool ids with end index larger than length of pool ids reportedy by reporter", async () => {
+    it("Should get poolIds with end index larger than length of poolIds reportedy by reporter", async () => {
       // ---------
       // Arrange: Set start, end index and reporter
       // ---------
@@ -2616,7 +2801,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Assert: Check that params are correct
       // ---------
-      // Get pool ids for reporter
+      // Get poolIds for reporter
       const poolIdsForReporter = (
         await divaOracleTellor.getPoolIdsForReporters([
           {
@@ -2632,81 +2817,80 @@ describe("DIVAOracleTellor", () => {
     });
   });
 
-  describe("updateMaxFeeAmountUSD", async () => {
-    let newMaxFeeAmountUSD;
+  describe("updateMaxDIVARewardUSD", async () => {
+    let newMaxDIVARewardUSD;
 
-    it("Should update max fee amount USD info after deployment", async () => {
+    it("Should update max DIVA reward USD info after deployment", async () => {
       // ---------
-      // Arrange: Set `newMaxFeeAmountUSD` and check max fee amount USD info before updating
       // ---------
-      newMaxFeeAmountUSD = parseUnits("20");
+      newMaxDIVARewardUSD = parseUnits("20");
 
-      // Get max fee amount USD info
-      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
-      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(0);
-      expect(maxFeeAmountUSDInfo.previousMaxFeeAmountUSD).to.eq(0);
-      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(maxFeeAmountUSD);
-
-      // ---------
-      // Act: Call `updateMaxFeeAmountUSD` function
-      // ---------
-      await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD);
+      // Get max DIVA reward USD info
+      maxDIVARewardUSDInfo = await divaOracleTellor.getMaxDIVARewardUSDInfo();
+      expect(maxDIVARewardUSDInfo.startTimeMaxDIVARewardUSD).to.eq(0);
+      expect(maxDIVARewardUSDInfo.previousMaxDIVARewardUSD).to.eq(0);
+      expect(maxDIVARewardUSDInfo.maxDIVARewardUSD).to.eq(maxDIVARewardUSD);
 
       // ---------
-      // Assert: Check that max fee amount USD info is updated on `divaOracleTellor` correctly
+      // Act: Call `updateMaxDIVARewardUSD` function
       // ---------
-      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
-      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
+      await divaOracleTellor.updateMaxDIVARewardUSD(newMaxDIVARewardUSD);
+
+      // ---------
+      // Assert: Check that max DIVA reward USD info is updated in DIVAOracleTellor correctly
+      // ---------
+      maxDIVARewardUSDInfo = await divaOracleTellor.getMaxDIVARewardUSDInfo();
+      expect(maxDIVARewardUSDInfo.startTimeMaxDIVARewardUSD).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(maxFeeAmountUSDInfo.previousMaxFeeAmountUSD).to.eq(
-        maxFeeAmountUSD
+      expect(maxDIVARewardUSDInfo.previousMaxDIVARewardUSD).to.eq(
+        maxDIVARewardUSD
       );
-      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(newMaxFeeAmountUSD);
+      expect(maxDIVARewardUSDInfo.maxDIVARewardUSD).to.eq(newMaxDIVARewardUSD);
     });
 
-    it("Should be able to update max fee amount USD info after pending period passes", async () => {
+    it("Should be able to update max DIVA reward USD info after pending period passes", async () => {
       // ---------
-      // Arrange: Update max fee amount USD
+      // Arrange: Update max DIVA reward USD
       // ---------
-      // Call `updateMaxFeeAmountUSD` function (first update)
-      const newMaxFeeAmountUSD1 = parseUnits("20");
-      await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD1);
+      // Call `updateMaxDIVARewardUSD` function (first update)
+      const newMaxDIVARewardUSD1 = parseUnits("20");
+      await divaOracleTellor.updateMaxDIVARewardUSD(newMaxDIVARewardUSD1);
 
-      // Get the max fee amount USD info before second updating
-      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
-      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.gt(
-        getCurrentTimestampInSeconds()
-      );
-      expect(maxFeeAmountUSDInfo.previousMaxFeeAmountUSD).to.eq(
-        maxFeeAmountUSD
-      );
-      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(newMaxFeeAmountUSD1);
-
-      // Set next block timestamp as after of `startTimeMaxFeeAmountUSD`
-      await setNextBlockTimestamp(
-        maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD.toNumber() + 1
-      );
-
-      // Set max fee amount USD for second update
-      const newMaxFeeAmountUSD2 = parseUnits("30");
-
-      // ---------
-      // Act: Call `updateMaxFeeAmountUSD` function (second update)
-      // ---------
-      await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD2);
-
-      // ---------
-      // Assert: Check that the max fee amount USD info is updated on `divaOracleTellor` correctly
-      // ---------
-      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
-      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
+      // Get the max DIVA reward USD info before second updating
+      maxDIVARewardUSDInfo = await divaOracleTellor.getMaxDIVARewardUSDInfo();
+      expect(maxDIVARewardUSDInfo.startTimeMaxDIVARewardUSD).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(maxFeeAmountUSDInfo.previousMaxFeeAmountUSD).to.eq(
-        newMaxFeeAmountUSD1
+      expect(maxDIVARewardUSDInfo.previousMaxDIVARewardUSD).to.eq(
+        maxDIVARewardUSD
       );
-      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(newMaxFeeAmountUSD2);
+      expect(maxDIVARewardUSDInfo.maxDIVARewardUSD).to.eq(newMaxDIVARewardUSD1);
+
+      // Set next block timestamp as after of `startTimeMaxDIVARewardUSD`
+      await setNextBlockTimestamp(
+        maxDIVARewardUSDInfo.startTimeMaxDIVARewardUSD.toNumber() + 1
+      );
+
+      // Set max DIVA reward USD for second update
+      const newMaxDIVARewardUSD2 = parseUnits("30");
+
+      // ---------
+      // Act: Call `updateMaxDIVARewardUSD` function (second update)
+      // ---------
+      await divaOracleTellor.updateMaxDIVARewardUSD(newMaxDIVARewardUSD2);
+
+      // ---------
+      // Assert: Check that the max DIVA reward USD info is updated in DIVAOracleTellor correctly
+      // ---------
+      maxDIVARewardUSDInfo = await divaOracleTellor.getMaxDIVARewardUSDInfo();
+      expect(maxDIVARewardUSDInfo.startTimeMaxDIVARewardUSD).to.eq(
+        (await getLastBlockTimestamp()) + activationDelay.toNumber()
+      );
+      expect(maxDIVARewardUSDInfo.previousMaxDIVARewardUSD).to.eq(
+        newMaxDIVARewardUSD1
+      );
+      expect(maxDIVARewardUSDInfo.maxDIVARewardUSD).to.eq(newMaxDIVARewardUSD2);
     });
 
     // -------------------------------------------
@@ -2718,37 +2902,37 @@ describe("DIVAOracleTellor", () => {
       // Act & Assert: Confirm that function call reverts if called by an account other than the contract owner
       // ---------
       await expect(
-        divaOracleTellor.connect(user2).updateMaxFeeAmountUSD(parseUnits("20"))
+        divaOracleTellor.connect(user2).updateMaxDIVARewardUSD(parseUnits("20"))
       ).to.be.revertedWith(
         `NotContractOwner("${user2.address}", "${user1.address}")`
       );
     });
 
-    it("Should revert if there is pending max fee amount USD update", async () => {
+    it("Should revert if there is pending max DIVA reward USD update", async () => {
       // ---------
-      // Arrange: Update max fee amount USD
+      // Arrange: Update max DIVA reward USD
       // ---------
-      // Call `updateMaxFeeAmountUSD` function
-      const tx = await divaOracleTellor.updateMaxFeeAmountUSD(
+      // Call `updateMaxDIVARewardUSD` function
+      const tx = await divaOracleTellor.updateMaxDIVARewardUSD(
         parseUnits("20")
       );
       const receipt = await tx.wait();
-      const startTimeMaxFeeAmountUSD = receipt.events.find(
-        (item) => item.event === "MaxFeeAmountUSDUpdated"
-      ).args.startTimeMaxFeeAmountUSD;
+      const startTimeMaxDIVARewardUSD = receipt.events.find(
+        (item) => item.event === "MaxDIVARewardUSDUpdated"
+      ).args.startTimeMaxDIVARewardUSD;
 
-      // Set next block timestamp as before of `startTimeMaxFeeAmountUSD`
+      // Set next block timestamp as before of `startTimeMaxDIVARewardUSD`
       nextBlockTimestamp = (await getLastBlockTimestamp()) + 1;
       await setNextBlockTimestamp(nextBlockTimestamp);
-      expect(nextBlockTimestamp).to.lt(startTimeMaxFeeAmountUSD);
+      expect(nextBlockTimestamp).to.lt(startTimeMaxDIVARewardUSD);
 
       // ---------
-      // Act & Assert: Confirm that `updateMaxFeeAmountUSD` function will fail
+      // Act & Assert: Confirm that `updateMaxDIVARewardUSD` function will fail
       // ---------
       await expect(
-        divaOracleTellor.updateMaxFeeAmountUSD(parseUnits("30"))
+        divaOracleTellor.updateMaxDIVARewardUSD(parseUnits("30"))
       ).to.be.revertedWith(
-        `PendingMaxFeeAmountUSDUpdate(${nextBlockTimestamp}, ${startTimeMaxFeeAmountUSD.toNumber()})`
+        `PendingMaxDIVARewardUSDUpdate(${nextBlockTimestamp}, ${startTimeMaxDIVARewardUSD.toNumber()})`
       );
     });
 
@@ -2756,112 +2940,112 @@ describe("DIVAOracleTellor", () => {
     // Events
     // ---------
 
-    it("Should emit a `MaxFeeAmountUSDUpdated` event", async () => {
+    it("Should emit a `MaxDIVARewardUSDUpdated` event", async () => {
       // ---------
-      // Arrange: Set next block timestamp and new max fee amount USD
+      // Arrange: Set next block timestamp and new max DIVA reward USD
       // ---------
-      newMaxFeeAmountUSD = parseUnits("20");
+      newMaxDIVARewardUSD = parseUnits("20");
       nextBlockTimestamp = (await getLastBlockTimestamp()) + 1;
       await setNextBlockTimestamp(nextBlockTimestamp);
 
       // ---------
-      // Act: Call `updateMaxFeeAmountUSD` function
+      // Act: Call `updateMaxDIVARewardUSD` function
       // ---------
-      const tx = await divaOracleTellor.updateMaxFeeAmountUSD(
-        newMaxFeeAmountUSD
+      const tx = await divaOracleTellor.updateMaxDIVARewardUSD(
+        newMaxDIVARewardUSD
       );
       const receipt = await tx.wait();
 
       // ---------
-      // Assert: Confirm that a `MaxFeeAmountUSDUpdated` event is emitted with the correct values
+      // Assert: Confirm that a `MaxDIVARewardUSDUpdated` event is emitted with the correct values
       // ---------
-      const maxFeeAmountUSDUpdatedEvent = receipt.events.find(
-        (item) => item.event === "MaxFeeAmountUSDUpdated"
+      const maxDIVARewardUSDUpdatedEvent = receipt.events.find(
+        (item) => item.event === "MaxDIVARewardUSDUpdated"
       ).args;
-      expect(maxFeeAmountUSDUpdatedEvent.from).to.eq(user1.address);
-      expect(maxFeeAmountUSDUpdatedEvent.maxFeeAmountUSD).to.eq(
-        newMaxFeeAmountUSD
+      expect(maxDIVARewardUSDUpdatedEvent.from).to.eq(user1.address);
+      expect(maxDIVARewardUSDUpdatedEvent.maxDIVARewardUSD).to.eq(
+        newMaxDIVARewardUSD
       );
-      expect(maxFeeAmountUSDUpdatedEvent.startTimeMaxFeeAmountUSD).to.eq(
+      expect(maxDIVARewardUSDUpdatedEvent.startTimeMaxDIVARewardUSD).to.eq(
         nextBlockTimestamp + activationDelay.toNumber()
       );
     });
   });
 
-  describe("updateExcessFeeRecipient", async () => {
-    it("Should update excess fee recipient info after deployment", async () => {
+  describe("updateExcessDIVARewardRecipient", async () => {
+    it("Should update excess DIVA reward recipient info after deployment", async () => {
       // ---------
-      // Arrange: Check the excess fee recipient info before updating
+      // Arrange: Check the excess DIVA reward recipient info before updating
       // ---------
-      excessFeeRecipientInfo =
-        await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(0);
-      expect(excessFeeRecipientInfo.previousExcessFeeRecipient).to.eq(
+      excessDIVARewardRecipientInfo =
+        await divaOracleTellor.getExcessDIVARewardRecipientInfo();
+      expect(excessDIVARewardRecipientInfo.startTimeExcessDIVARewardRecipient).to.eq(0);
+      expect(excessDIVARewardRecipientInfo.previousExcessDIVARewardRecipient).to.eq(
         ethers.constants.AddressZero
       );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(
-        excessFeeRecipient.address
+      expect(excessDIVARewardRecipientInfo.excessDIVARewardRecipient).to.eq(
+        excessDIVARewardRecipient.address
       );
 
       // ---------
-      // Act: Call `updateExcessFeeRecipient` function
+      // Act: Call `updateExcessDIVARewardRecipient` function
       // ---------
-      await divaOracleTellor.updateExcessFeeRecipient(user2.address);
+      await divaOracleTellor.updateExcessDIVARewardRecipient(user2.address);
 
       // ---------
-      // Assert: Check that the excess fee recipient info is updated on `divaOracleTellor` correctly
+      // Assert: Check that the excess DIVA reward recipient info is updated in DIVAOracleTellor correctly
       // ---------
-      excessFeeRecipientInfo =
-        await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(
+      excessDIVARewardRecipientInfo =
+        await divaOracleTellor.getExcessDIVARewardRecipientInfo();
+      expect(excessDIVARewardRecipientInfo.startTimeExcessDIVARewardRecipient).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(excessFeeRecipientInfo.previousExcessFeeRecipient).to.eq(
-        excessFeeRecipient.address
+      expect(excessDIVARewardRecipientInfo.previousExcessDIVARewardRecipient).to.eq(
+        excessDIVARewardRecipient.address
       );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(user2.address);
+      expect(excessDIVARewardRecipientInfo.excessDIVARewardRecipient).to.eq(user2.address);
     });
 
-    it("Should be able to update excess fee recipient info after pending period passes", async () => {
+    it("Should be able to update excess DIVA reward recipient info after pending period passes", async () => {
       // ---------
-      // Arrange: Update excess fee recipient
+      // Arrange: Update excess DIVA reward recipient
       // ---------
-      // Call `updateExcessFeeRecipient` function (first update)
-      await divaOracleTellor.updateExcessFeeRecipient(user2.address);
+      // Call `updateExcessDIVARewardRecipient` function (first update)
+      await divaOracleTellor.updateExcessDIVARewardRecipient(user2.address);
 
-      // Get the excess fee recipient info before second updating
-      excessFeeRecipientInfo =
-        await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.gt(
-        getCurrentTimestampInSeconds()
-      );
-      expect(excessFeeRecipientInfo.previousExcessFeeRecipient).to.eq(
-        excessFeeRecipient.address
-      );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(user2.address);
-
-      // Set next block timestamp as after of `startTimeExcessFeeRecipient`
-      await setNextBlockTimestamp(
-        excessFeeRecipientInfo.startTimeExcessFeeRecipient.toNumber() + 1
-      );
-
-      // ---------
-      // Act: Call `updateExcessFeeRecipient` function (second update)
-      // ---------
-      await divaOracleTellor.updateExcessFeeRecipient(user3.address);
-
-      // ---------
-      // Assert: Check that the excess fee recipient info is updated on `divaOracleTellor` correctly
-      // ---------
-      excessFeeRecipientInfo =
-        await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(
+      // Get the excess DIVA reward recipient info before second updating
+      excessDIVARewardRecipientInfo =
+        await divaOracleTellor.getExcessDIVARewardRecipientInfo();
+      expect(excessDIVARewardRecipientInfo.startTimeExcessDIVARewardRecipient).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(excessFeeRecipientInfo.previousExcessFeeRecipient).to.eq(
+      expect(excessDIVARewardRecipientInfo.previousExcessDIVARewardRecipient).to.eq(
+        excessDIVARewardRecipient.address
+      );
+      expect(excessDIVARewardRecipientInfo.excessDIVARewardRecipient).to.eq(user2.address);
+
+      // Set next block timestamp as after of `startTimeExcessDIVARewardRecipient`
+      await setNextBlockTimestamp(
+        excessDIVARewardRecipientInfo.startTimeExcessDIVARewardRecipient.toNumber() + 1
+      );
+
+      // ---------
+      // Act: Call `updateExcessDIVARewardRecipient` function (second update)
+      // ---------
+      await divaOracleTellor.updateExcessDIVARewardRecipient(user3.address);
+
+      // ---------
+      // Assert: Check that the excess DIVA reward recipient info is updated in DIVAOracleTellor correctly
+      // ---------
+      excessDIVARewardRecipientInfo =
+        await divaOracleTellor.getExcessDIVARewardRecipientInfo();
+      expect(excessDIVARewardRecipientInfo.startTimeExcessDIVARewardRecipient).to.eq(
+        (await getLastBlockTimestamp()) + activationDelay.toNumber()
+      );
+      expect(excessDIVARewardRecipientInfo.previousExcessDIVARewardRecipient).to.eq(
         user2.address
       );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(user3.address);
+      expect(excessDIVARewardRecipientInfo.excessDIVARewardRecipient).to.eq(user3.address);
     });
 
     // -------------------------------------------
@@ -2873,46 +3057,46 @@ describe("DIVAOracleTellor", () => {
       // Act & Assert: Confirm that function call reverts if called by an account other than the contract owner
       // ---------
       await expect(
-        divaOracleTellor.connect(user2).updateExcessFeeRecipient(user2.address)
+        divaOracleTellor.connect(user2).updateExcessDIVARewardRecipient(user2.address)
       ).to.be.revertedWith(
         `NotContractOwner("${user2.address}", "${user1.address}")`
       );
     });
 
-    it("Should revert if new `excessFeeRecipient` is zero address", async () => {
+    it("Should revert if new `excessDIVARewardRecipient` is zero address", async () => {
       // ---------
-      // Act & Assert: Confirm that `updateExcessFeeRecipient` function will fail with zero address
+      // Act & Assert: Confirm that `updateExcessDIVARewardRecipient` function will fail with zero address
       // ---------
       await expect(
-        divaOracleTellor.updateExcessFeeRecipient(ethers.constants.AddressZero)
-      ).to.be.revertedWith("ZeroExcessFeeRecipient()");
+        divaOracleTellor.updateExcessDIVARewardRecipient(ethers.constants.AddressZero)
+      ).to.be.revertedWith("ZeroExcessDIVARewardRecipient()");
     });
 
-    it("Should revert if there is pending excess fee recipient update", async () => {
+    it("Should revert if there is pending excess DIVA reward recipient update", async () => {
       // ---------
-      // Arrange: Update excess fee recipient
+      // Arrange: Update excess DIVA reward recipient
       // ---------
-      // Call `updateExcessFeeRecipient` function
-      const tx = await divaOracleTellor.updateExcessFeeRecipient(
+      // Call `updateExcessDIVARewardRecipient` function
+      const tx = await divaOracleTellor.updateExcessDIVARewardRecipient(
         user2.address
       );
       const receipt = await tx.wait();
-      const startTimeExcessFeeRecipient = receipt.events.find(
-        (item) => item.event === "ExcessFeeRecipientUpdated"
-      ).args.startTimeExcessFeeRecipient;
+      const startTimeExcessDIVARewardRecipient = receipt.events.find(
+        (item) => item.event === "ExcessDIVARewardRecipientUpdated"
+      ).args.startTimeExcessDIVARewardRecipient;
 
-      // Set next block timestamp as before of `startTimeExcessFeeRecipient`
+      // Set next block timestamp as before of `startTimeExcessDIVARewardRecipient`
       nextBlockTimestamp = (await getLastBlockTimestamp()) + 1;
       await setNextBlockTimestamp(nextBlockTimestamp);
-      expect(nextBlockTimestamp).to.lt(startTimeExcessFeeRecipient);
+      expect(nextBlockTimestamp).to.lt(startTimeExcessDIVARewardRecipient);
 
       // ---------
-      // Act & Assert: Confirm that `updateExcessFeeRecipient` function will fail
+      // Act & Assert: Confirm that `updateExcessDIVARewardRecipient` function will fail
       // ---------
       await expect(
-        divaOracleTellor.updateExcessFeeRecipient(user3.address)
+        divaOracleTellor.updateExcessDIVARewardRecipient(user3.address)
       ).to.be.revertedWith(
-        `PendingExcessFeeRecipientUpdate(${nextBlockTimestamp}, ${startTimeExcessFeeRecipient.toNumber()})`
+        `PendingExcessDIVARewardRecipientUpdate(${nextBlockTimestamp}, ${startTimeExcessDIVARewardRecipient.toNumber()})`
       );
     });
 
@@ -2920,7 +3104,7 @@ describe("DIVAOracleTellor", () => {
     // Events
     // ---------
 
-    it("Should emit an `ExcessFeeRecipientUpdated` event", async () => {
+    it("Should emit an `ExcessDIVARewardRecipientUpdated` event", async () => {
       // ---------
       // Arrange: Set next block timestamp
       // ---------
@@ -2928,71 +3112,77 @@ describe("DIVAOracleTellor", () => {
       await setNextBlockTimestamp(nextBlockTimestamp);
 
       // ---------
-      // Act: Call `updateExcessFeeRecipient` function
+      // Act: Call `updateExcessDIVARewardRecipient` function
       // ---------
-      const tx = await divaOracleTellor.updateExcessFeeRecipient(
+      const tx = await divaOracleTellor.updateExcessDIVARewardRecipient(
         user2.address
       );
       const receipt = await tx.wait();
 
       // ---------
-      // Assert: Confirm that an `ExcessFeeRecipientUpdated` event is emitted with the correct values
+      // Assert: Confirm that an `ExcessDIVARewardRecipientUpdated` event is emitted with the correct values
       // ---------
-      const excessFeeRecipientUpdatedEvent = receipt.events.find(
-        (item) => item.event === "ExcessFeeRecipientUpdated"
+      const excessDIVARewardRecipientUpdatedEvent = receipt.events.find(
+        (item) => item.event === "ExcessDIVARewardRecipientUpdated"
       ).args;
-      expect(excessFeeRecipientUpdatedEvent.from).to.eq(user1.address);
-      expect(excessFeeRecipientUpdatedEvent.excessFeeRecipient).to.eq(
+      expect(excessDIVARewardRecipientUpdatedEvent.from).to.eq(user1.address);
+      expect(excessDIVARewardRecipientUpdatedEvent.excessDIVARewardRecipient).to.eq(
         user2.address
       );
-      expect(excessFeeRecipientUpdatedEvent.startTimeExcessFeeRecipient).to.eq(
+      expect(excessDIVARewardRecipientUpdatedEvent.startTimeExcessDIVARewardRecipient).to.eq(
         nextBlockTimestamp + activationDelay.toNumber()
       );
     });
   });
 
-  describe("revokePendingExcessFeeRecipientUpdate", async () => {
-    let newExcessFeeRecipient;
+  describe("revokePendingExcessDIVARewardRecipientUpdate", async () => {
+    let newExcessDIVARewardRecipient;
 
     beforeEach(async () => {
-      // Set new excess fee recipient
-      newExcessFeeRecipient = user2;
+      // Set new excess DIVA reward recipient
+      newExcessDIVARewardRecipient = user2;
 
-      // Confirm that new excess fee recipient is not equal to the current one
-      excessFeeRecipientInfo =
-        await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.not.eq(newExcessFeeRecipient.address);
+      // Confirm that new excess DIVA reward recipient is not equal to the current one
+      excessDIVARewardRecipientInfo =
+        await divaOracleTellor.getExcessDIVARewardRecipientInfo();
+      expect(excessDIVARewardRecipientInfo.excessDIVARewardRecipient).to.not.eq(
+        newExcessDIVARewardRecipient.address
+      );
 
-      // Call `updateExcessFeeRecipient` function
-      await divaOracleTellor.updateExcessFeeRecipient(newExcessFeeRecipient.address);
+      // Call `updateExcessDIVARewardRecipient` function
+      await divaOracleTellor.updateExcessDIVARewardRecipient(
+        newExcessDIVARewardRecipient.address
+      );
     });
 
-    it("Should revoke pending excees fee recipient update", async () => {
+    it("Should revoke pending excees DIVA reward recipient update", async () => {
       // ---------
-      // Arrange: Check the excess fee recipient info before revoking
+      // Arrange: Check the excess DIVA reward recipient info before revoking
       // ---------
-      excessFeeRecipientInfo =
-        await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(
+      excessDIVARewardRecipientInfo =
+        await divaOracleTellor.getExcessDIVARewardRecipientInfo();
+      expect(excessDIVARewardRecipientInfo.startTimeExcessDIVARewardRecipient).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(newExcessFeeRecipient.address);
+      expect(excessDIVARewardRecipientInfo.excessDIVARewardRecipient).to.eq(
+        newExcessDIVARewardRecipient.address
+      );
 
       // ---------
-      // Act: Call `revokePendingExcessFeeRecipientUpdate` function
+      // Act: Call `revokePendingExcessDIVARewardRecipientUpdate` function
       // ---------
-      await divaOracleTellor.revokePendingExcessFeeRecipientUpdate();
+      await divaOracleTellor.revokePendingExcessDIVARewardRecipientUpdate();
 
       // ---------
-      // Assert: Check that the excess fee recipient info is revoked on `divaOracleTellor` correctly
+      // Assert: Check that the excess DIVA reward recipient info is revoked in DIVAOracleTellor correctly
       // ---------
-      excessFeeRecipientInfo =
-        await divaOracleTellor.getExcessFeeRecipientInfo();
-      expect(excessFeeRecipientInfo.startTimeExcessFeeRecipient).to.eq(
+      excessDIVARewardRecipientInfo =
+        await divaOracleTellor.getExcessDIVARewardRecipientInfo();
+      expect(excessDIVARewardRecipientInfo.startTimeExcessDIVARewardRecipient).to.eq(
         await getLastBlockTimestamp()
       );
-      expect(excessFeeRecipientInfo.excessFeeRecipient).to.eq(
-        excessFeeRecipient.address
+      expect(excessDIVARewardRecipientInfo.excessDIVARewardRecipient).to.eq(
+        excessDIVARewardRecipient.address
       );
     });
 
@@ -3008,32 +3198,34 @@ describe("DIVAOracleTellor", () => {
       const currentOwner = await diva.getOwner();
       expect(caller).to.not.eq(currentOwner);
       await expect(
-        divaOracleTellor.connect(caller).revokePendingExcessFeeRecipientUpdate()
+        divaOracleTellor
+          .connect(caller)
+          .revokePendingExcessDIVARewardRecipientUpdate()
       ).to.be.revertedWith(
         `NotContractOwner("${caller.address}", "${currentOwner}")`
       );
     });
 
-    it("Should revert with `ExcessFeeRecipientAlreadyActive` if new excess fee recipient is already active", async () => {
+    it("Should revert with `ExcessDIVARewardRecipientAlreadyActive` if new excess DIVA reward recipient is already active", async () => {
       // ---------
       // Arrange: Set next block timestamp
       // ---------
-      // Get start time for excess fee recipient
-      const startTimeExcessFeeRecipient = (
-        await divaOracleTellor.getExcessFeeRecipientInfo()
-      ).startTimeExcessFeeRecipient.toNumber();
+      // Get start time for excess DIVA reward recipient
+      const startTimeExcessDIVARewardRecipient = (
+        await divaOracleTellor.getExcessDIVARewardRecipientInfo()
+      ).startTimeExcessDIVARewardRecipient.toNumber();
 
-      // Set next block timestamp as after of `startTimeExcessFeeRecipient`
-      nextBlockTimestamp = startTimeExcessFeeRecipient + 1;
+      // Set next block timestamp as after of `startTimeExcessDIVARewardRecipient`
+      nextBlockTimestamp = startTimeExcessDIVARewardRecipient + 1;
       await setNextBlockTimestamp(nextBlockTimestamp);
 
       // ---------
-      // Act & Assert: Confirm that `revokePendingExcessFeeRecipientUpdate` function will fail
+      // Act & Assert: Confirm that `revokePendingExcessDIVARewardRecipientUpdate` function will fail
       // ---------
       await expect(
-        divaOracleTellor.revokePendingExcessFeeRecipientUpdate()
+        divaOracleTellor.revokePendingExcessDIVARewardRecipientUpdate()
       ).to.be.revertedWith(
-        `ExcessFeeRecipientAlreadyActive(${nextBlockTimestamp}, ${startTimeExcessFeeRecipient})`
+        `ExcessDIVARewardRecipientAlreadyActive(${nextBlockTimestamp}, ${startTimeExcessDIVARewardRecipient})`
       );
     });
 
@@ -3041,72 +3233,74 @@ describe("DIVAOracleTellor", () => {
     // Events
     // ---------
 
-    it("Should emit a `PendingExcessFeeRecipientUpdateRevoked` event", async () => {
+    it("Should emit a `PendingExcessDIVARewardRecipientUpdateRevoked` event", async () => {
       // ---------
-      // Act: Call `revokePendingExcessFeeRecipientUpdate` function
+      // Act: Call `revokePendingExcessDIVARewardRecipientUpdate` function
       // ---------
-      const tx =
-        await divaOracleTellor.connect(user1).revokePendingExcessFeeRecipientUpdate();
+      const tx = await divaOracleTellor
+        .connect(user1)
+        .revokePendingExcessDIVARewardRecipientUpdate();
       const receipt = await tx.wait();
 
       // ---------
-      // Assert: Confirm that a `PendingExcessFeeRecipientUpdateRevoked` event is emitted with the correct values
+      // Assert: Confirm that a `PendingExcessDIVARewardRecipientUpdateRevoked` event is emitted with the correct values
       // ---------
-      const pendingExcessFeeRecipientUpdateRevokedEvent = receipt.events.find(
-        (item) => item.event === "PendingExcessFeeRecipientUpdateRevoked"
+      const pendingExcessDIVARewardRecipientUpdateRevokedEvent = receipt.events.find(
+        (item) => item.event === "PendingExcessDIVARewardRecipientUpdateRevoked"
       ).args;
-      expect(pendingExcessFeeRecipientUpdateRevokedEvent.revokedBy).to.eq(
+      expect(pendingExcessDIVARewardRecipientUpdateRevokedEvent.revokedBy).to.eq(
         user1.address
       );
       expect(
-        pendingExcessFeeRecipientUpdateRevokedEvent.revokedExcessFeeRecipient
+        pendingExcessDIVARewardRecipientUpdateRevokedEvent.revokedExcessDIVARewardRecipient
       ).to.eq(user2.address);
       expect(
-        pendingExcessFeeRecipientUpdateRevokedEvent.restoredExcessFeeRecipient
-      ).to.eq(excessFeeRecipient.address);
+        pendingExcessDIVARewardRecipientUpdateRevokedEvent.restoredExcessDIVARewardRecipient
+      ).to.eq(excessDIVARewardRecipient.address);
     });
   });
 
-  describe("revokePendingMaxFeeAmountUSDUpdate", async () => {
-    let newMaxFeeAmountUSD;
+  describe("revokePendingMaxDIVARewardUSDUpdate", async () => {
+    let newMaxDIVARewardUSD;
 
     beforeEach(async () => {
-      // Set new max USD fee amount
-      newMaxFeeAmountUSD = parseUnits("20");
+      // Set new max USD DIVA reward
+      newMaxDIVARewardUSD = parseUnits("20");
 
-      // Confirm that new max USD fee amount is not equal to the current one
-      maxFeeAmountUSDInfo =
-        await divaOracleTellor.getMaxFeeAmountUSDInfo();
-      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.not.eq(newMaxFeeAmountUSD);
+      // Confirm that new max USD DIVA reward is not equal to the current one
+      maxDIVARewardUSDInfo = await divaOracleTellor.getMaxDIVARewardUSDInfo();
+      expect(maxDIVARewardUSDInfo.maxDIVARewardUSD).to.not.eq(
+        newMaxDIVARewardUSD
+      );
 
-      // Call `updateMaxFeeAmountUSD` function      
-      await divaOracleTellor.updateMaxFeeAmountUSD(newMaxFeeAmountUSD);
+      // Call `updateMaxDIVARewardUSD` function
+      await divaOracleTellor.updateMaxDIVARewardUSD(newMaxDIVARewardUSD);
     });
 
-    it("Should revoke pending max USD fee amount update", async () => {
+    it("Should revoke pending max USD DIVA reward update", async () => {
       // ---------
-      // Arrange: Check max USD fee amount info before updating
+      // Arrange: Check max USD DIVA reward info before updating
       // ---------
-      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
-      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
+      maxDIVARewardUSDInfo = await divaOracleTellor.getMaxDIVARewardUSDInfo();
+      expect(maxDIVARewardUSDInfo.startTimeMaxDIVARewardUSD).to.eq(
         (await getLastBlockTimestamp()) + activationDelay.toNumber()
       );
-      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(newMaxFeeAmountUSD);
+      expect(maxDIVARewardUSDInfo.maxDIVARewardUSD).to.eq(newMaxDIVARewardUSD);
 
       // ---------
-      // Act: Call `revokePendingMaxFeeAmountUSDUpdate` function
+      // Act: Call `revokePendingMaxDIVARewardUSDUpdate` function
       // ---------
-      await divaOracleTellor.revokePendingMaxFeeAmountUSDUpdate();
+      await divaOracleTellor.revokePendingMaxDIVARewardUSDUpdate();
 
       // ---------
-      // Assert: Check that max USD fee amount info is updated correctly and returns
-      // the previous one (`maxFeeAmountUSD` is the default value)
+      // Assert: Check that max USD DIVA reward info is updated correctly and returns
+      // the previous one (`maxDIVARewardUSD` is the default value)
       // ---------
-      maxFeeAmountUSDInfo = await divaOracleTellor.getMaxFeeAmountUSDInfo();
-      expect(maxFeeAmountUSDInfo.startTimeMaxFeeAmountUSD).to.eq(
+      maxDIVARewardUSDInfo = await divaOracleTellor.getMaxDIVARewardUSDInfo();
+      expect(maxDIVARewardUSDInfo.startTimeMaxDIVARewardUSD).to.eq(
         await getLastBlockTimestamp()
       );
-      expect(maxFeeAmountUSDInfo.maxFeeAmountUSD).to.eq(maxFeeAmountUSD);
+      expect(maxDIVARewardUSDInfo.maxDIVARewardUSD).to.eq(maxDIVARewardUSD);
     });
 
     // -------------------------------------------
@@ -3120,32 +3314,32 @@ describe("DIVAOracleTellor", () => {
       const caller = user2;
       const currentOwner = await diva.getOwner();
       await expect(
-        divaOracleTellor.connect(caller).revokePendingMaxFeeAmountUSDUpdate()
+        divaOracleTellor.connect(caller).revokePendingMaxDIVARewardUSDUpdate()
       ).to.be.revertedWith(
         `NotContractOwner("${caller.address}", "${currentOwner}")`
       );
     });
 
-    it("Should revert with `MaxFeeAmountUSDAlreadyActive` if new max USD fee amount is already active", async () => {
+    it("Should revert with `MaxDIVARewardUSDAlreadyActive` if new max USD DIVA reward is already active", async () => {
       // ---------
       // Arrange: Set next block timestamp
       // ---------
-      // Get start time for max fee amount USD
-      const startTimeMaxFeeAmountUSD = (
-        await divaOracleTellor.getMaxFeeAmountUSDInfo()
-      ).startTimeMaxFeeAmountUSD.toNumber();
+      // Get start time for max DIVA reward USD
+      const startTimeMaxDIVARewardUSD = (
+        await divaOracleTellor.getMaxDIVARewardUSDInfo()
+      ).startTimeMaxDIVARewardUSD.toNumber();
 
-      // Set next block timestamp as after of `startTimeMaxFeeAmountUSD`
-      nextBlockTimestamp = startTimeMaxFeeAmountUSD + 1;
+      // Set next block timestamp as after of `startTimeMaxDIVARewardUSD`
+      nextBlockTimestamp = startTimeMaxDIVARewardUSD + 1;
       await setNextBlockTimestamp(nextBlockTimestamp);
 
       // ---------
-      // Act & Assert: Confirm that `revokePendingMaxFeeAmountUSDUpdate` function will fail
+      // Act & Assert: Confirm that `revokePendingMaxDIVARewardUSDUpdate` function will fail
       // ---------
       await expect(
-        divaOracleTellor.revokePendingMaxFeeAmountUSDUpdate()
+        divaOracleTellor.revokePendingMaxDIVARewardUSDUpdate()
       ).to.be.revertedWith(
-        `MaxFeeAmountUSDAlreadyActive(${nextBlockTimestamp}, ${startTimeMaxFeeAmountUSD})`
+        `MaxDIVARewardUSDAlreadyActive(${nextBlockTimestamp}, ${startTimeMaxDIVARewardUSD})`
       );
     });
 
@@ -3153,28 +3347,28 @@ describe("DIVAOracleTellor", () => {
     // Events
     // ---------
 
-    it("Should emit a `PendingMaxFeeAmountUSDUpdateRevoked` event", async () => {
+    it("Should emit a `PendingMaxDIVARewardUSDUpdateRevoked` event", async () => {
       // ---------
-      // Act: Call `revokePendingMaxFeeAmountUSDUpdate` function
+      // Act: Call `revokePendingMaxDIVARewardUSDUpdate` function
       // ---------
-      const tx = await divaOracleTellor.revokePendingMaxFeeAmountUSDUpdate();
+      const tx = await divaOracleTellor.revokePendingMaxDIVARewardUSDUpdate();
       const receipt = await tx.wait();
 
       // ---------
-      // Assert: Confirm that a `PendingMaxFeeAmountUSDUpdateRevoked` event is emitted with the correct values
+      // Assert: Confirm that a `PendingMaxDIVARewardUSDUpdateRevoked` event is emitted with the correct values
       // ---------
-      const pendingMaxFeeAmountUSDUpdateRevokedEvent = receipt.events.find(
-        (item) => item.event === "PendingMaxFeeAmountUSDUpdateRevoked"
+      const pendingMaxDIVARewardUSDUpdateRevokedEvent = receipt.events.find(
+        (item) => item.event === "PendingMaxDIVARewardUSDUpdateRevoked"
       ).args;
-      expect(pendingMaxFeeAmountUSDUpdateRevokedEvent.revokedBy).to.eq(
+      expect(pendingMaxDIVARewardUSDUpdateRevokedEvent.revokedBy).to.eq(
         user1.address
       );
       expect(
-        pendingMaxFeeAmountUSDUpdateRevokedEvent.revokedMaxFeeAmountUSD
-      ).to.eq(newMaxFeeAmountUSD);
+        pendingMaxDIVARewardUSDUpdateRevokedEvent.revokedMaxDIVARewardUSD
+      ).to.eq(newMaxDIVARewardUSD);
       expect(
-        pendingMaxFeeAmountUSDUpdateRevokedEvent.restoredMaxFeeAmountUSD
-      ).to.eq(maxFeeAmountUSD);
+        pendingMaxDIVARewardUSDUpdateRevokedEvent.restoredMaxDIVARewardUSD
+      ).to.eq(maxDIVARewardUSD);
     });
   });
 });

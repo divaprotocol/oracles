@@ -2,10 +2,10 @@
  * Script to deploy DIVAOracleTellor contract.
  *
  * IMPORTANT:
- * - Set `EXCESS_FEE_RECIPIENT` in `.env` file to the initial DIVA treasury address.
+ * - Set `EXCESS_DIVA_REWARD_RECIPIENT` in `.env` file to the initial DIVA treasury address.
  * - Set `tellorVersion` on line 30 (ACTUAL or PLAYGROUND). Make sure
  * the Tellor contract addresses in `utils/constants.js` file are correct.
- * - Set `MAX_FEE_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
+ * - Set `MAX_DIVA_REWARD_AMOUNT_USD` in `.env` file to an integer with 18 decimals (e.g., $10 = 10000000000000000000)
  *
  * Run `yarn deploy:divaTellor`
  */
@@ -22,8 +22,8 @@ const {
 const { writeFileSync } = require("../../utils/utils");
 
 // Load relevant variable from `.env` file
-const EXCESS_FEE_RECIPIENT = process.env.EXCESS_FEE_RECIPIENT || "";
-const MAX_FEE_AMOUNT_USD = process.env.MAX_FEE_AMOUNT_USD || "";
+const EXCESS_DIVA_REWARD_RECIPIENT = process.env.EXCESS_DIVA_REWARD_RECIPIENT || "";
+const MAX_DIVA_REWARD_AMOUNT_USD = process.env.MAX_DIVA_REWARD_AMOUNT_USD || "";
 
 async function main() {
   // INPUT: Tellor version
@@ -54,8 +54,8 @@ async function main() {
   const divaOracleTellor = await divaOracleTellorFactory.deploy(
     divaOwnershipAddress,
     tellorAddress,
-    EXCESS_FEE_RECIPIENT,
-    MAX_FEE_AMOUNT_USD,
+    EXCESS_DIVA_REWARD_RECIPIENT,
+    MAX_DIVA_REWARD_AMOUNT_USD,
     divaAddress
   );
   await divaOracleTellor.deployed();
@@ -67,8 +67,8 @@ async function main() {
     module.exports = [
       "${divaOwnershipAddress}",
       "${tellorAddress}",
-      "${EXCESS_FEE_RECIPIENT}",
-      "${MAX_FEE_AMOUNT_USD}",
+      "${EXCESS_DIVA_REWARD_RECIPIENT}",
+      "${MAX_DIVA_REWARD_AMOUNT_USD}",
       "${divaAddress}"
     ];
   `;
