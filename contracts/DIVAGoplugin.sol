@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./interfaces/IDIVAGoplugin.sol";
-import "./interfaces/IDIVA.sol";
-import "./interfaces/IDIVAOwnershipShared.sol";
-import "./interfaces/IInvokeOracle.sol";
-import "./libraries/SafeDecimalMath.sol";
+import "hardhat/console.sol";
+
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IDIVAGoplugin} from "./interfaces/IDIVAGoplugin.sol";
+import {IDIVA} from "./interfaces/IDIVA.sol";
+import {IDIVAOwnershipShared} from "./interfaces/IDIVAOwnershipShared.sol";
+import {IInvokeOracle} from "./interfaces/IInvokeOracle.sol";
+import {SafeDecimalMath} from "./libraries/SafeDecimalMath.sol";
 
 contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
@@ -19,9 +21,6 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
-    IERC20Metadata private immutable _pli;
-
-    uint256 private constant FEE_PER_REQUEST = 0.1 * 10 ** 18;
 
     modifier onlyOwner() {
         address _owner = _diva.getOwner();
@@ -31,36 +30,26 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         _;
     }
 
-    constructor(address diva_, address pli_) {
+    constructor(address diva_) {
         if (diva_ == address(0)) {
             revert ZeroDIVAAddress();
-        }
-        if (pli_ == address(0)) {
-            revert ZeroPLIAddress();
         }
 
         _challengeable = false;
         _diva = IDIVA(diva_);
-        _pli = IERC20Metadata(pli_);
     }
 
     function requestFinalReferenceValue(
         uint256 _poolId
     ) external override returns (bytes32) {
-        uint256 _pliBalance = _pli.balanceOf(address(this));
-        if (_pliBalance < FEE_PER_REQUEST) {
-            _pli.safeTransferFrom(
-                msg.sender,
-                address(this),
-                FEE_PER_REQUEST - _pliBalance
-            );
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+        if (_params.statusFinalReferenceValue == IDIVA.Status.Confirmed) {
+            revert AlreadyConfirmedPool();
         }
 
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
         bytes32 _requestId = IInvokeOracle(
             _stringToAddress(_params.referenceAsset)
         ).requestData({_caller: msg.sender});
-
         _lastRequestedBlocktimestamps[_poolId] = block.timestamp;
 
         emit FinalReferenceValueRequested(_poolId, block.timestamp);
@@ -115,10 +104,6 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return address(_diva);
     }
 
-    function getPLIAddress() external view override returns (address) {
-        return address(_pli);
-    }
-
     function getLastRequestedBlocktimestamp(
         uint256 _poolId
     ) external view override returns (uint256) {
@@ -133,10 +118,6 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return
             IInvokeOracle(_stringToAddress(_params.referenceAsset))
                 .showPrice() * 10 ** 14;
-    }
-
-    function getFeePerRequest() external pure override returns (uint256) {
-        return FEE_PER_REQUEST;
     }
 
     /**
