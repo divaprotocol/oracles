@@ -18,6 +18,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
     // mapping `poolId` to last requested blocktimestamp
     mapping(uint256 => uint256) private _lastRequestedBlocktimestamps;
+    mapping(uint256 => bytes32) private _requestIds;
 
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
@@ -50,7 +51,9 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         bytes32 _requestId = IInvokeOracle(
             _stringToAddress(_params.referenceAsset)
         ).requestData({_caller: msg.sender});
+
         _lastRequestedBlocktimestamps[_poolId] = block.timestamp;
+        _requestIds[_poolId] = _requestId;
 
         emit FinalReferenceValueRequested(_poolId, block.timestamp);
 
@@ -60,25 +63,28 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     function setFinalReferenceValue(
         uint256 _poolId
     ) external override nonReentrant {
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
-
         uint256 _lastRequestedBlocktimestamp = _lastRequestedBlocktimestamps[
             _poolId
         ];
 
-        // Check that final reference value is requested and requested in the
-        // previous block or not
-        if (
-            _lastRequestedBlocktimestamp == 0 ||
-            block.timestamp == _lastRequestedBlocktimestamp
-        ) {
+        // Check that final reference value is requested or not
+        if (_lastRequestedBlocktimestamp == 0) {
             revert FinalReferenceValueNotRequested();
         }
+        // Check that final reference value is requested or not
+        if (
+            _lastRequestedBlocktimestamp + 20 > block.timestamp ||
+            _lastRequestedBlocktimestamp + 30 < block.timestamp
+        ) {
+            revert NotInValidPeriod();
+        }
+
+        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         // Format values (18 decimals)
         uint256 _formattedFinalReferenceValue = IInvokeOracle(
             _stringToAddress(_params.referenceAsset)
-        ).showPrice() * 10 ** 14;
+        ).showPrice(_requestIds[_poolId]) * 10 ** 14;
 
         // Forward final value to DIVA contract.
         //Allocates the fee as part of that process.
@@ -88,11 +94,16 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             _challengeable
         );
 
+        _diva.transferFeeClaim(
+            _diva.getOwner(),
+            _params.collateralToken,
+            _diva.getClaim(_params.collateralToken, address(this))
+        );
+
         emit FinalReferenceValueSet(
             _poolId,
             _formattedFinalReferenceValue,
-            _params.expiryTime,
-            _lastRequestedBlocktimestamp
+            _params.expiryTime
         );
     }
 
@@ -110,14 +121,21 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return _lastRequestedBlocktimestamps[_poolId];
     }
 
+    function getRequestId(
+        uint256 _poolId
+    ) external view override returns (bytes32) {
+        return _requestIds[_poolId];
+    }
+
     function getGopluginValue(
         uint256 _poolId
     ) external view override returns (uint256) {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
 
         return
-            IInvokeOracle(_stringToAddress(_params.referenceAsset))
-                .showPrice() * 10 ** 14;
+            IInvokeOracle(_stringToAddress(_params.referenceAsset)).showPrice(
+                _requestIds[_poolId]
+            ) * 10 ** 14;
     }
 
     /**
