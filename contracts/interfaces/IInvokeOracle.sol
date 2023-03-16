@@ -4,5 +4,5 @@ pragma solidity 0.8.9;
 interface IInvokeOracle {
     function requestData(address _caller) external returns (bytes32 requestId);
 
-    function showPrice() external view returns (uint256);
+    function showPrice(bytes32 _reqid) external view returns (uint256);
 }

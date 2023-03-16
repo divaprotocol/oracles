@@ -6,6 +6,8 @@ interface IDIVAGoplugin {
     // before request final reference value.
     error FinalReferenceValueNotRequested();
 
+    error NotInValidPeriod();
+
     // Thrown in constructor if zero address is provided as DIVA protocol address.
     error ZeroDIVAAddress();
 
@@ -29,13 +31,11 @@ interface IDIVAGoplugin {
      * @param poolId The Id of an existing derivatives pool.
      * @param finalValue Tellor value (converted into 18 decimals).
      * @param expiryTime Unix timestamp in seconds of pool expiry date.
-     * @param timestamp Tellor value timestamp.
      */
     event FinalReferenceValueSet(
         uint256 indexed poolId,
         uint256 finalValue,
-        uint256 expiryTime,
-        uint256 timestamp
+        uint256 expiryTime
     );
 
     /**
@@ -72,6 +72,8 @@ interface IDIVAGoplugin {
     function getLastRequestedBlocktimestamp(
         uint256 _poolId
     ) external view returns (uint256);
+
+    function getRequestId(uint256 _poolId) external view returns (bytes32);
 
     /**
      * @dev Returns the DIVA protocol contract address that the oracle is linked to.
