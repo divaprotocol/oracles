@@ -9,11 +9,10 @@ interface IDIVAGoplugin {
     // Thrown in constructor if zero address is provided as DIVA protocol address.
     error ZeroDIVAAddress();
 
-    // Thrown in constructor if zero address is provided as PLI token address.
-    error ZeroPLIAddress();
-
     // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner.
     error NotContractOwner(address _user, address _contractOwner);
+
+    error AlreadyConfirmedPool();
 
     /**
      * @notice Emitted when the final reference value is requested.
@@ -67,11 +66,6 @@ interface IDIVAGoplugin {
     function getGopluginValue(uint256 _poolId) external view returns (uint256);
 
     /**
-     * @dev Returns the fee per request.
-     */
-    function getFeePerRequest() external pure returns (uint256);
-
-    /**
      * @dev Returns the last requested blocktimestamp.
      * @param _poolId The unique identifier of the pool.
      */
@@ -83,9 +77,4 @@ interface IDIVAGoplugin {
      * @dev Returns the DIVA protocol contract address that the oracle is linked to.
      */
     function getDIVAAddress() external view returns (address);
-
-    /**
-     * @dev Returns the PLI token contract address.
-     */
-    function getPLIAddress() external view returns (address);
 }
