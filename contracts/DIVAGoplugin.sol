@@ -72,10 +72,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             revert FinalReferenceValueNotRequested();
         }
         // Check that final reference value is requested or not
-        if (
-            _lastRequestedBlocktimestamp + 20 > block.timestamp ||
-            _lastRequestedBlocktimestamp + 30 < block.timestamp
-        ) {
+        if (_lastRequestedBlocktimestamp + 20 > block.timestamp) {
             revert NotInValidPeriod();
         }
 
