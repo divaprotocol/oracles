@@ -5,6 +5,7 @@ const { parseUnits } = require("@ethersproject/units");
 const DIVA_ABI = require("../contracts/abi/DIVA.json");
 const DATA_FEED_ABI = require("../contracts/abi/InternalAbi.json");
 const {
+  advanceTime,
   getLastBlockTimestamp,
   setNextBlockTimestamp,
 } = require("../utils/utils");
@@ -98,6 +99,9 @@ describe("DIVAGoplugin", () => {
       ?.poolId;
     poolParams = await diva.getPoolParameters(poolId);
     feesParams = await diva.getFees(poolParams.indexFees);
+
+    await pliToken.connect(user2).approve(dataFeedAddress, feePerRequest);
+    await dataFeed.connect(user2).depositPLI(feePerRequest);
   });
 
   // Function to create contingent pools pre-populated with default values that can be overwritten depending on the test case
@@ -137,16 +141,11 @@ describe("DIVAGoplugin", () => {
   };
 
   describe("requestFinalReferenceValue", async () => {
-    beforeEach(async () => {
-      await pliToken.connect(user2).approve(dataFeedAddress, feePerRequest);
-      await dataFeed.connect(user2).depositPLI(feePerRequest);
-    });
-
     // ---------
     // Functionality
     // ---------
 
-    it.only("Should request final reference value to DIVAGoplugin", async () => {
+    it("Should request final reference value to DIVAGoplugin", async () => {
       // ---------
       // Arrange: Check that there's no final reference value request
       // ---------
@@ -179,16 +178,14 @@ describe("DIVAGoplugin", () => {
   describe("setFinalReferenceValue", async () => {
     beforeEach(async () => {
       // Request final reference value for `poolId`
-      await pliToken
-        .connect(user2)
-        .approve(divaGoplugin.address, feePerRequest);
       await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
     });
 
-    it("Should set the value from Goplugin Feed as the final reference value in DIVA Protocol and leave fee claims in DIVA unclaimed", async () => {
+    it.only("Should set the value from Goplugin Feed as the final reference value in DIVA Protocol and leave fee claims in DIVA unclaimed", async () => {
       // ---------
       // Arrange: Get value from Goplugin Feed for `poolId` and check token balance
       // ---------
+      await advanceTime(20);
       finalReferenceValue = await divaGoplugin.getGopluginValue(poolId);
 
       // Calc settlement fee
@@ -220,10 +217,7 @@ describe("DIVAGoplugin", () => {
 
       // Check that the fee claim was allocated to the DIVAGoplugin in DIVA Protocol
       expect(
-        await diva.getClaim(
-          collateralTokenInstance.address,
-          divaGoplugin.address
-        )
+        await diva.getClaim(collateralTokenInstance.address, owner.address)
       ).to.eq(settlementFeeAmount);
 
       // Check that the DIVAGoplugin's collateral token balance is unchanged (as the DIVA fee claim resides inside DIVA Protocol)
