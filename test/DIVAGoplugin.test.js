@@ -24,7 +24,6 @@ const {
 const network = "apothem";
 const dataFeedPair = "XDC/USDT";
 const collateralTokenDecimals = 6;
-const feePerRequest = parseUnits("0.2");
 
 describe("DIVAGoplugin", () => {
   let collateralTokenInstance;
@@ -36,6 +35,7 @@ describe("DIVAGoplugin", () => {
   let pliToken;
   let dataFeedAddress = GOPLUGIN_DATA_FEED_ADDRESSES[network][dataFeedPair];
   let dataFeed;
+  let minDepositAmount;
 
   let poolId;
   let poolParams;
@@ -57,11 +57,14 @@ describe("DIVAGoplugin", () => {
     const divaGopluginFactory = await ethers.getContractFactory(
       "DIVAGoplugin"
     );
-    divaGoplugin = await divaGopluginFactory.deploy(divaAddress);
+    divaGoplugin = await divaGopluginFactory.deploy(divaAddress, pliAddress);
 
     // Check initial params
     expect(await divaGoplugin.getChallengeable()).to.eq(false);
     expect(await divaGoplugin.getDIVAAddress()).to.eq(divaAddress);
+    expect(await divaGoplugin.getPLIAddress()).to.eq(pliAddress);
+    minDepositAmount = await divaGoplugin.getMinDepositAmount();
+    expect(minDepositAmount).to.eq(parseUnits("0.1").add(1));
 
     // Get PLI token instance
     pliToken = await erc20AttachFixture(pliAddress);
@@ -87,7 +90,6 @@ describe("DIVAGoplugin", () => {
       .connect(user1)
       .approve(diva.address, userStartTokenBalance);
 
-    // Get data feed contract
     dataFeed = await ethers.getContractAt(DATA_FEED_ABI, dataFeedAddress);
   });
 
@@ -99,9 +101,6 @@ describe("DIVAGoplugin", () => {
       ?.poolId;
     poolParams = await diva.getPoolParameters(poolId);
     feesParams = await diva.getFees(poolParams.indexFees);
-
-    await pliToken.connect(user2).approve(dataFeedAddress, feePerRequest);
-    await dataFeed.connect(user2).depositPLI(feePerRequest);
   });
 
   // Function to create contingent pools pre-populated with default values that can be overwritten depending on the test case
@@ -141,11 +140,13 @@ describe("DIVAGoplugin", () => {
   };
 
   describe("requestFinalReferenceValue", async () => {
+    let user2PLIBalanceBefore;
+
     // ---------
     // Functionality
     // ---------
 
-    it("Should request final reference value to DIVAGoplugin", async () => {
+    it("Should request final reference value to DIVAGoplugin (DIVAGoplugin contract has enough PLI token on itself)", async () => {
       // ---------
       // Arrange: Check that there's no final reference value request
       // ---------
@@ -153,9 +154,25 @@ describe("DIVAGoplugin", () => {
         0
       );
 
+      // Transfer PLI token from user2 to DIVAGoplugin
+      await pliToken
+        .connect(user2)
+        .transfer(divaGoplugin.address, minDepositAmount);
+
+      // Check PLI token balance of DIVAGoplugin contract
+      const divaGopluginPLIBalanceBefore = await pliToken.balanceOf(
+        divaGoplugin.address
+      );
+      expect(divaGopluginPLIBalanceBefore).to.be.gte(minDepositAmount);
+
+      // Get PLI token balance of user2 before request final reference value
+      user2PLIBalanceBefore = await pliToken.balanceOf(user2.address);
+
       // ---------
-      // Act: Call `requestFinalReferenceValue` function
+      // Act: Call `requestFinalReferenceValue` function after exactly pool expiry time has passed
       // ---------
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
       await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
 
       // ---------
@@ -164,6 +181,69 @@ describe("DIVAGoplugin", () => {
       expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
         await getLastBlockTimestamp()
       );
+      // Confirm that PLI token balance of user2 hasn't been changed
+      expect(await pliToken.balanceOf(user2.address)).to.eq(
+        user2PLIBalanceBefore
+      );
+      // Confirm that PLI token balance of DIVAGoplugin has been reduced
+      expect(await pliToken.balanceOf(divaGoplugin.address)).to.eq(
+        divaGopluginPLIBalanceBefore.sub(minDepositAmount)
+      );
+    });
+
+    it("Should request final reference value to DIVAGoplugin (Not enough PLI token on DIVAGoplugin contract)", async () => {
+      // ---------
+      // Arrange: Check that there's no final reference value request
+      // ---------
+      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
+        0
+      );
+
+      // Set amount of PLI token to transfer to DIVAGoplugin contract
+      const transferAmount = minDepositAmount.div(2);
+      expect(transferAmount).to.be.lt(minDepositAmount);
+      // Transfer PLI token from user2 to DIVAGoplugin
+      await pliToken
+        .connect(user2)
+        .transfer(divaGoplugin.address, transferAmount);
+      // Get PLI token balance of user2 before request final reference value
+      user2PLIBalanceBefore = await pliToken.balanceOf(user2.address);
+
+      // Check PLI token balance of DIVAGoplugin contract
+      expect(await pliToken.balanceOf(divaGoplugin.address)).to.be.lt(
+        minDepositAmount
+      );
+
+      const depositedAmount = (await dataFeed.plidbs(divaGoplugin.address))
+        .totalcredits;
+
+      // Approve PLI token of user2 to DIVAGoplugin
+      await pliToken
+        .connect(user2)
+        .approve(divaGoplugin.address, minDepositAmount.sub(transferAmount));
+
+      // ---------
+      // Act: Call `requestFinalReferenceValue` function after exactly pool expiry time has passed
+      // ---------
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
+
+      // ---------
+      // Assert: Check that final reference value is requested
+      // ---------
+      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
+        await getLastBlockTimestamp()
+      );
+      // Confirm that PLI token balance of user2 hasn't been changed
+      expect(await pliToken.balanceOf(user2.address)).to.eq(
+        user2PLIBalanceBefore
+          .sub(minDepositAmount)
+          .add(transferAmount)
+          .add(depositedAmount)
+      );
+      // Confirm that PLI token balance of DIVAGoplugin has been reduced
+      expect(await pliToken.balanceOf(divaGoplugin.address)).to.eq(0);
     });
 
     // ---------
@@ -177,11 +257,18 @@ describe("DIVAGoplugin", () => {
 
   describe("setFinalReferenceValue", async () => {
     beforeEach(async () => {
-      // Request final reference value for `poolId`
+      // Transfer PLI token from user2 to DIVAGoplugin
+      await pliToken
+        .connect(user2)
+        .transfer(divaGoplugin.address, minDepositAmount);
+
+      // Request final reference value for `poolId` after exactly pool expiry time has passed
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
       await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
     });
 
-    it.only("Should set the value from Goplugin Feed as the final reference value in DIVA Protocol and leave fee claims in DIVA unclaimed", async () => {
+    it("Should set the value from Goplugin Feed as the final reference value in DIVA Protocol and leave fee claims in DIVA unclaimed", async () => {
       // ---------
       // Arrange: Get value from Goplugin Feed for `poolId` and check token balance
       // ---------
@@ -199,11 +286,8 @@ describe("DIVAGoplugin", () => {
       ).to.eq(0);
 
       // ---------
-      // Act: Call `setFinalReferenceValue` function inside DIVAGoplugin
-      // contract after exactly pool expiry time has passed
+      // Act: Call `setFinalReferenceValue` function inside DIVAGoplugin contract
       // ---------
-      nextBlockTimestamp = poolParams.expiryTime.add(1);
-      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
       await divaGoplugin.connect(user1).setFinalReferenceValue(poolId);
 
       // ---------

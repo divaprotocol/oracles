@@ -6,15 +6,20 @@ interface IDIVAGoplugin {
     // before request final reference value.
     error FinalReferenceValueNotRequested();
 
-    error NotInValidPeriod();
+    error TooEarly();
 
     // Thrown in constructor if zero address is provided as DIVA protocol address.
     error ZeroDIVAAddress();
 
+    // Thrown in constructor if zero address is provided as PLI token address.
+    error ZeroPLIAddress();
+
     // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner.
     error NotContractOwner(address _user, address _contractOwner);
 
-    error AlreadyConfirmedPool();
+    error NotExpiredPool();
+
+    error FinalReferenceValueAlreadyRequested();
 
     /**
      * @notice Emitted when the final reference value is requested.
@@ -79,4 +84,8 @@ interface IDIVAGoplugin {
      * @dev Returns the DIVA protocol contract address that the oracle is linked to.
      */
     function getDIVAAddress() external view returns (address);
+
+    function getPLIAddress() external view returns (address);
+
+    function getMinDepositAmount() external pure returns (uint256);
 }
