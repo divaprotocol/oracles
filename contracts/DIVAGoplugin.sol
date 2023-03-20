@@ -22,6 +22,9 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
+    IERC20Metadata private immutable _pli;
+
+    uint256 private constant MIN_DEPOSIT_AMOUNT = 0.1 * 10 ** 18 + 1;
 
     modifier onlyOwner() {
         address _owner = _diva.getOwner();
@@ -31,26 +34,58 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         _;
     }
 
-    constructor(address diva_) {
+    constructor(address diva_, address pli_) {
         if (diva_ == address(0)) {
             revert ZeroDIVAAddress();
+        }
+        if (pli_ == address(0)) {
+            revert ZeroPLIAddress();
         }
 
         _challengeable = false;
         _diva = IDIVA(diva_);
+        _pli = IERC20Metadata(pli_);
     }
 
     function requestFinalReferenceValue(
         uint256 _poolId
     ) external override returns (bytes32) {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
-        if (_params.statusFinalReferenceValue == IDIVA.Status.Confirmed) {
-            revert AlreadyConfirmedPool();
+        if (_params.expiryTime >= block.timestamp) {
+            revert NotExpiredPool();
         }
 
-        bytes32 _requestId = IInvokeOracle(
-            _stringToAddress(_params.referenceAsset)
-        ).requestData({_caller: msg.sender});
+        if (_lastRequestedBlocktimestamps[_poolId] != 0) {
+            revert FinalReferenceValueAlreadyRequested();
+        }
+
+        address _dataFeedAddress = _stringToAddress(_params.referenceAsset);
+        IInvokeOracle _dataFeed = IInvokeOracle(_dataFeedAddress);
+
+        uint256 _pliAllowance = _pli.allowance(address(this), _dataFeedAddress);
+        if (_pliAllowance < MIN_DEPOSIT_AMOUNT) {
+            uint256 _diff = MIN_DEPOSIT_AMOUNT - _pliAllowance;
+
+            _pli.approve(_dataFeedAddress, _diff);
+        }
+
+        (, uint256 _depositedAmount) = _dataFeed.plidbs(address(this));
+        if (_depositedAmount < MIN_DEPOSIT_AMOUNT) {
+            uint256 _diff = MIN_DEPOSIT_AMOUNT - _depositedAmount;
+
+            uint256 _pliBalance = _pli.balanceOf(address(this));
+            if (_pliBalance < _diff) {
+                _pli.safeTransferFrom(
+                    msg.sender,
+                    address(this),
+                    _diff - _pliBalance
+                );
+            }
+
+            _dataFeed.depositPLI(_diff);
+        }
+
+        bytes32 _requestId = _dataFeed.requestData({_caller: address(this)});
 
         _lastRequestedBlocktimestamps[_poolId] = block.timestamp;
         _requestIds[_poolId] = _requestId;
@@ -73,7 +108,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         }
         // Check that final reference value is requested or not
         if (_lastRequestedBlocktimestamp + 20 > block.timestamp) {
-            revert NotInValidPeriod();
+            revert TooEarly();
         }
 
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
@@ -110,6 +145,14 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
     function getDIVAAddress() external view override returns (address) {
         return address(_diva);
+    }
+
+    function getPLIAddress() external view override returns (address) {
+        return address(_pli);
+    }
+
+    function getMinDepositAmount() external pure override returns (uint256) {
+        return MIN_DEPOSIT_AMOUNT;
     }
 
     function getLastRequestedBlocktimestamp(
