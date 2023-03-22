@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "hardhat/console.sol";
-
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -16,15 +14,15 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
     using SafeDecimalMath for uint256;
 
-    // mapping `poolId` to last requested blocktimestamp
-    mapping(uint256 => uint256) private _lastRequestedBlocktimestamps;
+    // mapping `poolId` to last requested timestamp
+    mapping(uint256 => uint256) private _lastRequestedTimestamps;
     mapping(uint256 => bytes32) private _requestIds;
 
     bool private immutable _challengeable;
     IDIVA private immutable _diva;
     IERC20Metadata private immutable _pli;
 
-    uint256 private constant MIN_DEPOSIT_AMOUNT = 0.1 * 10 ** 18 + 1;
+    uint256 private constant MIN_DEPOSIT_AMOUNT = 1 ether;
 
     modifier onlyOwner() {
         address _owner = _diva.getOwner();
@@ -49,25 +47,20 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
     function requestFinalReferenceValue(
         uint256 _poolId
-    ) external override returns (bytes32) {
+    ) external override nonReentrant returns (bytes32) {
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
-        if (_params.expiryTime >= block.timestamp) {
-            revert NotExpiredPool();
+        if (block.timestamp < _params.expiryTime) {
+            revert PoolNotExpired();
         }
 
-        if (_lastRequestedBlocktimestamps[_poolId] != 0) {
+        if (_lastRequestedTimestamps[_poolId] != 0) {
             revert FinalReferenceValueAlreadyRequested();
         }
 
+        _lastRequestedTimestamps[_poolId] = block.timestamp;
+
         address _dataFeedAddress = _stringToAddress(_params.referenceAsset);
         IInvokeOracle _dataFeed = IInvokeOracle(_dataFeedAddress);
-
-        uint256 _pliAllowance = _pli.allowance(address(this), _dataFeedAddress);
-        if (_pliAllowance < MIN_DEPOSIT_AMOUNT) {
-            uint256 _diff = MIN_DEPOSIT_AMOUNT - _pliAllowance;
-
-            _pli.approve(_dataFeedAddress, _diff);
-        }
 
         (, uint256 _depositedAmount) = _dataFeed.plidbs(address(this));
         if (_depositedAmount < MIN_DEPOSIT_AMOUNT) {
@@ -82,12 +75,12 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
                 );
             }
 
+            _pli.approve(_dataFeedAddress, _diff);
             _dataFeed.depositPLI(_diff);
         }
 
         bytes32 _requestId = _dataFeed.requestData({_caller: address(this)});
 
-        _lastRequestedBlocktimestamps[_poolId] = block.timestamp;
         _requestIds[_poolId] = _requestId;
 
         emit FinalReferenceValueRequested(_poolId, block.timestamp);
@@ -98,17 +91,11 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     function setFinalReferenceValue(
         uint256 _poolId
     ) external override nonReentrant {
-        uint256 _lastRequestedBlocktimestamp = _lastRequestedBlocktimestamps[
-            _poolId
-        ];
+        uint256 _lastRequestedTimestamp = _lastRequestedTimestamps[_poolId];
 
         // Check that final reference value is requested or not
-        if (_lastRequestedBlocktimestamp == 0) {
+        if (_lastRequestedTimestamp == 0) {
             revert FinalReferenceValueNotRequested();
-        }
-        // Check that final reference value is requested or not
-        if (_lastRequestedBlocktimestamp + 20 > block.timestamp) {
-            revert TooEarly();
         }
 
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
@@ -117,6 +104,11 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         uint256 _formattedFinalReferenceValue = IInvokeOracle(
             _stringToAddress(_params.referenceAsset)
         ).showPrice(_requestIds[_poolId]) * 10 ** 14;
+
+        // Check that final reference value is requested or not
+        if (_formattedFinalReferenceValue == 0) {
+            revert FinalReferenceValueNotReported();
+        }
 
         // Forward final value to DIVA contract.
         //Allocates the fee as part of that process.
@@ -155,10 +147,10 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         return MIN_DEPOSIT_AMOUNT;
     }
 
-    function getLastRequestedBlocktimestamp(
+    function getLastRequestedTimestamp(
         uint256 _poolId
     ) external view override returns (uint256) {
-        return _lastRequestedBlocktimestamps[_poolId];
+        return _lastRequestedTimestamps[_poolId];
     }
 
     function getRequestId(

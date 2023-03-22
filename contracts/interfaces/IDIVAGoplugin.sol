@@ -6,9 +6,12 @@ interface IDIVAGoplugin {
     // before request final reference value.
     error FinalReferenceValueNotRequested();
 
-    error TooEarly();
+    // Thrown in `setFinalReferenceValue` if there is no final reference value
+    // reported yet.
+    error FinalReferenceValueNotReported();
 
-    // Thrown in constructor if zero address is provided as DIVA protocol address.
+    // Thrown in constructor if zero address is provided as DIVA protocol
+    // address.
     error ZeroDIVAAddress();
 
     // Thrown in constructor if zero address is provided as PLI token address.
@@ -17,14 +20,18 @@ interface IDIVAGoplugin {
     // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner.
     error NotContractOwner(address _user, address _contractOwner);
 
-    error NotExpiredPool();
+    // Thrown in `requestFinalReferenceValue` if user tries to call the
+    // function before pool expiry time.
+    error PoolNotExpired();
 
+    // Thrown in `requestFinalReferenceValue` if the final reference value was
+    // already requested for the given pool id.
     error FinalReferenceValueAlreadyRequested();
 
     /**
      * @notice Emitted when the final reference value is requested.
      * @param poolId The Id of an existing derivatives pool.
-     * @param requestedTimestamp Current blocktimestamp.
+     * @param requestedTimestamp Current timestamp.
      */
     event FinalReferenceValueRequested(
         uint256 indexed poolId,
@@ -71,10 +78,10 @@ interface IDIVAGoplugin {
     function getGopluginValue(uint256 _poolId) external view returns (uint256);
 
     /**
-     * @dev Returns the last requested blocktimestamp.
+     * @dev Returns the last requested timestamp.
      * @param _poolId The unique identifier of the pool.
      */
-    function getLastRequestedBlocktimestamp(
+    function getLastRequestedTimestamp(
         uint256 _poolId
     ) external view returns (uint256);
 

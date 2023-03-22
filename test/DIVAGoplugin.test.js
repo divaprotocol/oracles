@@ -64,7 +64,7 @@ describe("DIVAGoplugin", () => {
     expect(await divaGoplugin.getDIVAAddress()).to.eq(divaAddress);
     expect(await divaGoplugin.getPLIAddress()).to.eq(pliAddress);
     minDepositAmount = await divaGoplugin.getMinDepositAmount();
-    expect(minDepositAmount).to.eq(parseUnits("0.1").add(1));
+    expect(minDepositAmount).to.eq(parseUnits("1"));
 
     // Get PLI token instance
     pliToken = await erc20AttachFixture(pliAddress);
@@ -150,9 +150,7 @@ describe("DIVAGoplugin", () => {
       // ---------
       // Arrange: Check that there's no final reference value request
       // ---------
-      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
-        0
-      );
+      expect(await divaGoplugin.getLastRequestedTimestamp(poolId)).to.eq(0);
 
       // Transfer PLI token from user2 to DIVAGoplugin
       await pliToken
@@ -178,7 +176,7 @@ describe("DIVAGoplugin", () => {
       // ---------
       // Assert: Check that final reference value is requested
       // ---------
-      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
+      expect(await divaGoplugin.getLastRequestedTimestamp(poolId)).to.eq(
         await getLastBlockTimestamp()
       );
       // Confirm that PLI token balance of user2 hasn't been changed
@@ -195,32 +193,20 @@ describe("DIVAGoplugin", () => {
       // ---------
       // Arrange: Check that there's no final reference value request
       // ---------
-      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
-        0
-      );
+      expect(await divaGoplugin.getLastRequestedTimestamp(poolId)).to.eq(0);
 
-      // Set amount of PLI token to transfer to DIVAGoplugin contract
-      const transferAmount = minDepositAmount.div(2);
-      expect(transferAmount).to.be.lt(minDepositAmount);
-      // Transfer PLI token from user2 to DIVAGoplugin
-      await pliToken
-        .connect(user2)
-        .transfer(divaGoplugin.address, transferAmount);
       // Get PLI token balance of user2 before request final reference value
       user2PLIBalanceBefore = await pliToken.balanceOf(user2.address);
 
-      // Check PLI token balance of DIVAGoplugin contract
-      expect(await pliToken.balanceOf(divaGoplugin.address)).to.be.lt(
-        minDepositAmount
+      // Calc diff between `minDepositAmount` and deposited amount
+      const diff = minDepositAmount.sub(
+        (await dataFeed.plidbs(divaGoplugin.address)).totalcredits
       );
-
-      const depositedAmount = (await dataFeed.plidbs(divaGoplugin.address))
-        .totalcredits;
+      // Check PLI token balance of DIVAGoplugin contract
+      expect(await pliToken.balanceOf(divaGoplugin.address)).to.be.lt(diff);
 
       // Approve PLI token of user2 to DIVAGoplugin
-      await pliToken
-        .connect(user2)
-        .approve(divaGoplugin.address, minDepositAmount.sub(transferAmount));
+      await pliToken.connect(user2).approve(divaGoplugin.address, diff);
 
       // ---------
       // Act: Call `requestFinalReferenceValue` function after exactly pool expiry time has passed
@@ -232,15 +218,12 @@ describe("DIVAGoplugin", () => {
       // ---------
       // Assert: Check that final reference value is requested
       // ---------
-      expect(await divaGoplugin.getLastRequestedBlocktimestamp(poolId)).to.eq(
+      expect(await divaGoplugin.getLastRequestedTimestamp(poolId)).to.eq(
         await getLastBlockTimestamp()
       );
       // Confirm that PLI token balance of user2 hasn't been changed
       expect(await pliToken.balanceOf(user2.address)).to.eq(
-        user2PLIBalanceBefore
-          .sub(minDepositAmount)
-          .add(transferAmount)
-          .add(depositedAmount)
+        user2PLIBalanceBefore.sub(diff)
       );
       // Confirm that PLI token balance of DIVAGoplugin has been reduced
       expect(await pliToken.balanceOf(divaGoplugin.address)).to.eq(0);
