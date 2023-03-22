@@ -144,7 +144,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         (,,address _divaTreasury,,) = _diva.getGovernanceParameters();
 
         // Transfer the fee claim that is allocated to `this` contract
-        // (data provider) by default to the DIVA owner
+        // (data provider) by default to the DIVA treasury address
         _diva.transferFeeClaim(
             _divaTreasury,
             _params.collateralToken,

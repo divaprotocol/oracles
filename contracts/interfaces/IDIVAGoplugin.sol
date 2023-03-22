@@ -17,11 +17,8 @@ interface IDIVAGoplugin {
     // Thrown in constructor if the PLI token address equals the zero address.
     error ZeroPLIAddress();
 
-    // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner.
-    error NotContractOwner(address _user, address _contractOwner);
-
     // Thrown in `requestFinalReferenceValue` if user tries to call the
-    // function before pool expiry time.
+    // function before pool is expired.
     error PoolNotExpired();
 
     // Thrown in `requestFinalReferenceValue` if the final reference value was
@@ -30,8 +27,8 @@ interface IDIVAGoplugin {
 
     /**
      * @notice Emitted when the final reference value is requested.
-     * @param poolId The Id of an existing derivatives pool.
-     * @param requestedTimestamp Current timestamp.
+     * @param poolId The unique identifier of the pool.
+     * @param requestedTimestamp Timestamp of request.
      * @param requestId Request Id.
      */
     event FinalReferenceValueRequested(
@@ -41,7 +38,7 @@ interface IDIVAGoplugin {
     );
 
     /**
-     * @dev Function to request final reference value to Goplugin Feed
+     * @notice Function to initiate a request to submit the data point
      * for a given `_poolId`.
      * @param _poolId The unique identifier of the pool.
      */
@@ -50,25 +47,26 @@ interface IDIVAGoplugin {
     ) external returns (bytes32);
 
     /**
-     * @dev Function to set the final reference value for a given `_poolId`.
+     * @notice Function to submit the provided data point to DIVA Protocol.
      * @param _poolId The unique identifier of the pool.
      */
     function setFinalReferenceValue(uint256 _poolId) external;
 
     /**
-     * @dev Returns whether the oracle's data feed is challengeable or not.
-     * Will return false in that implementation.
+     * @notice Returns whether the oracle's data feed is challengeable or not.
+     * Will return `false` in that implementation.
      */
     function getChallengeable() external view returns (bool);
 
     /**
-     * @dev Returns the value from Goplugin Feed with 18 decimals.
+     * @notice Returns the value from Goplugin Feed with 18 decimals.
+     * @dev Returns 0 if no data has been reported yet.
      * @param _poolId The unique identifier of the pool.
      */
     function getGoPluginValue(uint256 _poolId) external view returns (uint256);
 
     /**
-     * @dev Returns the last requested timestamp.
+     * @notice Returns the timestamp of the data request for a given `_poolId`.
      * @param _poolId The unique identifier of the pool.
      */
     function getLastRequestedTimestamp(
@@ -78,11 +76,17 @@ interface IDIVAGoplugin {
     function getRequestId(uint256 _poolId) external view returns (bytes32);
 
     /**
-     * @dev Returns the DIVA protocol contract address that the oracle is linked to.
+     * @notice Returns the DIVA protocol contract address that the oracle is linked to.
      */
     function getDIVAAddress() external view returns (address);
 
+    /**
+     * @notice Returns the PLI token contract address.
+     */
     function getPLIAddress() external view returns (address);
 
+    /**
+     * @notice Returns the minimum PLI deposit amount (1 PLI = 1e18 in integer terms).
+     */
     function getMinDepositAmount() external pure returns (uint256);
 }
