@@ -48,25 +48,40 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
     function requestFinalReferenceValue(
         uint256 _poolId
     ) external override nonReentrant returns (bytes32) {
+        // Get pool parameters
         IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+
+        // Confirm that the pool expired
         if (block.timestamp < _params.expiryTime) {
             revert PoolNotExpired();
         }
 
+        // Confirm that no GoPlugin request has been made yet
         if (_lastRequestedTimestamps[_poolId] != 0) {
             revert FinalReferenceValueAlreadyRequested();
         }
 
+        // Set the requested timestamp for the pool
         _lastRequestedTimestamps[_poolId] = block.timestamp;
 
+        // Convert referenceAsset string to address
         address _dataFeedAddress = _stringToAddress(_params.referenceAsset);
         IInvokeOracle _dataFeed = IInvokeOracle(_dataFeedAddress);
 
+        // `this` contract acts as the data consumer and needs to fund the
+        // the data feed contract with sufficient PLI, at least `MIN_DEPOSIT_AMOUNT`.
         (, uint256 _depositedAmount) = _dataFeed.plidbs(address(this));
         if (_depositedAmount < MIN_DEPOSIT_AMOUNT) {
             uint256 _diff = MIN_DEPOSIT_AMOUNT - _depositedAmount;
 
+            // Get `this` contract's (data consumer) PLI balance
             uint256 _pliBalance = _pli.balanceOf(address(this));
+            
+            // If the PLI balance of `this` contract is insufficient,
+            // transfer the missing amount from `msg.sender`. This requires
+            // prior approval by the user, max `MIN_DEPOSIT_AMOUNT` on first call
+            // if `this` contract is not funded or 0.1 PLI on any subsequent call.
+            // To sponsor data feeds, a user can send PLI to `this` contract.
             if (_pliBalance < _diff) {
                 _pli.safeTransferFrom(
                     msg.sender,
@@ -75,14 +90,19 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
                 );
             }
 
+            // Approve `_diff` amount with `this` contract and deposit into the
+            // data feed contract. 
             _pli.approve(_dataFeedAddress, _diff);
             _dataFeed.depositPLI(_diff);
         }
 
+        // Issue data request to the data feed contract
         bytes32 _requestId = _dataFeed.requestData({_caller: address(this)});
 
+        // Store request Id for pool
         _requestIds[_poolId] = _requestId;
 
+        // Log event
         emit FinalReferenceValueRequested(_poolId, block.timestamp);
 
         return _requestId;
