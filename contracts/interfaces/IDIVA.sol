@@ -43,6 +43,22 @@ interface IDIVA {
         string referenceAsset; // Reference asset string
     }
 
+    // Collection of settlement related periods
+    struct SettlementPeriods {
+        uint256 startTime; // Timestamp at which the new set of settlement periods becomes applicable
+        uint24 submissionPeriod; // Submission period length in seconds; max value: 15 days <= 2^24
+        uint24 challengePeriod; // Challenge period length in seconds; max value: 15 days <= 2^24
+        uint24 reviewPeriod; // Review period length in seconds; max value: 15 days <= 2^24
+        uint24 fallbackSubmissionPeriod; // Fallback submission period length in seconds; max value: 15 days <= 2^24
+    }
+
+    // Collection of fee related parameters
+    struct Fees {
+        uint256 startTime; // timestamp at which the new set of fees becomes applicable
+        uint96 protocolFee; // max value: 15000000000000000 = 1.5% <= 2^56
+        uint96 settlementFee; // max value: 15000000000000000 = 1.5% <= 2^56
+    }
+
     // Argument for `createContingentPool` function
     struct PoolParams {
         string referenceAsset;
@@ -193,4 +209,24 @@ interface IDIVA {
      * @return owner_ The address of the owner.
      */
     function getOwner() external view returns (address owner_);
+
+    /**
+     * @notice Returns the currently applicable governance parameters; ignores
+     * parameters pending activation.
+     * @return currentFees The current applicable fees.
+     * @return currentSettlementPeriods The current applicable settlement periods.
+     * @return treasury Current treasury address.
+     * @return fallbackDataProvider Current fallback data provider address.
+     * @return pauseReturnCollateralUntil Return of collateral paused until in seconds.
+     */
+    function getGovernanceParameters()
+        external
+        view
+        returns (
+            Fees memory currentFees,
+            SettlementPeriods memory currentSettlementPeriods,
+            address treasury,
+            address fallbackDataProvider,
+            uint256 pauseReturnCollateralUntil
+        );
 }
