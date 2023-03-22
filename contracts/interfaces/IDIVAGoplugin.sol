@@ -3,18 +3,18 @@ pragma solidity 0.8.9;
 
 interface IDIVAGoplugin {
     // Thrown in `setFinalReferenceValue` if user tries to call the function
-    // before request final reference value.
+    // but the data was not requested via `requestFinalReferenceValue` yet.
     error FinalReferenceValueNotRequested();
 
-    // Thrown in `setFinalReferenceValue` if there is no final reference value
-    // reported yet.
+    // Thrown in `setFinalReferenceValue` if no data has been submitted for the
+    // `requestId` yet.
     error FinalReferenceValueNotReported();
 
-    // Thrown in constructor if zero address is provided as DIVA protocol
-    // address.
+    // Thrown in constructor if the DIVA protocol address equals the
+    // zero address.
     error ZeroDIVAAddress();
 
-    // Thrown in constructor if zero address is provided as PLI token address.
+    // Thrown in constructor if the PLI token address equals the zero address.
     error ZeroPLIAddress();
 
     // Thrown `onlyOwner` modifier if `msg.sender` is not contract owner.
@@ -32,22 +32,12 @@ interface IDIVAGoplugin {
      * @notice Emitted when the final reference value is requested.
      * @param poolId The Id of an existing derivatives pool.
      * @param requestedTimestamp Current timestamp.
+     * @param requestId Request Id.
      */
     event FinalReferenceValueRequested(
         uint256 indexed poolId,
-        uint256 requestedTimestamp
-    );
-
-    /**
-     * @notice Emitted when the final reference value is set.
-     * @param poolId The Id of an existing derivatives pool.
-     * @param finalValue Tellor value (converted into 18 decimals).
-     * @param expiryTime Unix timestamp in seconds of pool expiry date.
-     */
-    event FinalReferenceValueSet(
-        uint256 indexed poolId,
-        uint256 finalValue,
-        uint256 expiryTime
+        uint256 requestedTimestamp,
+        bytes32 requestId
     );
 
     /**
@@ -75,7 +65,7 @@ interface IDIVAGoplugin {
      * @dev Returns the value from Goplugin Feed with 18 decimals.
      * @param _poolId The unique identifier of the pool.
      */
-    function getGopluginValue(uint256 _poolId) external view returns (uint256);
+    function getGoPluginValue(uint256 _poolId) external view returns (uint256);
 
     /**
      * @dev Returns the last requested timestamp.
