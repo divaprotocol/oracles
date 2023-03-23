@@ -5,7 +5,7 @@
 
 // @todo move Tellor related example scripts into a separate folder and update scripts in package.json
 
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { parseUnits } = require("@ethersproject/units");
 
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
@@ -13,9 +13,13 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const {
   DIVA_ADDRESS,
   COLLATERAL_TOKENS,
+  DIVA_GOPLUGIN_ADDRESS,
   DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
+  GOPLUGIN_DATA_FEED_ADDRESSES,
 } = require("../../utils/constants");
 const { getExpiryInSeconds } = require("../../utils/utils");
+
+const DATA_FEED_PAIR = "XDC/USDT";
 
 // Auxiliary function to perform checks required for successful execution, in line with those implemented
 // inside the smart contract function. It is recommended to perform those checks in frontend applications
@@ -93,15 +97,15 @@ const checkConditions = (
 };
 
 async function main() {
-  // INPUT: network should be the same as in diva::getPoolParameters command)
-  const network = "goerli";
-
   // INPUT: collateral token symbol
   const collateralTokenSymbol = "dUSD";
 
   const collateralTokenAddress =
-    COLLATERAL_TOKENS[network][collateralTokenSymbol];
-  const dataProviderAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
+  const dataProviderAddress =
+    network.name == "apothem"
+      ? DIVA_GOPLUGIN_ADDRESS[network.name]
+      : DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
 
   // Get signer of pool creator
   const [creator] = await ethers.getSigners();
@@ -117,7 +121,10 @@ async function main() {
   const balance = await erc20Contract.balanceOf(creator.address);
 
   // Input arguments for `createContingentPool` function
-  const referenceAsset = "ETH/USD";
+  const referenceAsset =
+    network.name == "apothem"
+      ? GOPLUGIN_DATA_FEED_ADDRESSES[network.name][DATA_FEED_PAIR]
+      : "ETH/USD";
   const expiryTime = getExpiryInSeconds(100); // 100 means expiry in 100 seconds from now
   const floor = parseUnits("2000");
   const inflection = parseUnits("2500");
@@ -150,7 +157,10 @@ async function main() {
   );
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(
+    DIVA_ABI,
+    DIVA_ADDRESS[network.name]
+  );
 
   // Get creator's current allowance
   let allowance = await erc20Contract.allowance(creator.address, diva.address);
