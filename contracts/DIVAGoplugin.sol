@@ -70,7 +70,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
             // Get `this` contract's (data consumer) PLI balance
             uint256 _pliBalance = _pli.balanceOf(address(this));
-            
+
             // If the PLI balance of `this` contract is insufficient,
             // transfer the missing amount from `msg.sender`. This requires
             // prior approval by the user, max `MIN_DEPOSIT_AMOUNT` on first call
@@ -85,7 +85,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             }
 
             // Approve `_diff` amount with `this` contract and deposit into the
-            // data feed contract. 
+            // data feed contract.
             _pli.approve(_dataFeedAddress, _diff);
             _dataFeed.depositPLI(_diff);
         }
@@ -97,11 +97,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         _requestIds[_poolId] = _requestId;
 
         // Log event
-        emit FinalReferenceValueRequested(
-            _poolId,
-            block.timestamp,
-            _requestId
-        );
+        emit FinalReferenceValueRequested(_poolId, block.timestamp, _requestId);
 
         return _requestId;
     }
@@ -127,7 +123,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
         ).showPrice(_requestIds[_poolId]) * 10 ** 14;
 
         // Confirm that a value has been already submitted. Returns 0
-        // if that's not the case. 
+        // if that's not the case.
         // IMPORTANT: This works under the assumption that only values > 0
         // will be submitted.
         if (_formattedFinalReferenceValue == 0) {
@@ -141,7 +137,7 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             _challengeable
         );
 
-        (,,address _divaTreasury,,) = _diva.getGovernanceParameters();
+        (, , address _divaTreasury, , ) = _diva.getGovernanceParameters();
 
         // Transfer the fee claim that is allocated to `this` contract
         // (data provider) by default to the DIVA treasury address
@@ -162,10 +158,6 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
 
     function getPLIAddress() external view override returns (address) {
         return address(_pli);
-    }
-
-    function getMinDepositAmount() external pure override returns (uint256) {
-        return MIN_DEPOSIT_AMOUNT;
     }
 
     function getLastRequestedTimestamp(
@@ -189,6 +181,10 @@ contract DIVAGoplugin is IDIVAGoplugin, ReentrancyGuard {
             IInvokeOracle(_stringToAddress(_params.referenceAsset)).showPrice(
                 _requestIds[_poolId]
             ) * 10 ** 14;
+    }
+
+    function getMinDepositAmount() external pure override returns (uint256) {
+        return MIN_DEPOSIT_AMOUNT;
     }
 
     /**

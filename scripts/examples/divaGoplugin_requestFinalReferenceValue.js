@@ -5,18 +5,22 @@
 
 const { ethers, network } = require("hardhat");
 
-const {
-  PLI_ADDRESS,
-  DIVA_GOPLUGIN_ADDRESS,
-  GOPLUGIN_DATA_FEED_ADDRESSES,
-} = require("../../utils/constants");
+const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const DATA_FEED_ABI = require("../../contracts/abi/InternalAbi.json");
 
-const DATA_FEED_PAIR = "XDC/USDT";
+const {
+  DIVA_ADDRESS,
+  PLI_ADDRESS,
+  DIVA_GOPLUGIN_ADDRESS,
+} = require("../../utils/constants");
+const { getCurrentTimestampInSeconds } = require("../../utils/utils");
 
 async function main() {
   // INPUT: id of existing pool
-  const poolId = 2;
+  const poolId = 7;
+
+  // Get signer of operator
+  const [user] = await ethers.getSigners();
 
   // Connect to DIVAGoplugin contract
   const divaGoplugin = await ethers.getContractAt(
@@ -30,10 +34,28 @@ async function main() {
     PLI_ADDRESS[network.name]
   );
 
+  // Connect to deployed DIVA contract
+  const diva = await ethers.getContractAt(
+    DIVA_ABI,
+    DIVA_ADDRESS[network.name]
+  );
+
+  // Get pool parameters
+  const poolParams = await diva.getPoolParameters(poolId);
+  // Check that the pool is already expired or not
+  if (poolParams.expiryTime.gt(getCurrentTimestampInSeconds())) {
+    throw new Error("Pool not expired yet.");
+  }
+
+  // Check that the final reference value is already requested or not
+  if ((await divaGoplugin.getLastRequestedTimestamp(poolId)).gt(0)) {
+    throw new Error("Final reference value is already requested.");
+  }
+
   // Connect to data feed contract
   const dataFeed = await ethers.getContractAt(
     DATA_FEED_ABI,
-    GOPLUGIN_DATA_FEED_ADDRESSES[network.name][DATA_FEED_PAIR]
+    poolParams.referenceAsset
   );
 
   // Get minimum deposit amount
@@ -41,9 +63,21 @@ async function main() {
   // Get already deposited amount on data feed contract
   const depositedAmount = (await dataFeed.plidbs(divaGoplugin.address))
     .totalcredits;
-  const diff = minDepositAmount.sub(depositedAmount);
-  // Approve PLI token to DIVAGoplugin contract
-  await pliToken.approve(divaGoplugin.address, diff);
+  if (minDepositAmount.gt(depositedAmount)) {
+    const diff = minDepositAmount.sub(depositedAmount);
+    const pliBalance = await pliToken.balanceOf(divaGoplugin.address);
+
+    if (pliBalance.lt(diff)) {
+      if ((await pliToken.balanceOf(user.address)).lt(diff.sub(pliBalance))) {
+        throw new Error("Not enough PLI tokne on user.");
+      }
+      // Approve PLI token to DIVAGoplugin contract
+      const tx = await pliToken.approve(
+        divaGoplugin.address,
+        diff.sub(pliBalance)
+      );
+    }
+  }
 
   // Request final reference value
   const tx = await divaGoplugin.requestFinalReferenceValue(poolId);
