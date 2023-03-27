@@ -16,7 +16,7 @@ const {
 
 async function main() {
   // INPUT: id of existing pool
-  const poolId = 1;
+  const poolId = 7;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(
@@ -30,8 +30,20 @@ async function main() {
     DIVA_GOPLUGIN_ADDRESS[network.name]
   );
 
+  // Check that the final reference value is already requested or not
+  if ((await divaGoplugin.getLastRequestedTimestamp(poolId)).eq(0)) {
+    throw new Error("Final reference value is not requested yet.");
+  }
+
+  // Check that the final reference value is already submitted or not
+  const finalReferenceValue = await divaGoplugin.getGoPluginValue(poolId);
+  if (finalReferenceValue.eq(0)) {
+    throw new Error("Final reference value is not submitted yet.");
+  }
+
   // Set final reference value
-  await divaGoplugin.setFinalReferenceValue(poolId);
+  const tx = await divaGoplugin.setFinalReferenceValue(poolId);
+  await tx.wait();
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
@@ -40,6 +52,7 @@ async function main() {
   console.log("DIVA address: ", diva.address);
   console.log("DIVAGoplugin address: " + divaGoplugin.address);
   console.log("PoolId: ", poolId);
+  console.log("Final reference value: ", finalReferenceValue);
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(
     "StatusFinalReferenceValue: ",

@@ -76,6 +76,7 @@ async function main() {
         divaGoplugin.address,
         diff.sub(pliBalance)
       );
+      await tx.wait();
     }
   }
 
