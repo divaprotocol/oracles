@@ -27,7 +27,7 @@ const collateralTokenDecimals = 6;
 
 describe("DIVAGoplugin", () => {
   let collateralTokenInstance;
-  let owner, user1, user2;
+  let owner, user1, user2, user3;
 
   let divaGoplugin;
   let divaAddress = DIVA_ADDRESS[network];
@@ -46,7 +46,7 @@ describe("DIVAGoplugin", () => {
   let nextBlockTimestamp;
 
   before(async () => {
-    [owner, user1, user2] = await ethers.getSigners();
+    [owner, user1, user2, user3] = await ethers.getSigners();
 
     // Get DIVA contract
     diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -199,14 +199,18 @@ describe("DIVAGoplugin", () => {
       user2PLIBalanceBefore = await pliToken.balanceOf(user2.address);
 
       // Calc diff between `minDepositAmount` and deposited amount
-      const diff = minDepositAmount.sub(
-        (await dataFeed.plidbs(divaGoplugin.address)).totalcredits
-      );
-      // Check PLI token balance of DIVAGoplugin contract
-      expect(await pliToken.balanceOf(divaGoplugin.address)).to.be.lt(diff);
+      const depositedAmount = (await dataFeed.plidbs(divaGoplugin.address))
+        .totalcredits;
+      expect(depositedAmount).to.be.lt(minDepositAmount);
+      const diff = minDepositAmount.sub(depositedAmount);
 
+      const pliBalance = await pliToken.balanceOf(divaGoplugin.address);
+      // Check PLI token balance of DIVAGoplugin contract
+      expect(pliBalance).to.be.lt(diff);
       // Approve PLI token of user2 to DIVAGoplugin
-      await pliToken.connect(user2).approve(divaGoplugin.address, diff);
+      await pliToken
+        .connect(user2)
+        .approve(divaGoplugin.address, diff.sub(pliBalance));
 
       // ---------
       // Act: Call `requestFinalReferenceValue` function after exactly pool expiry time has passed
@@ -233,9 +237,138 @@ describe("DIVAGoplugin", () => {
     // Reverts
     // ---------
 
+    it("Should revert if triggered before pool expiry", async () => {
+      // ---------
+      // Arrange: Set next block timestamp as before pool expiry time
+      // ---------
+      nextBlockTimestamp = poolParams.expiryTime.sub(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+
+      // ---------
+      // Act & Assert: Confirm that `requestFinalReferenceValue` function will
+      // revert if called before pool expiry
+      // ---------
+      await expect(
+        divaGoplugin.connect(user2).requestFinalReferenceValue(poolId)
+      ).to.be.revertedWith("PoolNotExpired()");
+    });
+
+    it("Should revert if final reference value is requested already", async () => {
+      // ---------
+      // Arrange: Request final reference value
+      // ---------
+      // Calc diff between `minDepositAmount` and deposited amount
+      const depositedAmount = (await dataFeed.plidbs(divaGoplugin.address))
+        .totalcredits;
+      expect(depositedAmount).to.be.lt(minDepositAmount);
+      const diff = minDepositAmount.sub(depositedAmount);
+
+      const pliBalance = await pliToken.balanceOf(divaGoplugin.address);
+      // Check PLI token balance of DIVAGoplugin contract
+      expect(pliBalance).to.be.lt(diff);
+      // Approve PLI token of user2 to DIVAGoplugin
+      await pliToken
+        .connect(user2)
+        .approve(divaGoplugin.address, diff.sub(pliBalance));
+
+      // Call `requestFinalReferenceValue` function after exactly pool expiry time has passed
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
+
+      // ---------
+      // Act & Assert: Confirm that `requestFinalReferenceValue` function will
+      // revert if final reference value is requested already
+      // ---------
+      await expect(
+        divaGoplugin.connect(user2).requestFinalReferenceValue(poolId)
+      ).to.be.revertedWith("FinalReferenceValueAlreadyRequested()");
+    });
+
+    it("Should revert if there is no enough PLI token on DIVAGoplugin and user", async () => {
+      // ---------
+      // Arrange: Check that there's no final reference value request
+      // ---------
+
+      // Get PLI token balance of user3 before request final reference value
+      const user3PLIBalanceBefore = await pliToken.balanceOf(user3.address);
+
+      // Calc diff between `minDepositAmount` and deposited amount
+      const depositedAmount = (await dataFeed.plidbs(divaGoplugin.address))
+        .totalcredits;
+      expect(depositedAmount).to.be.lt(minDepositAmount);
+      const diff = minDepositAmount.sub(depositedAmount);
+
+      const pliBalance = await pliToken.balanceOf(divaGoplugin.address);
+      // Check PLI token balance of DIVAGoplugin contract
+      expect(pliBalance).to.be.lt(diff);
+      // Approve PLI token of user3 to DIVAGoplugin
+      await pliToken
+        .connect(user3)
+        .approve(divaGoplugin.address, diff.sub(pliBalance));
+
+      // Check the PLI token on DIVAGoplugin and user3 is not enough
+      expect(pliBalance.add(user3PLIBalanceBefore)).to.be.lt(diff);
+
+      // ---------
+      // Act & Assert: Confirm that `requestFinalReferenceValue` function will
+      // revert if called before pool expiry
+      // ---------
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await expect(
+        divaGoplugin.connect(user3).requestFinalReferenceValue(poolId)
+      ).to.be.revertedWith("SafeERC20: low-level call failed");
+    });
+
     // ---------
     // Events
     // ---------
+
+    it("Should emit a `FinalReferenceValueRequested` event", async () => {
+      // ---------
+      // Arrange: Check that there's no final reference value request
+      // ---------
+      expect(await divaGoplugin.getLastRequestedTimestamp(poolId)).to.eq(0);
+
+      // Calc diff between `minDepositAmount` and deposited amount
+      const depositedAmount = (await dataFeed.plidbs(divaGoplugin.address))
+        .totalcredits;
+      expect(depositedAmount).to.be.lt(minDepositAmount);
+      const diff = minDepositAmount.sub(depositedAmount);
+
+      const pliBalance = await pliToken.balanceOf(divaGoplugin.address);
+      // Check PLI token balance of DIVAGoplugin contract
+      expect(pliBalance).to.be.lt(diff);
+      // Approve PLI token of user2 to DIVAGoplugin
+      await pliToken
+        .connect(user2)
+        .approve(divaGoplugin.address, diff.sub(pliBalance));
+
+      // ---------
+      // Act: Call `requestFinalReferenceValue` function after exactly pool expiry time has passed
+      // ---------
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      const tx = await divaGoplugin
+        .connect(user2)
+        .requestFinalReferenceValue(poolId);
+      const receipt = await tx.wait();
+
+      // ---------
+      // Assert: Confirm that a `FinalReferenceValueRequested` event is emitted with the correct values
+      // ---------
+      const finalReferenceValueRequestedEvent = receipt.events.find(
+        (item) => item.event === "FinalReferenceValueRequested"
+      );
+      expect(finalReferenceValueRequestedEvent.args.poolId).to.eq(poolId);
+      expect(finalReferenceValueRequestedEvent.args.requestedTimestamp).to.eq(
+        await getLastBlockTimestamp()
+      );
+      expect(finalReferenceValueRequestedEvent.args.requestId).to.eq(
+        await divaGoplugin.getRequestId(poolId)
+      );
+    });
   });
 
   describe("setFinalReferenceValue", async () => {
@@ -244,19 +377,25 @@ describe("DIVAGoplugin", () => {
       await pliToken
         .connect(user2)
         .transfer(divaGoplugin.address, minDepositAmount);
-
-      // Request final reference value for `poolId` after exactly pool expiry time has passed
-      nextBlockTimestamp = poolParams.expiryTime.add(1);
-      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
-      await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
     });
+
+    // ---------
+    // Functionality
+    // ---------
 
     it("Should set the value from Goplugin Feed as the final reference value in DIVA Protocol and leave fee claims in DIVA unclaimed", async () => {
       // ---------
       // Arrange: Get value from Goplugin Feed for `poolId` and check token balance
       // ---------
+
+      // Request final reference value for `poolId` after exactly pool expiry time has passed
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
+
+      // Wait 20 seconds
       await advanceTime(20);
-      finalReferenceValue = await divaGoplugin.getGopluginValue(poolId);
+      finalReferenceValue = await divaGoplugin.getGoPluginValue(poolId);
 
       // Calc settlement fee
       settlementFeeAmount = poolParams.collateralBalance
@@ -291,6 +430,47 @@ describe("DIVAGoplugin", () => {
       expect(
         await collateralTokenInstance.balanceOf(divaGoplugin.address)
       ).to.eq(0);
+    });
+
+    // ---------
+    // Reverts
+    // ---------
+
+    it("Should revert if called without requesting final reference value", async () => {
+      // ---------
+      // Arrange: Check that there's no final reference value requested
+      // ---------
+      expect(await divaGoplugin.getLastRequestedTimestamp(poolId)).to.eq(0);
+
+      // ---------
+      // Act & Assert: Confirm that `setFinalReferenceValue` function will
+      // revert if called without requesting final reference value
+      // ---------
+      await expect(
+        divaGoplugin.connect(user1).setFinalReferenceValue(poolId)
+      ).to.be.revertedWith("FinalReferenceValueNotRequested()");
+    });
+
+    it("Should revert if called before submit of final reference value", async () => {
+      // ---------
+      // Arrange: Request final reference value
+      // ---------
+
+      // Request final reference value for `poolId` after exactly pool expiry time has passed
+      nextBlockTimestamp = poolParams.expiryTime.add(1);
+      await setNextBlockTimestamp(nextBlockTimestamp.toNumber());
+      await divaGoplugin.connect(user2).requestFinalReferenceValue(poolId);
+
+      // Check that the final reference value is not submitted yet
+      expect(await divaGoplugin.getGoPluginValue(poolId)).to.eq(0);
+
+      // ---------
+      // Act & Assert: Confirm that `setFinalReferenceValue` function will
+      // revert if called before submit of final reference value
+      // ---------
+      await expect(
+        divaGoplugin.connect(user1).setFinalReferenceValue(poolId)
+      ).to.be.revertedWith("FinalReferenceValueNotReported()");
     });
   });
 });
