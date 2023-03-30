@@ -12,13 +12,13 @@ const { DIVA_ADDRESS, STATUS } = require("../../utils/constants");
 
 async function main() {
   // INPUT: network (should be the same as in diva::getPoolParameters command)
-  const network = "goerli";
+  const network = "apothem";
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
 
   // INPUT: id of pool
-  const poolId = 59;
+  const poolId = 8;
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);

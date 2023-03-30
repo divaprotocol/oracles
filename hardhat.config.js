@@ -50,8 +50,8 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.RPC_URL_GOERLI,
-        blockNumber: 8508421,
+        url: process.env.RPC_URL_APOTHEM,
+        // blockNumber: 8508421,
       },
       accounts: {
         mnemonic: MNEMONIC,
@@ -97,6 +97,18 @@ module.exports = {
     },
     chiado: {
       url: process.env.RPC_URL_CHIADO,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    apothem: {
+      url: process.env.RPC_URL_APOTHEM,
+      accounts: {
+        mnemonic: MNEMONIC,
+      },
+    },
+    xdc: {
+      url: process.env.RPC_URL_XDC,
       accounts: {
         mnemonic: MNEMONIC,
       },
