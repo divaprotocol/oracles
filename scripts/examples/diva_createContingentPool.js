@@ -126,9 +126,9 @@ async function main() {
       ? GOPLUGIN_DATA_FEED_ADDRESSES[network.name][DATA_FEED_PAIR]
       : "ETH/USD";
   const expiryTime = getExpiryInSeconds(100); // 100 means expiry in 100 seconds from now
-  const floor = parseUnits("2000");
-  const inflection = parseUnits("2500");
-  const cap = parseUnits("3000");
+  const floor = parseUnits("0.2");
+  const inflection = parseUnits("0.3");
+  const cap = parseUnits("0.4");
   const gradient = parseUnits("0.5", decimals);
   const collateralAmount = parseUnits("100", decimals);
   const collateralToken = collateralTokenAddress;

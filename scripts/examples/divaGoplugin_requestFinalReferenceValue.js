@@ -17,7 +17,7 @@ const { getCurrentTimestampInSeconds } = require("../../utils/utils");
 
 async function main() {
   // INPUT: id of existing pool
-  const poolId = 7;
+  const poolId = 8;
 
   // Get signer of operator
   const [user] = await ethers.getSigners();

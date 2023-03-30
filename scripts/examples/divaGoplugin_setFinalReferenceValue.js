@@ -16,7 +16,7 @@ const {
 
 async function main() {
   // INPUT: id of existing pool
-  const poolId = 7;
+  const poolId = 8;
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(
