@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./UsingTellor.sol";
-import "./interfaces/IDIVAOracleTellor.sol";
-import "./interfaces/IDIVA.sol";
-import "./interfaces/IDIVAOwnershipShared.sol";
-import "./libraries/SafeDecimalMath.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {UsingTellor} from "./UsingTellor.sol";
+import {IDIVAOracleTellor} from "./interfaces/IDIVAOracleTellor.sol";
+import {IDIVA} from "./interfaces/IDIVA.sol";
+import {IDIVAOwnershipShared} from "./interfaces/IDIVAOwnershipShared.sol";
+import {SafeDecimalMath} from "./libraries/SafeDecimalMath.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "./interfaces/ITellor.sol";
+import {ITellor} from "./interfaces/ITellor.sol";
 
 /**
  * @title UserContract
