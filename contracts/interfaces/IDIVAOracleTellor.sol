@@ -344,7 +344,7 @@ interface IDIVAOracleTellor {
      * will determine the payouts, and users can start claiming their
      * payouts thereafter.
      */
-    function getChallengeable() external view returns (bool);
+    function getChallengeable() external pure returns (bool);
 
     /**
      * @notice Function to return the excess DIVA reward recipient info, including

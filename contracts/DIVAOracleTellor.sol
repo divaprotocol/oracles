@@ -29,7 +29,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     uint256 private _startTimeExcessDIVARewardRecipient;
 
     address private immutable _ownershipContract;
-    bool private immutable _challengeable;
+    bool private constant _challengeable = false;
     IDIVA private immutable _diva;
 
     uint256 private constant _activationDelay = 3 days;
@@ -62,7 +62,6 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         // Zero address check for `tellorAddress_` is done inside `UsingTellor.sol`
 
         _ownershipContract = ownershipContract_;
-        _challengeable = false;
         _excessDIVARewardRecipient = excessDIVARewardRecipient_;
         _maxDIVARewardUSD = maxDIVARewardUSD_;
         _diva = IDIVA(diva_);
@@ -307,7 +306,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function getChallengeable() external view override returns (bool) {
+    function getChallengeable() external pure override returns (bool) {
         return _challengeable;
     }
 
