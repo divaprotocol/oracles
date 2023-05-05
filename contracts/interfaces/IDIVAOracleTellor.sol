@@ -26,6 +26,9 @@ interface IDIVAOracleTellor {
     // Thrown in constructor if zero address is provided as ownershipContract.
     error ZeroOwnershipContractAddress();
 
+    // Thrown in constructor if zero address is provided for DIVA Protocol contract.
+    error ZeroDIVAAddress();
+
     // Thrown in governance related functions including `updateExcessDIVARewardRecipient`
     // `updateMaxDIVARewardUSD`, `revokePendingExcessDIVARewardRecipientUpdate`,
     // and `revokePendingMaxDIVARewardUSDUpdate` and `msg.sender` is not contract owner.

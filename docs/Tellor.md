@@ -793,6 +793,7 @@ The following errors may be emitted during execution of the functions, including
 | `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` | Thrown if there is no data reported after the expiry time for the underlying pool. |
 | `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` | Thrown if user tries to call `setFinalReferenceValue` before the minimum period undisputed period has passed.               |
 | `ZeroOwnershipContractAddress()`      | constructor | Thrown in constructor if zero address is provided as ownershipContract.               |
+| `ZeroDIVAAddress()`      | constructor | Thrown in constructor if zero address is provided for DIVA Protocol contract.               |
 | `NotContractOwner(address _user, address _contractOwner)`      | `updateExcessDIVARewardRecipient` / `updateMaxDIVARewardUSD` / `revokePendingExcessDIVARewardRecipientUpdate` / `revokePendingMaxDIVARewardUSDUpdate` | Thrown in constructor if zero address is provided as ownershipContract.               |
 | `PendingExcessDIVARewardRecipientUpdate(uint256 _timestampBlock, uint256 _startTimeExcessDIVARewardRecipient)`      | `updateExcessDIVARewardRecipient` | Thrown if there is already a pending excess DIVA reward recipient address update.               |
 | `PendingMaxDIVARewardUSDUpdate(uint256 _timestampBlock, uint256 _startTimeMaxDIVARewardUSD)`      | `updateMaxDIVARewardUSD` | Thrown if there is already a pending max USD DIVA reward update.               |

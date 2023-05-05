@@ -35,6 +35,7 @@ describe("DIVAOracleTellor", () => {
     excessDIVARewardRecipient,
     tipper;
 
+  let divaOracleTellorFactory;
   let divaOracleTellor;
   let tellorPlayground;
   let tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
@@ -105,7 +106,7 @@ describe("DIVAOracleTellor", () => {
 
   beforeEach(async () => {
     // Deploy DIVAOracleTellor contract
-    const divaOracleTellorFactory = await ethers.getContractFactory(
+    divaOracleTellorFactory = await ethers.getContractFactory(
       "DIVAOracleTellor"
     );
     divaOracleTellor = await divaOracleTellorFactory.deploy(
@@ -901,6 +902,54 @@ describe("DIVAOracleTellor", () => {
             .connect(user2)
             .setFinalReferenceValue(latestPoolId, [], false)
         ).to.be.revertedWith("NoOracleSubmissionAfterExpiryTime()");
+      });
+
+      it("Should revert if a zero ownership contract address is provided at contract deployment", async () => {
+        await expect(
+          divaOracleTellorFactory.deploy(
+            ethers.constants.AddressZero,
+            tellorPlaygroundAddress,
+            excessDIVARewardRecipient.address,
+            maxDIVARewardUSD,
+            divaAddress
+          )
+        ).to.be.revertedWith("ZeroOwnershipContractAddress()");
+      });
+
+      it("Should revert if a zero excess DIVA reward recipient address is provided at contract deployment", async () => {
+        await expect(
+          divaOracleTellorFactory.deploy(
+            divaOwnershipAddress,
+            tellorPlaygroundAddress,
+            ethers.constants.AddressZero,
+            maxDIVARewardUSD,
+            divaAddress
+          )
+        ).to.be.revertedWith("ZeroExcessDIVARewardRecipient()");
+      });
+
+      it("Should revert if a zero DIVA Protocol address is provided at contract deployment", async () => {
+        await expect(
+          divaOracleTellorFactory.deploy(
+            divaOwnershipAddress,
+            tellorPlaygroundAddress,
+            excessDIVARewardRecipient.address,
+            maxDIVARewardUSD,
+            ethers.constants.AddressZero
+          )
+        ).to.be.revertedWith("ZeroDIVAAddress()");
+      });
+
+      it("Should revert if a zero Tellor address is provided at contract deployment", async () => {
+        await expect(
+          divaOracleTellorFactory.deploy(
+            divaOwnershipAddress,
+            ethers.constants.AddressZero,
+            excessDIVARewardRecipient.address,
+            maxDIVARewardUSD,
+            divaAddress
+          )
+        ).to.be.revertedWith("Zero Tellor address");
       });
     });
 

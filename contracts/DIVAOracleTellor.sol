@@ -56,6 +56,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         if (excessDIVARewardRecipient_ == address(0)) {
             revert ZeroExcessDIVARewardRecipient();
         }
+        if (diva_ == address(0)) {
+            revert ZeroDIVAAddress();
+        }
+        // Zero address check for `tellorAddress_` is done inside `UsingTellor.sol`
 
         _ownershipContract = ownershipContract_;
         _challengeable = false;
