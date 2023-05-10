@@ -135,7 +135,7 @@ describe("DIVAOracleTellor", () => {
     // Set user start token balance
     const userStartTokenBalance = parseUnits("1000000");
 
-    // Deploy collateral token without and with fee-on-transfer and approve it to the Tellor adapter
+    // Deploy collateral token and approve it to DIVA contract
     collateralTokenInstance = await erc20DeployFixture(
       "DummyToken",
       "DCT",
