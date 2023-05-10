@@ -72,7 +72,8 @@ describe("DIVAPorterModule", () => {
       "COT",
       parseUnits(tokenAmount, collateralTokenDecimals),
       user1.address,
-      collateralTokenDecimals
+      collateralTokenDecimals,
+      "0"
     );
 
     // Approve CollateralToken to DIVA Porter module contract
@@ -87,7 +88,8 @@ describe("DIVAPorterModule", () => {
       "BCT",
       parseUnits(tokenAmount, collateralTokenDecimals),
       issuer.address,
-      collateralTokenDecimals
+      collateralTokenDecimals,
+      "0"
     );
 
     // Deploy PaymentToken
@@ -96,7 +98,8 @@ describe("DIVAPorterModule", () => {
       "PAT",
       parseUnits(tokenAmount, paymentTokenDecimals),
       issuer.address,
-      paymentTokenDecimals
+      paymentTokenDecimals,
+      "0"
     );
 
     // Grant allowed token role for payment token and collateral token in order to use them for creating bonds.

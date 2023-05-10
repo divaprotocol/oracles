@@ -320,18 +320,21 @@ struct ArgsBatchSetFinalReferenceValue {
 
 ### addTip
 
-Function to tip a pool. Tips can be added in any ERC20 token until the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Tips can be claimed via the [`claimReward`](#claimreward) function after final value confirmation. Refer to [`batchAddTip`](#batchaddtip) for the batch version of the function.
+Function to tip a pool. Tips can be added in a wide range of ERC20 tokens until the final value has been submitted and confirmed in DIVA Protocol by successfully calling the [`setFinalReferenceValue`](#setfinalreferencevalue) function. Tips can be claimed via the [`claimReward`](#claimreward) function after final value confirmation. Refer to [`batchAddTip`](#batchaddtip) for the batch version of the function.
+
+> **❗Important:** Rebasable and fee-on-transfer tokens are not supported! While deposits of tokens that charge fees on transfers will be rejected by the contract, deposits of rebasable tokens won't. When tokens with a flexible supply are considered, only tokens with a constant balance mechanism such as [Compound's cToken][interest-bearing-tokens] or the wrapped version of Lido's staked ETH ([wstETH][wsteth]) should be used.
 
 The function executes the following steps in the following order:
 * Confirm that the final value hasn't been submitted to DIVA Protocol yet, in which case `_poolIdToReporter` would resolve to the zero address.
 * Add a new entry in the `_poolIdToTippingTokens` array if the specified `_tippingToken` does not yet exist for the specified pool.
 * Update balance before doing a potentially unsafe `safeTransferFrom` call. Requires prior user approval to succeed.
-* Transfer tipping token from `msg.sender` to this contract.
+* Transfer tipping token from `msg.sender` to this contract if the token didn't charge fees on the transfer.
 * Emit a [`TipAdded`](#tipadded) event on success.
 
 The function reverts under the following conditions:
 * The final value has already been submitted and confirmed in DIVA Protocol.
-* The `msg.sender` has set insufficient allowance for the `_tippingToken`.
+* The `msg.sender` has insufficient balance or allowance for the `_tippingToken`.
+* The tipping token charges a fee on transfers. **It's important to reiterate that the function will not revert if rebasable tokens are used!**
 
 ```js
 function addTip(
@@ -342,7 +345,7 @@ function addTip(
     external;
 ```
 
->**Note:** DIVA Protocol also has an `addTip` function, but it only allows tipping with the collateral token of the pool. When a tip is added through this function, it is credited to the data provider along with the settlement fees (combined referred to as DIVA reward) once the final value is confirmed.
+>**Note:** DIVA Protocol also has an `addTip` function, but it only allows tipping with the collateral token of the pool. When a tip is added through DIVA's `addTip` function, it is credited to the Tellor reporter along with the settlement fees (combined referred to as DIVA reward) once the final value is confirmed.
 
 ### batchAddTip
 
@@ -789,6 +792,7 @@ The following errors may be emitted during execution of the functions, including
 | :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NotConfirmedPool()`                  | `claimReward` / `setFinalReferenceValue`| Thrown if rewards are claimed before a pool was confirmed.                                                                   |
 | `AlreadyConfirmedPool()`              | `addTip`                                                                                                                                                 | Thrown if user tries to add a tip for an already confirmed pool                                                                                 |
+| `FeeTokensNotSupported()`              | `addTip`                                                                                                                                                 | Thrown if the tipping token implements a fee                                                                                 |
 | `ZeroExcessDIVARewardRecipient()`            | `updateExcessDIVARewardRecipient` / constructor                                                                                                                                  | Thrown if the zero address is passed as excess DIVA reward recipient address.                                                                      |
 | `NoOracleSubmissionAfterExpiryTime()` | `setFinalReferenceValue` | Thrown if there is no data reported after the expiry time for the underlying pool. |
 | `MinPeriodUndisputedNotPassed()`      | `setFinalReferenceValue` | Thrown if user tries to call `setFinalReferenceValue` before the minimum period undisputed period has passed.               |
@@ -822,3 +826,5 @@ Using the Tellor adapter as data provider for DIVA pools comes with the followin
 [tellor-docs]: https://github.com/tellor-io/dataSpecs/blob/main/types/DIVAProtocol.md
 [tellor-protocol]: https://tellor.io/
 [tellor-adapter-contract]: https://github.com/divaprotocol/oracles/blob/update-documentation/contracts/DIVAOracleTellor.sol
+[interest-bearing-tokens]: https://edge.app/blog/company-news/interest-bearing-tokens-in-edge-atokens-ctokens/#:~:text=The%20interest%2Dbearing%20tokens%20have,from%20the%20Compound%20money%20market.
+[wsteth]: https://help.lido.fi/en/articles/5231836-what-is-wrapped-steth-wsteth

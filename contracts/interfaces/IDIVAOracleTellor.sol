@@ -11,6 +11,9 @@ interface IDIVAOracleTellor {
     // pool.
     error AlreadyConfirmedPool();
 
+    // Thrown in `addTip` if the tipping token implements a fee
+    error FeeTokensNotSupported();
+
     // Thrown in `updateExcessDIVARewardRecipient` or constructor if the zero address
     // is passed as excess DIVA reward recipient address.
     error ZeroExcessDIVARewardRecipient();
