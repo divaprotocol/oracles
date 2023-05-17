@@ -74,7 +74,7 @@ interface IDIVA {
      * dispute mechanism doesn't make sense.
      */
     function setFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _finalReferenceValue,
         bool _allowChallenge
     ) external;
@@ -161,7 +161,7 @@ interface IDIVA {
      */
     function createContingentPool(PoolParams memory _poolParams)
         external
-        returns (uint256);
+        returns (bytes32);
 
     /**
      * @notice Returns the pool parameters for a given pool Id. To
@@ -172,7 +172,7 @@ interface IDIVA {
      * @param _poolId Id of the pool.
      * @return Pool struct.
      */
-    function getPoolParameters(uint256 _poolId)
+    function getPoolParameters(bytes32 _poolId)
         external
         view
         returns (Pool memory);

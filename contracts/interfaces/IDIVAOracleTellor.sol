@@ -74,7 +74,7 @@ interface IDIVAOracleTellor {
      * @param timestamp Tellor value timestamp.
      */
     event FinalReferenceValueSet(
-        uint256 indexed poolId,
+        bytes32 indexed poolId,
         uint256 finalValue,
         uint256 expiryTime,
         uint256 timestamp
@@ -89,7 +89,7 @@ interface IDIVAOracleTellor {
      * @param tipper Tipper address.
      */
     event TipAdded(
-        uint256 poolId,
+        bytes32 poolId,
         address tippingToken,
         uint256 amount,
         address tipper
@@ -105,7 +105,7 @@ interface IDIVAOracleTellor {
      * token decimals.
      */
     event TipClaimed(
-        uint256 poolId,
+        bytes32 poolId,
         address recipient,
         address tippingToken,
         uint256 amount
@@ -172,35 +172,35 @@ interface IDIVAOracleTellor {
 
     // Struct for `batchSetFinalReferenceValue` function input.
     struct ArgsBatchSetFinalReferenceValue {
-        uint256 poolId;
+        bytes32 poolId;
         address[] tippingTokens;
         bool claimDIVAReward;
     }
 
     // Struct for `batchAddTip` function input.
     struct ArgsBatchAddTip {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 amount;
         address tippingToken;
     }
     
     // Struct for `batchClaimReward` function input.
     struct ArgsBatchClaimReward {
-        uint256 poolId;
+        bytes32 poolId;
         address[] tippingTokens;
         bool claimDIVAReward;
     }
 
     // Struct for `getTippingTokens` function input.
     struct ArgsGetTippingTokens {
-        uint256 poolId;
+        bytes32 poolId;
         uint256 startIndex;
         uint256 endIndex;
     }
 
     // Struct for `getTipAmounts` function input.
     struct ArgsGetTipAmounts {
-        uint256 poolId;
+        bytes32 poolId;
         address[] tippingTokens;
     }
 
@@ -222,7 +222,7 @@ interface IDIVAOracleTellor {
      * @param _claimDIVAReward Flag indicating whether to claim the DIVA reward.
      */
     function setFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         address[] calldata _tippingTokens,
         bool _claimDIVAReward
     ) external;
@@ -250,7 +250,7 @@ interface IDIVAOracleTellor {
      * @param _tippingToken Tipping token address.
      */
     function addTip(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _amount,
         address _tippingToken
     ) external;
@@ -280,7 +280,7 @@ interface IDIVAOracleTellor {
      * DIVA reward.
      */
     function claimReward(
-        uint256 _poolId,
+        bytes32 _poolId,
         address[] memory _tippingTokens,
         bool _claimDIVAReward
     ) external;
@@ -399,7 +399,7 @@ interface IDIVAOracleTellor {
      * set of poolIds.
      * @param _poolIds Array of poolIds.
      */
-    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
+    function getTippingTokensLengthForPoolIds(bytes32[] calldata _poolIds)
         external
         view
         returns (uint256[] memory);
@@ -434,7 +434,7 @@ interface IDIVAOracleTellor {
      * the function returns the zero address.
      * @param _poolIds Array of poolIds.
      */
-    function getReporters(uint256[] calldata _poolIds)
+    function getReporters(bytes32[] calldata _poolIds)
         external
         view
         returns (address[] memory);
@@ -459,7 +459,7 @@ interface IDIVAOracleTellor {
      */
     function getPoolIdsForReporters(
         ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
-    ) external view returns (uint256[][] memory);
+    ) external view returns (bytes32[][] memory);
 
     /**
      * @notice Function to return the DIVA contract address that the
@@ -489,6 +489,6 @@ interface IDIVAOracleTellor {
      * @param _poolId The Id of the pool.
      */
     function getQueryDataAndId(
-        uint256 _poolId
+        bytes32 _poolId
     ) external view returns (bytes memory, bytes32);
 }

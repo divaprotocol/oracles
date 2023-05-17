@@ -3,8 +3,9 @@ const DIVA_ADDRESS = {
   rinkeby: "0x4F7ad4674e67aFc2169984f194d7a5e77926327C",
   ropsten: "0x67965e27cC17aa8073Da4cB19236bDddAD285E91",
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
-  kovan: "0x607228ebB95aa097648Fa8b24dF8807684BBF101",
-  polygon_mumbai: "0xf2Ea8e23E1EaA2e5D280cE6b397934Ba7f30EF6B",
+  sepolia: "0x8ca8dE48c4507fa54a83Dde7ac68097e87520eEc", // 17.05.2023 (main version)
+  polygon_mumbai: "0x05029c04AFB6cf53Ef0af7af7e970E53A7143bD3", // 17.05.2023 (secondary version)
+  chiado: "0x05029c04AFB6cf53Ef0af7af7e970E53A7143bD3", // 17.05.2023 (secondary version)
   goerli: "0x6625011b21D1d9b9dCCACF577Bbb74D0Aa448cbF", // 17.02.2023
 };
 
@@ -28,6 +29,7 @@ const BOND_FACTORY = {
 };
 
 // Tellor contract INCLUDING the requirement to stake prior to reporting
+// Source: https://docs.tellor.io/tellor/the-basics/contracts-reference
 const TELLOR_ADDRESS = {
   ethereum: "0xB3B662644F8d3138df63D2F43068ea621e2981f9",
   polygon: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
@@ -35,6 +37,7 @@ const TELLOR_ADDRESS = {
   goerli: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   mumbai: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
   chiado: "0xD9157453E2668B2fc45b7A803D3FEF3642430cC0",
+  sepolia: "0x199839a4907ABeC8240D119B606C98c405Bb0B33",
 };
 
 // Tellor playground contract EXCLUDING the requirement to stake prior to reporting

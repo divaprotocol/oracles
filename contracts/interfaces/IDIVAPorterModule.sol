@@ -26,7 +26,7 @@ interface IDIVAPorterModule {
      * when a new version of DIVA Protocol is released.
      * @param _poolId The id of the pool.
      */
-    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
+    function setFinalReferenceValue(address _divaDiamond, bytes32 _poolId)
         external;
 
     /**
@@ -64,7 +64,7 @@ interface IDIVAPorterModule {
     function createContingentPool(
         address _divaDiamond,
         PorterPoolParams calldata _porterPoolParams
-    ) external returns (uint256);
+    ) external returns (bytes32);
 
     /**
      * @dev Function to update `_bondFactoryAddress`. Only callable by contract owner.
