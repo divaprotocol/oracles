@@ -20,6 +20,7 @@ const collateralTokenDecimals = 6;
 const paymentTokenDecimals = 18;
 const tokenAmount = "1000000000";
 
+// @todo update tests for new poolId type; also update "latestPoolId" variable name
 describe("DIVAPorterModule", () => {
   let user1, issuer, longRecipient, shortRecipient;
   let divaPorterModule;

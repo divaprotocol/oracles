@@ -51,7 +51,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: process.env.RPC_URL_GOERLI,
-        blockNumber: 8508421,
+        blockNumber: 9018205,
       },
       accounts: {
         mnemonic: MNEMONIC,

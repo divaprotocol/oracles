@@ -149,9 +149,8 @@ describe("DIVAOracleTellor", () => {
     // Create an expired contingent pool that uses Tellor as the data provider
     const tx = await createContingentPool();
     const receipt = await tx.wait();
-
     latestPoolId = receipt.events?.find((x) => x.event === "PoolIssued")?.args
-      ?.poolId;
+      ?.poolId; // @todo consider renaming
     poolParams = await diva.getPoolParameters(latestPoolId);
 
     feesParams = await diva.getFees(poolParams.indexFees);
@@ -187,7 +186,7 @@ describe("DIVAOracleTellor", () => {
       tippingTokenDecimals,
       "0"
     );
-
+    
     // Set tipping amounts
     tippingAmount1 = parseUnits("1000", tippingTokenDecimals);
     tippingAmount2 = parseUnits("2000", tippingTokenDecimals);
@@ -2819,7 +2818,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Arrange: Set start, end index and poolId
       // ---------
-      poolId = latestPoolId;
+      poolId = latestPoolId; // @todo check here if we rename latestPoolId
       startIndex = 0;
       endIndex = (
         await divaOracleTellor.getTippingTokensLengthForPoolIds([poolId])
@@ -2847,7 +2846,7 @@ describe("DIVAOracleTellor", () => {
       // ---------
       // Arrange: Set start, end index and poolId
       // ---------
-      poolId = latestPoolId;
+      poolId = latestPoolId; // @todo remove line if we rename latestPoolId to poolId
       startIndex = 0;
       endIndex =
         (
@@ -2955,7 +2954,7 @@ describe("DIVAOracleTellor", () => {
       )[0];
       // Confirm that poolId for reporter is correct
       expect(poolIdsForReporter[0]).to.eq(latestPoolId);
-      expect(poolIdsForReporter[1]).to.eq(0);
+      expect(poolIdsForReporter[1]).to.eq(ethers.constants.HashZero);
     });
   });
 

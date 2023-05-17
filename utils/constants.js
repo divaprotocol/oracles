@@ -6,7 +6,7 @@ const DIVA_ADDRESS = {
   sepolia: "0x8ca8dE48c4507fa54a83Dde7ac68097e87520eEc", // 17.05.2023 (main version)
   polygon_mumbai: "0x05029c04AFB6cf53Ef0af7af7e970E53A7143bD3", // 17.05.2023 (secondary version)
   chiado: "0x05029c04AFB6cf53Ef0af7af7e970E53A7143bD3", // 17.05.2023 (secondary version)
-  goerli: "0x6625011b21D1d9b9dCCACF577Bbb74D0Aa448cbF", // 17.02.2023
+  goerli: "0x131e157322b3DDaE6eF28a124f566bC9c177De69", // 17.05.2023 (main version)
 };
 
 const BOND_FACTORY = {
