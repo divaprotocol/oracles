@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.19;
 
 /**
  * @notice Reduced version of Synthetix' SafeDecimalMath library for decimal

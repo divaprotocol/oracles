@@ -35,6 +35,7 @@ describe("DIVAOracleTellor", () => {
     excessDIVARewardRecipient,
     tipper;
 
+  let divaOracleTellorFactory;
   let divaOracleTellor;
   let tellorPlayground;
   let tellorPlaygroundAddress = TELLOR_PLAYGROUND_ADDRESS[network];
@@ -105,7 +106,7 @@ describe("DIVAOracleTellor", () => {
 
   beforeEach(async () => {
     // Deploy DIVAOracleTellor contract
-    const divaOracleTellorFactory = await ethers.getContractFactory(
+    divaOracleTellorFactory = await ethers.getContractFactory(
       "DIVAOracleTellor"
     );
     divaOracleTellor = await divaOracleTellorFactory.deploy(
@@ -140,7 +141,8 @@ describe("DIVAOracleTellor", () => {
       "DCT",
       userStartTokenBalance,
       user1.address,
-      collateralTokenDecimals
+      collateralTokenDecimals,
+      "0"
     );
     await collateralTokenInstance.approve(diva.address, userStartTokenBalance);
 
@@ -174,14 +176,16 @@ describe("DIVAOracleTellor", () => {
       "TPT1",
       userStartTokenBalance,
       tipper.address,
-      tippingTokenDecimals
+      tippingTokenDecimals,
+      "0"
     );
     tippingToken2 = await erc20DeployFixture(
       "TippingToken2",
       "TPT2",
       userStartTokenBalance,
       tipper.address,
-      tippingTokenDecimals
+      tippingTokenDecimals,
+      "0"
     );
 
     // Set tipping amounts
@@ -902,6 +906,54 @@ describe("DIVAOracleTellor", () => {
             .setFinalReferenceValue(latestPoolId, [], false)
         ).to.be.revertedWith("NoOracleSubmissionAfterExpiryTime()");
       });
+
+      it("Should revert if a zero ownership contract address is provided at contract deployment", async () => {
+        await expect(
+          divaOracleTellorFactory.deploy(
+            ethers.constants.AddressZero,
+            tellorPlaygroundAddress,
+            excessDIVARewardRecipient.address,
+            maxDIVARewardUSD,
+            divaAddress
+          )
+        ).to.be.revertedWith("ZeroOwnershipContractAddress()");
+      });
+
+      it("Should revert if a zero excess DIVA reward recipient address is provided at contract deployment", async () => {
+        await expect(
+          divaOracleTellorFactory.deploy(
+            divaOwnershipAddress,
+            tellorPlaygroundAddress,
+            ethers.constants.AddressZero,
+            maxDIVARewardUSD,
+            divaAddress
+          )
+        ).to.be.revertedWith("ZeroExcessDIVARewardRecipient()");
+      });
+
+      it("Should revert if a zero DIVA Protocol address is provided at contract deployment", async () => {
+        await expect(
+          divaOracleTellorFactory.deploy(
+            divaOwnershipAddress,
+            tellorPlaygroundAddress,
+            excessDIVARewardRecipient.address,
+            maxDIVARewardUSD,
+            ethers.constants.AddressZero
+          )
+        ).to.be.revertedWith("ZeroDIVAAddress()");
+      });
+
+      it("Should revert if a zero Tellor address is provided at contract deployment", async () => {
+        await expect(
+          divaOracleTellorFactory.deploy(
+            divaOwnershipAddress,
+            ethers.constants.AddressZero,
+            excessDIVARewardRecipient.address,
+            maxDIVARewardUSD,
+            divaAddress
+          )
+        ).to.be.revertedWith("Zero Tellor address");
+      });
     });
 
     describe("Set final reference value and claim tips and DIVA reward", async () => {
@@ -1562,6 +1614,46 @@ describe("DIVAOracleTellor", () => {
       );
     });
 
+    it("Deducts a fee on transfer for the Mock ERC20 token with fees (required for revert test)", async () => {
+      // This test is to ensure that the fee logic in the Mock ERC20 functions correctly
+
+      // ---------
+      // Arrange: Get the token balances before transfer and prepare for transfer
+      // ---------
+      const tippingTokenBalanceTipperBefore = await tippingToken1.balanceOf(tipper.address);
+      const tippingTokenBalanceUser2Before = await tippingToken1.balanceOf(user2.address);
+
+      // Set fee on token
+      const fee = 100;
+      await tippingToken1.setFee(fee);
+
+      // Calculate applicable fee amount
+      const amountToTransfer = parseUnits("1", tippingTokenDecimals);
+      const feePct = await tippingToken1.getFee();
+      expect(feePct).to.be.gt(0)
+      const feeAmount = amountToTransfer.div(feePct);
+      
+      // ---------
+      // Act: Transfer tokens
+      // ---------
+      await tippingToken1
+        .connect(tipper)
+        .transfer(user2.address, amountToTransfer);
+
+      // ---------
+      // Assert: Confirm that the new balances are as expected
+      // ---------
+      const tippingTokenBalanceTipperAfter = await tippingToken1.balanceOf(tipper.address);
+      const tippingTokenBalanceUser2After = await tippingToken1.balanceOf(user2.address);
+      expect(tippingTokenBalanceTipperAfter).to.eq(tippingTokenBalanceTipperBefore.sub(amountToTransfer));
+      expect(tippingTokenBalanceUser2After).to.eq(tippingTokenBalanceUser2Before.add(amountToTransfer).sub(feeAmount));
+
+      // ---------
+      // Assert: Set fees back to zero
+      // ---------
+      await tippingToken1.setFee(0);
+    });
+
     // ---------
     // Revert
     // ---------
@@ -1602,6 +1694,56 @@ describe("DIVAOracleTellor", () => {
           .addTip(latestPoolId, tippingAmount1, tippingToken1.address)
       ).to.be.revertedWith("AlreadyConfirmedPool()");
     });
+
+    it("Reverts with `FeeTokensNotSupported` if the tipping token implements a fee", async () => {
+      // ---------
+      // Arrange: Activate token transfer fees and set tip parameters
+      // ---------
+      const fee = 100;
+      await tippingToken1.setFee(fee);
+      expect(await tippingToken1.getFee()).to.eq(fee);
+      
+      // Get tip amount before
+      const tipAmountBefore = (
+          await divaOracleTellor.getTipAmounts([
+            { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+          ])
+        )[0][0]
+
+      // Set tip amount
+      tippingAmount1 = parseUnits("1", tippingTokenDecimals);
+      
+      // Confirm that the pool is not yet confirmed and a tip is possible
+      expect(poolParams.statusFinalReferenceValue).to.eq(0); // 0 = Open
+
+      // ---------
+      // Act & Assert: Check that adding a tip fails if a fee is activated
+      // ---------
+      await expect(
+        divaOracleTellor
+          .connect(tipper)
+          .addTip(latestPoolId, tippingAmount1, tippingToken1.address)
+      ).to.be.revertedWith("FeeTokensNotSupported()");
+
+      // ---------
+      // Reset: Set back fee to zero and test that `addTip` works again
+      // ---------
+      await tippingToken1.setFee(0);
+      expect(await tippingToken1.getFee()).to.eq(0);
+
+      // Tip pool with `tipAmount`
+      await divaOracleTellor
+        .connect(tipper)
+        .addTip(latestPoolId, tippingAmount1, tippingToken1.address);
+
+      // Confirm that the tip amount increased
+      const tipAmountAfter = (
+        await divaOracleTellor.getTipAmounts([
+          { poolId: latestPoolId, tippingTokens: [tippingToken1.address] },
+        ])
+      )[0][0]
+      expect(tipAmountAfter).to.eq(tipAmountBefore.add(tippingAmount1));
+  });
 
     // ---------
     // Events

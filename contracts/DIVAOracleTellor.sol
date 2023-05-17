@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./UsingTellor.sol";
-import "./interfaces/IDIVAOracleTellor.sol";
-import "./interfaces/IDIVA.sol";
-import "./interfaces/IDIVAOwnershipShared.sol";
-import "./libraries/SafeDecimalMath.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {UsingTellor} from "./UsingTellor.sol";
+import {IDIVAOracleTellor} from "./interfaces/IDIVAOracleTellor.sol";
+import {IDIVA} from "./interfaces/IDIVA.sol";
+import {IDIVAOwnershipShared} from "./interfaces/IDIVAOwnershipShared.sol";
+import {SafeDecimalMath} from "./libraries/SafeDecimalMath.sol";
 
 contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
@@ -29,11 +29,11 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     uint256 private _startTimeExcessDIVARewardRecipient;
 
     address private immutable _ownershipContract;
-    bool private immutable _challengeable;
-    IDIVA private immutable _diva;
+    bool private constant _CHALLENGEABLE = false;
+    IDIVA private immutable _DIVA;
 
-    uint256 private constant _activationDelay = 3 days;
-    uint32 private constant _minPeriodUndisputed = 12 hours;
+    uint256 private constant _ACTIVATION_DELAY = 3 days;
+    uint32 private constant _MIN_PERIOD_UNDISPUTED = 12 hours;
 
     modifier onlyOwner() {
         address _owner = _contractOwner();
@@ -56,12 +56,15 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         if (excessDIVARewardRecipient_ == address(0)) {
             revert ZeroExcessDIVARewardRecipient();
         }
+        if (diva_ == address(0)) {
+            revert ZeroDIVAAddress();
+        }
+        // Zero address check for `tellorAddress_` is done inside `UsingTellor.sol`
 
         _ownershipContract = ownershipContract_;
-        _challengeable = false;
         _excessDIVARewardRecipient = excessDIVARewardRecipient_;
         _maxDIVARewardUSD = maxDIVARewardUSD_;
-        _diva = IDIVA(diva_);
+        _DIVA = IDIVA(diva_);
     }
 
     function addTip(
@@ -89,16 +92,27 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _poolIdToTippingTokens[_poolId].push(_tippingToken);
         }
 
+        // Cache tipping token instance
+        IERC20Metadata _tippingTokenInstance = IERC20Metadata(_tippingToken);
+
         // Follow the CEI pattern by updating the balance before doing a potentially
         // unsafe `safeTransferFrom` call.
         _tips[_poolId][_tippingToken] += _amount;
 
-        // Transfer tipping token from `msg.sender` to this contract.
-        IERC20Metadata(_tippingToken).safeTransferFrom(
+        // Check tipping token balance before and after the transfer to identify
+        // fee-on-transfer tokens. If no fees were charged, transfer approved
+        // tipping token from `msg.sender` to `this`. Otherwise, revert.
+        uint256 _before = _tippingTokenInstance.balanceOf(address(this));
+        _tippingTokenInstance.safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
+        uint256 _after = _tippingTokenInstance.balanceOf(address(this));
+
+        if (_after - _before != _amount) {
+            revert FeeTokensNotSupported();
+        }
 
         // Log event including tipped pool, amount and tipper address.
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
@@ -199,7 +213,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
 
         // Set time at which the new excess DIVA reward recipient will become applicable
         uint256 _startTimeNewExcessDIVARewardRecipient = block.timestamp +
-            _activationDelay;
+            _ACTIVATION_DELAY;
 
         // Store start time and new excess DIVA reward recipient
         _startTimeExcessDIVARewardRecipient = _startTimeNewExcessDIVARewardRecipient;
@@ -234,7 +248,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
 
         // Set time at which the new max DIVA reward USD will become applicable
         uint256 _startTimeNewMaxDIVARewardUSD = block.timestamp +
-            _activationDelay;
+            _ACTIVATION_DELAY;
 
         // Store start time and new max DIVA reward USD
         _startTimeMaxDIVARewardUSD = _startTimeNewMaxDIVARewardUSD;
@@ -303,8 +317,8 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
     }
 
-    function getChallengeable() external view override returns (bool) {
-        return _challengeable;
+    function getChallengeable() external pure override returns (bool) {
+        return _CHALLENGEABLE;
     }
 
     function getExcessDIVARewardRecipientInfo()
@@ -346,7 +360,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function getMinPeriodUndisputed() external pure override returns (uint32) {
-        return _minPeriodUndisputed;
+        return _MIN_PERIOD_UNDISPUTED;
     }
 
     function getTippingTokens(
@@ -447,7 +461,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function getDIVAAddress() external view override returns (address) {
-        return address(_diva);
+        return address(_DIVA);
     }
 
     function getReporters(uint256[] calldata _poolIds)
@@ -535,7 +549,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function getActivationDelay() external pure override returns (uint256) {
-        return _activationDelay;
+        return _ACTIVATION_DELAY;
     }
 
     function getQueryDataAndId(uint256 _poolId)
@@ -548,7 +562,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         queryData = 
                 abi.encode(
                     "DIVAProtocol",
-                    abi.encode(_poolId, address(_diva), block.chainid)
+                    abi.encode(_poolId, address(_DIVA), block.chainid)
                 );
 
         // Construct Tellor queryId
@@ -624,14 +638,14 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         // Claim DIVA reward if indicated in the function call. Alternatively,
         // DIVA rewards can be claimed from the DIVA smart contract directly.
         if (_claimDIVAReward) {
-            IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
-            _diva.claimFee(_params.collateralToken, _poolIdToReporter[_poolId]);
+            IDIVA.Pool memory _params = _DIVA.getPoolParameters(_poolId);
+            _DIVA.claimFee(_params.collateralToken, _poolIdToReporter[_poolId]);
         }
     }
 
     function _setFinalReferenceValue(uint256 _poolId) private {
         // Load pool information from the DIVA smart contract.
-        IDIVA.Pool memory _params = _diva.getPoolParameters(_poolId);
+        IDIVA.Pool memory _params = _DIVA.getPoolParameters(_poolId);
 
         // Get queryId from poolId for the value look-up inside the Tellor contract.
         (, bytes32 _queryId) = getQueryDataAndId(_poolId);
@@ -647,8 +661,8 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             revert NoOracleSubmissionAfterExpiryTime();
         }
 
-        // Check that `_minPeriodUndisputed` has passed after `_timestampRetrieved`.
-        if (block.timestamp - _timestampRetrieved < _minPeriodUndisputed) {
+        // Check that `_MIN_PERIOD_UNDISPUTED` has passed after `_timestampRetrieved`.
+        if (block.timestamp - _timestampRetrieved < _MIN_PERIOD_UNDISPUTED) {
             revert MinPeriodUndisputedNotPassed();
         }
 
@@ -672,10 +686,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         // contract as part of that process. DIVA reward claim is transferred to
         // the corresponding reporter via the `batchTransferFeeClaim` function
         // further down below.
-        _diva.setFinalReferenceValue(
+        _DIVA.setFinalReferenceValue(
             _poolId,
             _formattedFinalReferenceValue,
-            _challengeable
+            _CHALLENGEABLE
         );
 
         uint256 _SCALING = uint256(
@@ -683,7 +697,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         );
 
         // Get the current DIVA reward claim allocated to this contract address (msg.sender)
-        uint256 divaRewardClaim = _diva.getClaim(
+        uint256 divaRewardClaim = _DIVA.getClaim(
             _params.collateralToken,
             address(this)
         ); // denominated in collateral token; integer with collateral token decimals
@@ -726,7 +740,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _params.collateralToken,
             divaRewardClaim - divaRewardToReporter // integer with collateral token decimals
         );
-        _diva.batchTransferFeeClaim(_divaRewardClaimTransfers);
+        _DIVA.batchTransferFeeClaim(_divaRewardClaimTransfers);
 
         // Log event including reported information
         emit FinalReferenceValueSet(

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.19;
 
-import "./interfaces/ITellor.sol";
+import {ITellor} from "./interfaces/ITellor.sol";
 
 /**
  * @title UserContract
@@ -17,6 +17,7 @@ contract UsingTellor {
      * @param _tellor is the Tellor Oracle address
      */
     constructor(address payable _tellor) {
+        require(_tellor != address(0), "Zero Tellor address");
         tellor = ITellor(_tellor);
     }
 

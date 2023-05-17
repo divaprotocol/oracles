@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity 0.8.19;
 
 interface IDIVAOracleTellor {
     // Thrown in the internal `_claimReward` function used in `claimReward`, 
@@ -10,6 +10,9 @@ interface IDIVAOracleTellor {
     // Thrown in `addTip` if user tries to add a tip for an already confirmed
     // pool.
     error AlreadyConfirmedPool();
+
+    // Thrown in `addTip` if the tipping token implements a fee
+    error FeeTokensNotSupported();
 
     // Thrown in `updateExcessDIVARewardRecipient` or constructor if the zero address
     // is passed as excess DIVA reward recipient address.
@@ -25,6 +28,9 @@ interface IDIVAOracleTellor {
 
     // Thrown in constructor if zero address is provided as ownershipContract.
     error ZeroOwnershipContractAddress();
+
+    // Thrown in constructor if zero address is provided for DIVA Protocol contract.
+    error ZeroDIVAAddress();
 
     // Thrown in governance related functions including `updateExcessDIVARewardRecipient`
     // `updateMaxDIVARewardUSD`, `revokePendingExcessDIVARewardRecipientUpdate`,
@@ -341,7 +347,7 @@ interface IDIVAOracleTellor {
      * will determine the payouts, and users can start claiming their
      * payouts thereafter.
      */
-    function getChallengeable() external view returns (bool);
+    function getChallengeable() external pure returns (bool);
 
     /**
      * @notice Function to return the excess DIVA reward recipient info, including
