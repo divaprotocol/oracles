@@ -92,16 +92,27 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _poolIdToTippingTokens[_poolId].push(_tippingToken);
         }
 
+        // Cache tipping token instance
+        IERC20Metadata _tippingTokenInstance = IERC20Metadata(_tippingToken);
+
         // Follow the CEI pattern by updating the balance before doing a potentially
         // unsafe `safeTransferFrom` call.
         _tips[_poolId][_tippingToken] += _amount;
 
-        // Transfer tipping token from `msg.sender` to this contract.
-        IERC20Metadata(_tippingToken).safeTransferFrom(
+        // Check tipping token balance before and after the transfer to identify
+        // fee-on-transfer tokens. If no fees were charged, transfer approved
+        // tipping token from `msg.sender` to `this`. Otherwise, revert.
+        uint256 _before = _tippingTokenInstance.balanceOf(address(this));
+        _tippingTokenInstance.safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
+        uint256 _after = _tippingTokenInstance.balanceOf(address(this));
+
+        if (_after - _before != _amount) {
+            revert FeeTokensNotSupported();
+        }
 
         // Log event including tipped pool, amount and tipper address.
         emit TipAdded(_poolId, _tippingToken, _amount, msg.sender);
