@@ -7,11 +7,9 @@
 
 const { ethers } = require("hardhat");
 const { parseUnits, formatUnits } = require("@ethersproject/units");
-
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const TELLOR_PLAYGROUND_ABI = require("../../contracts/abi/TellorPlayground.json");
 const TELLOR_ABI = require("../../contracts/abi/Tellor.json");
-
 const {
   DIVA_ADDRESS,
   TELLOR_VERSION,
@@ -51,7 +49,7 @@ const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
       { poolId, startIndex: 0, endIndex: 1 },
     ])
   )[0];
-  if (tippingTokens.length) {
+  if (!(tippingTokens.length == 1 && tippingTokens[0] == ethers.constants.AddressZero)) {
     await Promise.all(
       tippingTokens.map(async (tippingToken) =>
         console.log(
@@ -84,26 +82,25 @@ const getReward = async (divaOracleTellor, poolId, poolParams, feesParams) => {
 };
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
-  const tellorVersion = TELLOR_VERSION.ACTUAL;
+  // INPUT: tellorVersion
+  const tellorVersion = TELLOR_VERSION.PLAYGROUND;
 
   let tellorAddress;
   if (tellorVersion == TELLOR_VERSION.PLAYGROUND) {
-    tellorAddress = TELLOR_PLAYGROUND_ADDRESS[network];
+    tellorAddress = TELLOR_PLAYGROUND_ADDRESS[network.name];
   } else if (tellorVersion == TELLOR_VERSION.ACTUAL) {
-    tellorAddress = TELLOR_ADDRESS[network];
+    tellorAddress = TELLOR_ADDRESS[network.name];
   } else {
     throw Error(
       "Invalid value for tellorVersion. Set to PLAYGROUND or ACTUAL"
     );
   }
-  const divaAddress = DIVA_ADDRESS[network];
+  const divaAddress = DIVA_ADDRESS[network.name];
   const divaOracleTellorAddress =
-    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
 
   // INPUT: id of pool
-  const poolId = 186;
+  const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
 
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -139,7 +136,7 @@ async function main() {
   );
 
   // Get fee params
-  const feesParams = await diva.getFees(poolId);
+  const feesParams = await diva.getFees(poolParams.indexFees);
 
   // Get current tips and fees from DIVA for reporting the value
   await getReward(divaOracleTellor, poolId, poolParams, feesParams);
