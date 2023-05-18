@@ -149,8 +149,9 @@ describe("DIVAOracleTellor", () => {
     // Create an expired contingent pool that uses Tellor as the data provider
     const tx = await createContingentPool();
     const receipt = await tx.wait();
+
     poolId = receipt.events?.find((x) => x.event === "PoolIssued")?.args
-      ?.poolId; // @todo consider renaming
+      ?.poolId;
     poolParams = await diva.getPoolParameters(poolId);
 
     feesParams = await diva.getFees(poolParams.indexFees);
