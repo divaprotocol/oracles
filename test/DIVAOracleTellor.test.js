@@ -187,7 +187,7 @@ describe("DIVAOracleTellor", () => {
       tippingTokenDecimals,
       "0"
     );
-    
+
     // Set tipping amounts
     tippingAmount1 = parseUnits("1000", tippingTokenDecimals);
     tippingAmount2 = parseUnits("2000", tippingTokenDecimals);

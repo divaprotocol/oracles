@@ -181,14 +181,14 @@ describe("DIVAPorterModule", () => {
       );
       
       // Actually execute the tx. 
-      const tx = await divaPorterModule.createContingentPool(
+      await divaPorterModule.createContingentPool(
         divaAddress,
         createContingentPoolParams
       );
-      await tx.wait();
 
-      // Note: For some reason, I couldn't extract the "PoolIssued" event and hence couldn't
-      // read the poolId from there. That's why we are using `callStatic` here
+      // Note: It was not possible to extract the "PoolIssued" event, most likely because
+      // `diva.createContingentPool` is called via the Porter wrapper function.
+      // That's why the poolId is obtained via the `callStatic` method.
 
       // ---------
       // Assert: Confirm that new pool is created with correct params
@@ -246,11 +246,10 @@ describe("DIVAPorterModule", () => {
       );
       
       // Actually execute the tx. 
-      const tx = await divaPorterModule.createContingentPool(
+      await divaPorterModule.createContingentPool(
         divaAddress,
         createContingentPoolParams
       );
-      await tx.wait();
 
       // Get the pool parameters
       poolParams = await diva.getPoolParameters(poolId);
