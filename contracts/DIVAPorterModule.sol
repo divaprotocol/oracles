@@ -14,7 +14,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20Metadata;
 
     // Mapping to check if pool is settled already
-    mapping(uint256 => bool) public poolIsSettled;
+    mapping(bytes32 => bool) public poolIsSettled;
 
     bool private immutable _challengeable;
     address private _bondFactoryAddress;
@@ -24,7 +24,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
         _bondFactoryAddress = bondFactoryAddress_;
     }
 
-    function setFinalReferenceValue(address _divaDiamond, uint256 _poolId)
+    function setFinalReferenceValue(address _divaDiamond, bytes32 _poolId)
         external
         override
         nonReentrant
@@ -76,7 +76,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
     function createContingentPool(
         address _divaDiamond,
         PorterPoolParams calldata _porterPoolParams
-    ) external override nonReentrant returns (uint256) {
+    ) external override nonReentrant returns (bytes32) {
         IBondFactory _bondFactory = IBondFactory(_bondFactoryAddress);
         address _porterBond = _porterPoolParams.referenceAsset;
 
@@ -123,7 +123,7 @@ contract DIVAPorterModule is IDIVAPorterModule, Ownable, ReentrancyGuard {
             .permissionedERC721Token;
 
         IDIVA _diva = IDIVA(_divaDiamond);
-        uint256 _poolId = _diva.createContingentPool(_poolParams);
+        bytes32 _poolId = _diva.createContingentPool(_poolParams);
 
         return _poolId;
     }

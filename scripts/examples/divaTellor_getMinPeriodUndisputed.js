@@ -6,14 +6,11 @@
  */
 
 const { ethers } = require("hardhat");
-
 const { DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS } = require("../../utils/constants");
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
-
-  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+  // Get DIVA Tellor oracle address
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
 
   // Connect to DIVAOracleTellor contract
   const divaOracleTellor = await ethers.getContractAt(

@@ -3,13 +3,9 @@
  * Run: `yarn diva:createContingentPool`
  */
 
-// @todo move Tellor related example scripts into a separate folder and update scripts in package.json
-
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const { parseUnits } = require("@ethersproject/units");
-
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
-
 const {
   DIVA_ADDRESS,
   COLLATERAL_TOKENS,
@@ -62,10 +58,6 @@ const checkConditions = (
     throw new Error("Gradient cannot be greater than 1e18");
   }
 
-  if (collateralAmount.lt(parseUnits("1", 6))) {
-    throw new Error("collateralAmount cannot be smaller than 1e6");
-  }
-
   if (capacity.lt(collateralAmount)) {
     throw new Error("Capacity cannot be smaller than collateral amount");
   }
@@ -74,8 +66,8 @@ const checkConditions = (
     throw new Error("Collateral token cannot have more than 18 decimals");
   }
 
-  if (decimals < 3) {
-    throw new Error("Collateral token cannot have less than 3 decimals");
+  if (decimals < 6) {
+    throw new Error("Collateral token cannot have less than 6 decimals");
   }
 
   if (
@@ -93,15 +85,12 @@ const checkConditions = (
 };
 
 async function main() {
-  // INPUT: network should be the same as in diva::getPoolParameters command)
-  const network = "goerli";
-
   // INPUT: collateral token symbol
   const collateralTokenSymbol = "dUSD";
 
   const collateralTokenAddress =
-    COLLATERAL_TOKENS[network][collateralTokenSymbol];
-  const dataProviderAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+    COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
+  const dataProviderAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
 
   // Get signer of pool creator
   const [creator] = await ethers.getSigners();
@@ -118,7 +107,7 @@ async function main() {
 
   // Input arguments for `createContingentPool` function
   const referenceAsset = "ETH/USD";
-  const expiryTime = getExpiryInSeconds(100); // 100 means expiry in 100 seconds from now
+  const expiryTime = getExpiryInSeconds(300); // 100 means expiry in 100 seconds from now
   const floor = parseUnits("2000");
   const inflection = parseUnits("2500");
   const cap = parseUnits("3000");
@@ -150,7 +139,7 @@ async function main() {
   );
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Get creator's current allowance
   let allowance = await erc20Contract.allowance(creator.address, diva.address);

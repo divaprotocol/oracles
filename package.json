@@ -14,12 +14,11 @@
     "diva:createContingentPool": "yarn hardhat run scripts/examples/diva_createContingentPool.js --network goerli",
     "diva:getPoolParameters": "yarn hardhat run scripts/examples/diva_getPoolParameters.js --network goerli",
     "divaTellor:getMinPeriodUndisputed": "yarn hardhat run scripts/examples/divaTellor_getMinPeriodUndisputed.js --network goerli",
-    "divaTellor:getQueryId": "yarn hardhat run scripts/examples/divaTellor_getQueryId.js --network goerli",
+    "divaTellor:getQueryDataAndId": "yarn hardhat run scripts/examples/divaTellor_getQueryDataAndId.js --network goerli",
     "divaTellor:setFinalReferenceValue": "yarn hardhat run scripts/examples/divaTellor_setFinalReferenceValue.js --network goerli",
     "divaTellor:addTip": "yarn hardhat run scripts/examples/divaTellor_addTip.js --network goerli",
     "divaTellor:claimReward": "yarn hardhat run scripts/examples/divaTellor_claimReward.js --network goerli",
     "tellor:submitValue": "yarn hardhat run scripts/examples/tellor_submitValue.js --network goerli",
-    "tellor:queryDataExample": "yarn hardhat run scripts/examples/tellorQueryDataExample.js --network goerli",
     "xdeploy:divaTellor": "npx node scripts/xdeploy/xdeployTellor.js",
     "verify:divaTellor": "yarn hardhat run scripts/verifyTellor.js"
   },

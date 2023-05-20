@@ -5,9 +5,7 @@
  */
 
 const { ethers } = require("hardhat");
-
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
-
 const {
   STATUS,
   DIVA_ADDRESS,
@@ -15,15 +13,14 @@ const {
 } = require("../../utils/constants");
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
-
-  const divaOracleTellorAddress =
-    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
-  const divaAddress = DIVA_ADDRESS[network];
-
   // INPUT: id of existing pool
-  const poolId = 181;
+  const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
+
+  // Get DIVA Tellor oracle address
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
+
+  // Get DIVA Protocol address
+  const divaAddress = DIVA_ADDRESS[network.name];
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -42,7 +39,6 @@ async function main() {
   const finalReferenceValueSetEvent = receipt.events.find(
     (item) => item.event === "FinalReferenceValueSet"
   );
-  console.log("finalReferenceValueSetEvent", finalReferenceValueSetEvent);
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);
@@ -53,7 +49,7 @@ async function main() {
   console.log("PoolId: ", poolId);
   console.log(
     "Final reference value: ",
-    finalReferenceValueSetEvent.args.finalValue
+    finalReferenceValueSetEvent.args.finalValue.toString()
   );
   console.log("Data provider: ", poolParams.dataProvider);
   console.log(

@@ -5,20 +5,15 @@
 
 const { ethers } = require("hardhat");
 const { formatUnits } = require("@ethersproject/units");
-
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
-
 const { DIVA_ADDRESS, STATUS } = require("../../utils/constants");
 
 async function main() {
-  // INPUT: network (should be the same as in diva::getPoolParameters command)
-  const network = "goerli";
+  // INPUT: id of pool
+  const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
 
   // Connect to deployed DIVA contract
-  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network]);
-
-  // INPUT: id of pool
-  const poolId = 59;
+  const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
 
   // Get pool parameters
   const poolParams = await diva.getPoolParameters(poolId);

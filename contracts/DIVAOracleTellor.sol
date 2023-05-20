@@ -15,10 +15,10 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     using SafeDecimalMath for uint256;
 
     // Ordered to optimize storage
-    mapping(uint256 => mapping(address => uint256)) private _tips; // mapping poolId => tipping token address => tip amount
-    mapping(uint256 => address[]) private _poolIdToTippingTokens; // mapping poolId to tipping tokens
-    mapping(uint256 => address) private _poolIdToReporter; // mapping poolId to reporter address
-    mapping(address => uint256[]) private _reporterToPoolIds; // mapping reporter to poolIds
+    mapping(bytes32 => mapping(address => uint256)) private _tips; // mapping poolId => tipping token address => tip amount
+    mapping(bytes32 => address[]) private _poolIdToTippingTokens; // mapping poolId to tipping tokens
+    mapping(bytes32 => address) private _poolIdToReporter; // mapping poolId to reporter address
+    mapping(address => bytes32[]) private _reporterToPoolIds; // mapping reporter to poolIds
 
     uint256 private _previousMaxDIVARewardUSD; // expressed as an integer with 18 decimals, initialized to zero at contract deployment
     uint256 private _maxDIVARewardUSD; // expressed as an integer with 18 decimals
@@ -68,7 +68,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function addTip(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _amount,
         address _tippingToken
     ) external override nonReentrant {
@@ -76,7 +76,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
     
     function _addTip(
-        uint256 _poolId,
+        bytes32 _poolId,
         uint256 _amount,
         address _tippingToken
     ) private {
@@ -136,7 +136,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function claimReward(
-        uint256 _poolId,
+        bytes32 _poolId,
         address[] calldata _tippingTokens,
         bool _claimDIVAReward
     ) external override nonReentrant {
@@ -161,7 +161,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function setFinalReferenceValue(
-        uint256 _poolId,
+        bytes32 _poolId,
         address[] calldata _tippingTokens,
         bool _claimDIVAReward
     ) external override nonReentrant {
@@ -407,7 +407,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return _tippingTokens;
     }
 
-    function getTippingTokensLengthForPoolIds(uint256[] calldata _poolIds)
+    function getTippingTokensLengthForPoolIds(bytes32[] calldata _poolIds)
         external
         view
         override
@@ -464,7 +464,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return address(_DIVA);
     }
 
-    function getReporters(uint256[] calldata _poolIds)
+    function getReporters(bytes32[] calldata _poolIds)
         external
         view
         override
@@ -484,11 +484,11 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
 
     function getPoolIdsForReporters(
         ArgsGetPoolIdsForReporters[] calldata _argsGetPoolIdsForReporters
-    ) external view override returns (uint256[][] memory) {
+    ) external view override returns (bytes32[][] memory) {
         uint256 _len = _argsGetPoolIdsForReporters.length;
-        uint256[][] memory _poolIds = new uint256[][](_len);
+        bytes32[][] memory _poolIds = new bytes32[][](_len);
         for (uint256 i = 0; i < _len; ) {
-            uint256[] memory _poolIdsForReporter = new uint256[](
+            bytes32[] memory _poolIdsForReporter = new bytes32[](
                 _argsGetPoolIdsForReporters[i].endIndex -
                     _argsGetPoolIdsForReporters[i].startIndex
             );
@@ -552,7 +552,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         return _ACTIVATION_DELAY;
     }
 
-    function getQueryDataAndId(uint256 _poolId)
+    function getQueryDataAndId(bytes32 _poolId)
         public
         view
         override
@@ -593,7 +593,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     }
 
     function _claimReward(
-        uint256 _poolId,
+        bytes32 _poolId,
         address[] calldata _tippingTokens,
         bool _claimDIVAReward
     ) private {
@@ -643,7 +643,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         }
     }
 
-    function _setFinalReferenceValue(uint256 _poolId) private {
+    function _setFinalReferenceValue(bytes32 _poolId) private {
         // Load pool information from the DIVA smart contract.
         IDIVA.Pool memory _params = _DIVA.getPoolParameters(_poolId);
 

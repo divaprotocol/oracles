@@ -21,7 +21,7 @@ const decodeOracleValue = (tellorValue) => {
 const getQueryDataAndId = (poolId, divaAddress, chainId) => {
   const abiCoder = new ethers.utils.AbiCoder();
   const queryDataArgs = abiCoder.encode(
-    ["uint256", "address", "uint256"],
+    ["bytes32", "address", "uint256"],
     [poolId, divaAddress, chainId]
   );
   const queryData = abiCoder.encode(

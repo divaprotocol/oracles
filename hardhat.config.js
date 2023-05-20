@@ -41,7 +41,7 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      ropsten: process.env.ETHERSCAN_API_KEY,
+      sepolia: process.env.ETHERSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYGON_API_KEY || "",
       polygonMumbai: process.env.POLYGON_API_KEY || "",
@@ -51,7 +51,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: process.env.RPC_URL_GOERLI,
-        blockNumber: 8508421,
+        blockNumber: 9018205,
       },
       accounts: {
         mnemonic: MNEMONIC,
@@ -100,6 +100,7 @@ module.exports = {
       accounts: {
         mnemonic: MNEMONIC,
       },
+      gasPrice: 7000000000,
     },
   },
   xdeploy: { ...xdeployConfig, ...generalXdeployConfig },

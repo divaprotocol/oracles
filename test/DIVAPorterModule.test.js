@@ -18,7 +18,7 @@ const {
 const network = "goerli"; // should be the same as in hardhat -> forking -> url settings in hardhat.config.js
 const collateralTokenDecimals = 6;
 const paymentTokenDecimals = 18;
-const tokenAmount = "1000000000";
+const tokenAmount = "100000000000000";
 
 describe("DIVAPorterModule", () => {
   let user1, issuer, longRecipient, shortRecipient;
@@ -28,7 +28,7 @@ describe("DIVAPorterModule", () => {
   let bondFactoryAdmin = BOND_FACTORY.admin[network];
   let bondAddress;
   let bond;
-  let latestPoolId;
+  let poolId;
   let poolParams;
   let collateralToken, bondCollateralToken;
   let paymentToken;
@@ -51,6 +51,12 @@ describe("DIVAPorterModule", () => {
 
     // Generate signer of BondFactory admin
     const bondFactoryAdminSigner = await ethers.getSigner(bondFactoryAdmin);
+
+    // Fund the bondFactoryAdmin account with sufficient ETH
+    await hre.network.provider.send("hardhat_setBalance", [
+      bondFactoryAdmin,
+      "0x100000000000000000000",
+    ]);
 
     // Get BondFactory contract
     const bondFactory = await ethers.getContractAt(
@@ -167,16 +173,28 @@ describe("DIVAPorterModule", () => {
       // ---------
       // Act: Call createContingentPool function inside DIVA Porter module
       // ---------
+      // Extract the returned poolId using `callStatic`. Note that this does not
+      // modify state.
+      poolId = await divaPorterModule.callStatic.createContingentPool(
+        divaAddress,
+        createContingentPoolParams
+      );
+      
+      // Actually execute the tx. 
       await divaPorterModule.createContingentPool(
         divaAddress,
         createContingentPoolParams
       );
 
+      // Note: It was not possible to extract the "PoolIssued" event, most likely because
+      // `diva.createContingentPool` is called via the Porter wrapper function.
+      // That's why the poolId is obtained via the `callStatic` method.
+
       // ---------
       // Assert: Confirm that new pool is created with correct params
       // ---------
-      latestPoolId = await diva.getLatestPoolId();
-      poolParams = await diva.getPoolParameters(latestPoolId);
+      poolParams = await diva.getPoolParameters(poolId);
+
       const shortTokenInstance = await erc20AttachFixture(
         await poolParams.shortToken
       );
@@ -219,11 +237,22 @@ describe("DIVAPorterModule", () => {
 
   describe("setFinalReferenceValue", async () => {
     beforeEach(async () => {
-      // Create congingent pool using DIVA Porter module
+      // Create congingent pool using DIVA Porter module.
+      // Extract the returned poolId using `callStatic`. Note that this does not
+      // modify state.
+      poolId = await divaPorterModule.callStatic.createContingentPool(
+        divaAddress,
+        createContingentPoolParams
+      );
+      
+      // Actually execute the tx. 
       await divaPorterModule.createContingentPool(
         divaAddress,
         createContingentPoolParams
       );
+
+      // Get the pool parameters
+      poolParams = await diva.getPoolParameters(poolId);
 
       // Wait till the pool end
       await setNextBlockTimestamp(gracePeriodEnd.toNumber());
@@ -234,12 +263,10 @@ describe("DIVAPorterModule", () => {
       // Arrange: Confirm that finalRereferenceValue and statusFinalReferenceValue are not yet set on DIVA Protocol
       // and the pool was not yet settled on DIVA Porter module.
       // ---------
-      latestPoolId = await diva.getLatestPoolId();
-      poolParams = await diva.getPoolParameters(latestPoolId);
       expect(poolParams.finalReferenceValue).to.eq(0);
       expect(poolParams.statusFinalReferenceValue).to.eq(0);
 
-      const poolIsSettled = await divaPorterModule.poolIsSettled(latestPoolId);
+      const poolIsSettled = await divaPorterModule.poolIsSettled(poolId);
       expect(poolIsSettled).to.eq(false);
 
       const amountUnpaid = await bond.amountUnpaid();
@@ -247,14 +274,14 @@ describe("DIVAPorterModule", () => {
       // ---------
       // Act: Call setFinalReferenceValue function inside DIVAPorterModule
       // ---------
-      await divaPorterModule.setFinalReferenceValue(divaAddress, latestPoolId);
+      await divaPorterModule.setFinalReferenceValue(divaAddress, poolId);
 
       // ---------
       // Assert: Confirm that statusFinalReferenceValue is updated accordingly in DIVA Protocol
       // and finalReferenceValue is udpated as amountUnpaid
       // and payout amounts (net of fees) are correct
       // ---------
-      poolParams = await diva.getPoolParameters(latestPoolId);
+      poolParams = await diva.getPoolParameters(poolId);
       expect(poolParams.statusFinalReferenceValue).to.eq(3); // 3 = Confirmed
       expect(poolParams.finalReferenceValue).to.eq(
         amountUnpaid.mul(parseUnits("1", 18 - paymentTokenDecimals))
@@ -274,21 +301,19 @@ describe("DIVAPorterModule", () => {
       // ---------
       // Arrange: Settle pool using amountUnpaid from Porter Bond contract
       // ---------
-      latestPoolId = await diva.getLatestPoolId();
-      poolParams = await diva.getPoolParameters(latestPoolId);
       expect(poolParams.finalReferenceValue).to.eq(0);
       expect(poolParams.statusFinalReferenceValue).to.eq(0);
 
-      const poolIsSettled = await divaPorterModule.poolIsSettled(latestPoolId);
+      const poolIsSettled = await divaPorterModule.poolIsSettled(poolId);
       expect(poolIsSettled).to.eq(false);
 
-      await divaPorterModule.setFinalReferenceValue(divaAddress, latestPoolId);
+      await divaPorterModule.setFinalReferenceValue(divaAddress, poolId);
 
       // ---------
       // Act & Assert: Confirm that the setFinalReferenceValue function will fail if called after the pool has been already settled
       // ---------
       await expect(
-        divaPorterModule.setFinalReferenceValue(divaAddress, latestPoolId)
+        divaPorterModule.setFinalReferenceValue(divaAddress, poolId)
       ).to.be.revertedWith("DIVAPorterModule: pool is already settled");
     });
   });

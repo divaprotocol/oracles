@@ -6,7 +6,6 @@
 
 const { ethers } = require("hardhat");
 const { parseUnits, formatUnits } = require("@ethersproject/units");
-
 const {
   COLLATERAL_TOKENS,
   DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
@@ -23,18 +22,20 @@ const checkConditions = (reporter) => {
 };
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
+  // INPUT: Id of pool
+  const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
 
   // INPUT: tipping token symbol
   const tippingTokenSymbol = "dUSD";
 
-  const tippingTokenAddress = COLLATERAL_TOKENS[network][tippingTokenSymbol];
-  const divaOracleTellorAddress =
-    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
+  // INPUT: Tipping amount (converted into big integer further down below)
+  const _amount = 1.5;
 
-  // INPUT: id of pool
-  const poolId = 180;
+  // Get tipping token address
+  const tippingTokenAddress = COLLATERAL_TOKENS[network.name][tippingTokenSymbol];
+  
+  // Get DIVA Tellor oracle address
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
 
   // Get signer of tipper
   const [tipper] = await ethers.getSigners();
@@ -61,7 +62,7 @@ async function main() {
   const decimals = await tippingTokenContract.decimals();
 
   // INPUT: tipping amount
-  const amount = parseUnits("1", decimals);
+  const amount = parseUnits(_amount.toString(), decimals);
 
   // Set allowance for DIVAOracleTellor contract
   const approveTx = await tippingTokenContract

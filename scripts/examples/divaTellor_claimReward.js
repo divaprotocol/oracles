@@ -5,9 +5,7 @@
 
 const { ethers } = require("hardhat");
 const { formatUnits } = require("@ethersproject/units");
-
 const DIVA_ABI = require("../../contracts/abi/DIVA.json");
-
 const {
   DIVA_ADDRESS,
   DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
@@ -17,22 +15,20 @@ const checkConditions = (reporter, tippingTokens) => {
   if (reporter === ethers.constants.AddressZero) {
     throw new Error("Not confirmed pool");
   }
-
-  if (!tippingTokens.length) {
+  if (tippingTokens.length == 1 && tippingTokens[0] == ethers.constants.AddressZero) {
     throw new Error("No tipping tokens to claim");
   }
 };
 
 async function main() {
-  // INPUT: network
-  const network = "goerli";
-
-  const divaAddress = DIVA_ADDRESS[network];
-  const divaOracleTellorAddress =
-    DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network];
-
   // INPUT: id of existing pool
-  const poolId = 186;
+  const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
+
+  // Get DIVA Tellor oracle address
+  const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
+
+  // Get DIVA Protocol address
+  const divaAddress = DIVA_ADDRESS[network.name];
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
@@ -71,9 +67,9 @@ async function main() {
     })
   );
 
-  // Check tips on DIVAOracleTellor contract before claim tips
+  // Check tips on DIVAOracleTellor contract before reward claim
   console.log("");
-  console.log("Tips on DIVAOracleTellor contract before claim tips");
+  console.log("Tips on DIVAOracleTellor contract before reward claim");
   await Promise.all(
     tippingTokens.map(async (tippingToken, index) => {
       const tips = (
@@ -90,9 +86,9 @@ async function main() {
     })
   );
 
-  // Check the balances of reporter before claim tips
+  // Check the balances of reporter before reward claim
   console.log("");
-  console.log("Tipping token balances of reporter before claim tips");
+  console.log("Tipping token balances of reporter before reward claim");
   await Promise.all(
     tippingTokenContracts.map(async (tippingTokenContract, index) => {
       const tippingTokenBalance = await tippingTokenContract.balanceOf(
@@ -127,7 +123,8 @@ async function main() {
 
   // Get DIVA reward claim before claiming it
   const divaRewardBefore = formatUnits(
-    await diva.getClaim(poolParams.collateralToken, divaOracleTellorAddress)
+    await diva.getReservedClaim(poolParams.collateralToken, divaOracleTellorAddress),
+    decimals
   );
 
   // Claim tips
@@ -185,14 +182,14 @@ async function main() {
   console.log("DIVA address: ", diva.address);
   console.log("PoolId: ", poolId);
   console.log("Reporter address: ", reporter);
-  console.log("Get DIVA reward claim BEFORE claim: ", divaRewardBefore);
-  console.log("Get DIVA reward claim AFTER claim: ", divaRewardAfter);
+  console.log("Get DIVA reward BEFORE claim: ", divaRewardBefore);
+  console.log("Get DIVA reward AFTER claim: ", divaRewardAfter);
   console.log(
-    "Collateral token balance of reporter BEFORE claim DIVA reward: ",
+    "Collateral token balance of reporter BEFORE DIVA reward claim: ",
     collateralTokenBalanceReporterBefore
   );
   console.log(
-    "Collateral token balance of reporter AFTER claim DIVA reward: ",
+    "Collateral token balance of reporter AFTER DIVA reward claim: ",
     collateralTokenBalanceReporterAfter
   );
 }

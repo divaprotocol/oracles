@@ -290,7 +290,7 @@ The function reverts under the following conditions:
 
 ```js
 function setFinalReferenceValue(
-    uint256 _poolId,                    // The Id of the pool
+    bytes32 _poolId,                    // The Id of the pool
     address[] calldata _tippingTokens,  // Array of tipping tokens to claim
     bool _claimDIVAReward               // Flag indicating whether to claim the DIVA reward
 )
@@ -312,7 +312,7 @@ where `ArgsBatchSetFinalReferenceValue` is given by
 
 ```js
 struct ArgsBatchSetFinalReferenceValue {
-    uint256 poolId;             // The Id of the pool
+    bytes32 poolId;             // The Id of the pool
     address[] tippingTokens;    // Array of tipping tokens to claim
     bool claimDIVAReward;       // Flag indicating whether to claim the DIVA reward
 }
@@ -338,7 +338,7 @@ The function reverts under the following conditions:
 
 ```js
 function addTip(
-    uint256 _poolId,        // The Id of the pool
+    bytes32 _poolId,        // The Id of the pool
     uint256 _amount,        // The amount to tip expressed as an integer with tipping token decimals
     address _tippingToken   // Tipping token address
 )
@@ -362,7 +362,7 @@ where `ArgsBatchAddTip` is given by
 
 ```js
 struct ArgsBatchAddTip {
-    uint256 poolId;         // The Id of the pool
+    bytes32 poolId;         // The Id of the pool
     uint256 amount;         // The amount to tip expressed as an integer with tipping token decimals
     address tippingToken;   // Tipping token address
 }
@@ -390,7 +390,7 @@ The function executes the following steps in the following order:
 
 ```js
 function claimReward(
-    uint256 _poolId,                    // The Id of the pool
+    bytes32 _poolId,                    // The Id of the pool
     address[] memory _tippingTokens,    // Array of tipping tokens to claim
     bool _claimDIVAReward               // Flag indicating whether to claim the DIVA reward
 )
@@ -412,7 +412,7 @@ where `ArgsBatchClaimReward` is given by
 
 ```js
 struct ArgsBatchClaimReward {
-    uint256 poolId;             // The Id of the pool
+    bytes32 poolId;             // The Id of the pool
     address[] tippingTokens;    // Array of tipping tokens to claim
     bool claimDIVAReward;       // Flag indicating whether to claim the DIVA reward
 }
@@ -541,7 +541,7 @@ Function to return the number of tipping tokens for a given set of poolIds. Usef
 
 ```js
 function getTippingTokensLengthForPoolIds(
-    uint256[] calldata _poolIds // Array of poolIds
+    bytes32[] calldata _poolIds // Array of poolIds
 )
     external
     view
@@ -565,7 +565,7 @@ where `ArgsGetTippingTokens` struct is defined as
 
 ```js
 struct ArgsGetTippingTokens {
-    uint256 poolId;         // The Id of the pool
+    bytes32 poolId;         // The Id of the pool
     uint256 startIndex;     // Start index within the `_poolIdToTippingTokens` mapping array
     uint256 endIndex;       // End index within the `_poolIdToTippingTokens` mapping array
 }
@@ -588,7 +588,7 @@ where `ArgsGetTipAmounts` struct is defined as
 
 ```js
 struct ArgsGetTipAmounts {
-    uint256 poolId;           // The Id of the pool
+    bytes32 poolId;           // The Id of the pool
     address[] tippingTokens;  // List of tipping token addresses
 }
 ```
@@ -599,7 +599,7 @@ Function to return the list of reporter addresses that are entitled to receive r
 
 ```js
 function getReporters(
-    uint256[] calldata _poolIds // List of poolIds
+    bytes32[] calldata _poolIds // List of poolIds
 )
     external
     view
@@ -629,7 +629,7 @@ function getPoolIdsForReporters(
 )
     external
     view
-    returns (uint256[][] memory);
+    returns (bytes32[][] memory);
 ```
 
 where `ArgsGetPoolIdsForReporters` struct is defined as
@@ -681,7 +681,7 @@ Function to return the query data and Id for a given poolId which are required f
 
 ```js
 function getQueryDataAndId(
-    uint256 _poolId // The Id of the pool
+    bytes32 _poolId // The Id of the pool
 )
     external
     view
@@ -703,7 +703,7 @@ Emitted when the final reference value is set via the [`setFinalReferenceValue`]
 
 ```js
 event FinalReferenceValueSet(
-    uint256 indexed poolId, // The Id of the pool
+    bytes32 indexed poolId, // The Id of the pool
     uint256 finalValue,     // Tellor value expressed as an integer with 18 decimals
     uint256 expiryTime,     // Pool expiry time as a unix timestamp in seconds
     uint256 timestamp       // Tellor value timestamp
@@ -716,7 +716,7 @@ Emitted when a tip is added via the [`addTip`](#addtip) function.
 
 ```js
 event TipAdded(
-    uint256 poolId,         // The Id of the tipped pool
+    bytes32 poolId,         // The Id of the tipped pool
     address tippingToken,   // Tipping token address
     uint256 amount,         // Tipping token amount expressed as an integer with tipping token decimals
     address tipper          // Tipper address
@@ -729,7 +729,7 @@ Emitted when the reward is claimed via the [`claimReward`](#claimreward) functio
 
 ```js
 event TipClaimed(
-    uint256 poolId,         // The Id of the pool
+    bytes32 poolId,         // The Id of the pool
     address recipient,      // Address of the tip recipient
     address tippingToken,   // Tipping token address
     uint256 amount          // Claimed amount expressed as an integer with tipping token decimals
