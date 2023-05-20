@@ -122,7 +122,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         ArgsBatchAddTip[] calldata _argsBatchAddTip
     ) external override nonReentrant {
         uint256 _len = _argsBatchAddTip.length;
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             _addTip(
                 _argsBatchAddTip[i].poolId,
                 _argsBatchAddTip[i].amount,
@@ -147,7 +147,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         ArgsBatchClaimReward[] calldata _argsBatchClaimReward
     ) external override nonReentrant {
         uint256 _len = _argsBatchClaimReward.length;
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             _claimReward(
                 _argsBatchClaimReward[i].poolId,
                 _argsBatchClaimReward[i].tippingTokens,
@@ -173,7 +173,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         ArgsBatchSetFinalReferenceValue[] calldata _argsBatchSetFinalReferenceValue
     ) external override nonReentrant {
         uint256 _len = _argsBatchSetFinalReferenceValue.length;
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             _setFinalReferenceValue(_argsBatchSetFinalReferenceValue[i].poolId);
             _claimReward(
                 _argsBatchSetFinalReferenceValue[i].poolId,
@@ -212,8 +212,12 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _previousExcessDIVARewardRecipient = _excessDIVARewardRecipient;
 
         // Set time at which the new excess DIVA reward recipient will become applicable
-        uint256 _startTimeNewExcessDIVARewardRecipient = block.timestamp +
-            _ACTIVATION_DELAY;
+        uint256 _startTimeNewExcessDIVARewardRecipient;
+        unchecked {
+            // Cannot realistically overflow
+            _startTimeNewExcessDIVARewardRecipient = block.timestamp +
+                _ACTIVATION_DELAY;
+        }
 
         // Store start time and new excess DIVA reward recipient
         _startTimeExcessDIVARewardRecipient = _startTimeNewExcessDIVARewardRecipient;
@@ -247,8 +251,12 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         _previousMaxDIVARewardUSD = _maxDIVARewardUSD;
 
         // Set time at which the new max DIVA reward USD will become applicable
-        uint256 _startTimeNewMaxDIVARewardUSD = block.timestamp +
-            _ACTIVATION_DELAY;
+        uint256 _startTimeNewMaxDIVARewardUSD;
+        unchecked {
+            // Cannot realistically overflow
+            _startTimeNewMaxDIVARewardUSD = block.timestamp +
+                _ACTIVATION_DELAY;
+        }        
 
         // Store start time and new max DIVA reward USD
         _startTimeMaxDIVARewardUSD = _startTimeNewMaxDIVARewardUSD;
@@ -368,7 +376,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     ) external view override returns (address[][] memory) {
         uint256 _len = _argsGetTippingTokens.length;
         address[][] memory _tippingTokens = new address[][](_len);
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             address[] memory _tippingTokensForPoolId = new address[](
                 _argsGetTippingTokens[i].endIndex -
                     _argsGetTippingTokens[i].startIndex
@@ -415,7 +423,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     {
         uint256 _len = _poolIds.length;
         uint256[] memory _tippingTokensLength = new uint256[](_len);
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             _tippingTokensLength[i] = _poolIdToTippingTokens[_poolIds[i]]
                 .length;
 
@@ -434,7 +442,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     {
         uint256 _len = _argsGetTipAmounts.length;
         uint256[][] memory _tipAmounts = new uint256[][](_len);
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             uint256 _tippingTokensLen = _argsGetTipAmounts[i]
                 .tippingTokens
                 .length;
@@ -472,7 +480,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     {
         uint256 _len = _poolIds.length;
         address[] memory _reporters = new address[](_len);
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             _reporters[i] = _poolIdToReporter[_poolIds[i]];
 
             unchecked {
@@ -487,7 +495,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     ) external view override returns (bytes32[][] memory) {
         uint256 _len = _argsGetPoolIdsForReporters.length;
         bytes32[][] memory _poolIds = new bytes32[][](_len);
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             bytes32[] memory _poolIdsForReporter = new bytes32[](
                 _argsGetPoolIdsForReporters[i].endIndex -
                     _argsGetPoolIdsForReporters[i].startIndex
@@ -534,7 +542,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
     {
         uint256 _len = _reporters.length;
         uint256[] memory _poolIdsLength = new uint256[](_len);
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             _poolIdsLength[i] = _reporterToPoolIds[_reporters[i]].length;
 
             unchecked {
@@ -606,7 +614,7 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
         // Iterate over the provided `_tippingTokens` array. Will skip the for
         // loop if no tipping tokens have been provided.
         uint256 _len = _tippingTokens.length;
-        for (uint256 i = 0; i < _len; ) {
+        for (uint256 i; i < _len; ) {
             address _tippingToken = _tippingTokens[i];
 
             // Get tip amount for pool and tipping token.
@@ -692,9 +700,14 @@ contract DIVAOracleTellor is UsingTellor, IDIVAOracleTellor, ReentrancyGuard {
             _CHALLENGEABLE
         );
 
-        uint256 _SCALING = uint256(
-            10**(18 - IERC20Metadata(_params.collateralToken).decimals())
-        );
+        uint256 _SCALING;
+        unchecked {
+            // Cannot over-/underflow as collateralToken decimals are restricted to
+            // a minimum of 6 and a maximum of 18 inside DIVA Protocol.
+            _SCALING = uint256(
+                10**(18 - IERC20Metadata(_params.collateralToken).decimals())
+            );
+        }        
 
         // Get the current DIVA reward claim allocated to this contract address (msg.sender)
         uint256 divaRewardClaim = _DIVA.getClaim(
