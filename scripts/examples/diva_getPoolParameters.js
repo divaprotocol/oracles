@@ -1,6 +1,6 @@
 /**
  * Script to get the pool parameters for an existing poolId in DIVA Protocol.
- * Run: `yarn diva:getPoolParameters`
+ * Run: `yarn diva:getPoolParameters --network mumbai`
  */
 
 const { ethers } = require("hardhat");

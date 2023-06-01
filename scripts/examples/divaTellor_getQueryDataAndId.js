@@ -1,7 +1,7 @@
 /**
  * Script to get queryId for a given poolId, DIVA address and chain number. The
  * latter is inferred by the specified network.
- * Run `yarn divaTellor:getQueryDataAndId`
+ * Run `yarn divaTellor:getQueryDataAndId --network mumbai`
  */
 const { ethers, network } = require("hardhat");
 const { getQueryDataAndId } = require("../../utils/utils");

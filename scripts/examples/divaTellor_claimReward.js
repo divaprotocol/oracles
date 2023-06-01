@@ -1,6 +1,6 @@
 /**
  * Script to claim tips. Make sure you run this script after set finial reference value.
- * Run `yarn divaTellor:claimReward`
+ * Run `yarn divaTellor:claimReward --network mumbai`
  */
 
 const { ethers } = require("hardhat");

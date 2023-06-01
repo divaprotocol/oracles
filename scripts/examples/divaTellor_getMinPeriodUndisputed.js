@@ -2,7 +2,7 @@
  * Script to get the minimum period a reported value needs to remain undisputed
  * before considered valid. This is a parameter inside DIVAOracleTellor that is set
  * at contract deployment.
- * Run `yarn divaTellor:getMinPeriodUndisputed`
+ * Run `yarn divaTellor:getMinPeriodUndisputed --network mumbai`
  */
 
 const { ethers } = require("hardhat");

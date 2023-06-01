@@ -1,7 +1,13 @@
 /**
- * Script to set the final reference value. Run this script after a value has been
- * submitted to the Tellor contract and the minPeriodUndisputed has passed.
- * Run `yarn divaTellor:setFinalReferenceValue`
+ * Script to set the final reference value for an already expired pool. 
+ * Run this script after a value has been submitted to the Tellor contract
+ * and the minPeriodUndisputed has passed.
+ * Run `yarn divaTellor:setFinalReferenceValue --network mumbai`
+ * 
+ * Example usage (append corresponding network):
+ * 1. `yarn diva::createContingentPool`: Create pool with a short expiration and
+ *    the Tellor adapter contract address as the data provider.
+ * 2. `yarn tellor:submitValue`: Submit value to Tellor contract.
  */
 
 const { ethers } = require("hardhat");
@@ -14,7 +20,7 @@ const {
 
 async function main() {
   // INPUT: id of existing pool
-  const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
+  const poolId = "0x93604d7bfeeb6a5a36aad8bd8a037ba6e9c72c8b53af919a0b01a8537394626e";
 
   // Get DIVA Tellor oracle address
   const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];

@@ -1,7 +1,7 @@
 /**
  * Script to add tip. Run this function BEFORE the final value has been confirmed
  * (i.e. `setFinalReferenceValue` was called).
- * Run `yarn divaTellor:addTip`
+ * Run `yarn divaTellor:addTip --network mumbai`
  */
 
 const { ethers } = require("hardhat");
