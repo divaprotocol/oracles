@@ -64,7 +64,7 @@ module.exports = {
       },
     },
     ethMain: {
-      url: process.env.RPC_URL_MAINNET,
+      url: process.env.RPC_URL_ETHMAIN,
       chainId: 1,
       accounts: {
         mnemonic: MNEMONIC,
@@ -117,14 +117,14 @@ module.exports = {
     },
     arbitrumMain: {
       // arbitrumOne; there also exists arbitrumNova in xdeployer
-      url: process.env.RPC_URL_ARBITRUM_MAINNET,
+      url: process.env.RPC_URL_ARBITRUMMAINNET,
       chainId: 42161,
       accounts: {
         mnemonic: MNEMONIC,
       },
     },
     arbitrumTestnet: {
-      url: process.env.RPC_URL_ARBITRUM_TESTNET,
+      url: process.env.RPC_URL_ARBITRUMTESTNET,
       chainId: 421613,
       accounts: {
         mnemonic: MNEMONIC,
