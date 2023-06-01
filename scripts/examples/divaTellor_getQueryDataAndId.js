@@ -1,7 +1,7 @@
 /**
  * Script to get queryId for a given poolId, DIVA address and chain number. The
  * latter is inferred by the specified network.
- * Run `yarn divaTellor:getQueryDataAndId --network mumbai`
+ * Run: `yarn divaTellor:getQueryDataAndId --network mumbai`
  */
 const { ethers, network } = require("hardhat");
 const { getQueryDataAndId } = require("../../utils/utils");
@@ -11,8 +11,17 @@ const {
 } = require("../../utils/constants");
 
 async function main() {
-  // INPUT: id of pool
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+
+  // Id of an existing pool
   const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -27,7 +36,7 @@ async function main() {
   const [queryData, queryId] = getQueryDataAndId(poolId, divaAddress, chainId);
 
   // Log relevant information
-  console.log("DIVAOracleTellor address: ", divaOracleTellorAddress);
+  console.log("Tellor adapter address: ", divaOracleTellorAddress);
   console.log("DIVA address: ", divaAddress);
   console.log("PoolId: ", poolId);
   console.log("Network name: ", network.name)

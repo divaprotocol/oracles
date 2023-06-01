@@ -1,7 +1,8 @@
 /**
- * Script to add tip. Run this function BEFORE the final value has been confirmed
- * (i.e. `setFinalReferenceValue` was called).
- * Run `yarn divaTellor:addTip --network mumbai`
+ * Script to add a tip to an existing contingent pool.
+ * The pool has to be in "Open" state for successful execution.
+ * 
+ * Run: `yarn divaTellor:addTip --network mumbai`
  */
 
 const { ethers } = require("hardhat");
@@ -11,25 +12,27 @@ const {
   DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS,
 } = require("../../utils/constants");
 
-// Auxiliary function to perform checks required for successful execution, in line with those implemented
-// inside the smart contract function. It is recommended to perform those checks in frontend applications
-// to save users gas fees on reverts.
-const checkConditions = (reporter) => {
-  // Check reporter address
-  if (reporter !== ethers.constants.AddressZero) {
-    throw new Error("Already confirmed pool");
-  }
-};
-
 async function main() {
-  // INPUT: Id of pool
-  const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
 
-  // INPUT: tipping token symbol
+  // Id of an existing pool
+  const poolId = "0x2610b8617991b12848a9dda7b9efd0ac2cc3ceacda5a055d7ebbe8ca4f0e5b26";
+
+  // Tipping token symbol
   const tippingTokenSymbol = "dUSD";
 
-  // INPUT: Tipping amount (converted into big integer further down below)
+  // Tipping amount (converted into big integer further down below)
   const _amount = 1.5;
+
+  // Set tipper account
+  const [tipper] = await ethers.getSigners();
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Get tipping token address
   const tippingTokenAddress = COLLATERAL_TOKENS[network.name][tippingTokenSymbol];
@@ -37,10 +40,7 @@ async function main() {
   // Get DIVA Tellor oracle address
   const divaOracleTellorAddress = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
 
-  // Get signer of tipper
-  const [tipper] = await ethers.getSigners();
-
-  // Connect to DIVAOracleTellor contract
+  // Connect to Tellor adapter contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
@@ -61,13 +61,14 @@ async function main() {
   // Get decimals of tipping token
   const decimals = await tippingTokenContract.decimals();
 
-  // INPUT: tipping amount
+  // Convert tipping amount into an integer with the corresponding
+  // amount of decimals
   const amount = parseUnits(_amount.toString(), decimals);
 
-  // Set allowance for DIVAOracleTellor contract
+  // Set allowance for Tellor adapter contract
   const approveTx = await tippingTokenContract
     .connect(tipper)
-    .approve(divaOracleTellor.address, amount);
+    .approve(divaOracleTellorAddress, amount);
   await approveTx.wait();
 
   // Get tips before add tip
@@ -97,7 +98,7 @@ async function main() {
   );
 
   // Log relevant info
-  console.log("DivaOracleTellorAddress: " + divaOracleTellor.address);
+  console.log("Tellor adapter address: " + divaOracleTellorAddress);
   console.log("PoolId: ", poolId);
   console.log("Tipper: " + tipper.address);
   console.log("Tipping token address: " + tippingTokenContract.address);
@@ -106,9 +107,21 @@ async function main() {
     "Tipping amount (in decimal terms): ",
     formatUnits(amount, decimals)
   );
-  console.log("Tips on DIVAOracleTellor contract BEFORE add tip: ", tipsBefore);
-  console.log("Tips on DIVAOracleTellor contract AFTER add tip: ", tipsAfter);
+  console.log("Tips on Tellor adapter contract BEFORE add tip: ", tipsBefore);
+  console.log("Tips on Tellor adapter contract AFTER add tip: ", tipsAfter);
 }
+
+// Auxiliary function to perform checks required for successful execution, in line with those implemented
+// inside the smart contract function. It is recommended to perform those checks in frontend applications
+// to save users gas fees on reverts. Alternatively, use Tenderly to pre-simulate the tx and catch any errors
+// before actually executing it.
+const checkConditions = (reporter) => {
+  // Confirm that no reporter has been set yet which is equivalent to that the pool
+  // was not yet confirmed
+  if (reporter !== ethers.constants.AddressZero) {
+    throw new Error("Already confirmed pool");
+  }
+};
 
 main()
   .then(() => process.exit(0))

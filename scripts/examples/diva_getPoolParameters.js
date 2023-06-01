@@ -9,8 +9,17 @@ const DIVA_ABI = require("../../contracts/abi/DIVA.json");
 const { DIVA_ADDRESS, STATUS } = require("../../utils/constants");
 
 async function main() {
-  // INPUT: id of pool
-  const poolId = "0xa7c27b6ba28c8b173c64ad0f2edc56da840740cec684c7a72e51a7d71d86a496";
+  // ************************************
+  //           INPUT ARGUMENTS
+  // ************************************
+  
+  // Id of an existing pool
+  const poolId = "0x2610b8617991b12848a9dda7b9efd0ac2cc3ceacda5a055d7ebbe8ca4f0e5b26";
+
+
+  // ************************************
+  //              EXECUTION
+  // ************************************
 
   // Connect to deployed DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, DIVA_ADDRESS[network.name]);
@@ -27,7 +36,7 @@ async function main() {
 
   // Log relevant info
   console.log("DIVA address: ", diva.address);
-  console.log("Pool id: ", poolId);
+  console.log("PoolId: ", poolId);
   console.log("Reference asset: ", poolParams.referenceAsset);
   console.log("Floor: ", formatUnits(poolParams.floor));
   console.log("Inflection: ", formatUnits(poolParams.inflection));
@@ -51,7 +60,7 @@ async function main() {
     "Status final reference value: ",
     STATUS[poolParams.statusFinalReferenceValue]
   );
-  console.log("Status timestamp: ", poolParams.statusTimestamp.toString());
+  console.log("Status timestamp: ", new Date(poolParams.statusTimestamp * 1000).toLocaleString());
   console.log(
     "Final referencen value: ",
     formatUnits(poolParams.finalReferenceValue)

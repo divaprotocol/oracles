@@ -54,7 +54,7 @@ const TELLOR_PLAYGROUND_ADDRESS = {
   goerli: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
   sepolia: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
   mumbai: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
-  chiado: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
+  chiado: "0xe7147C5Ed14F545B4B17251992D1DB2bdfa26B6d",
   arbitrumTestnet: "0x3251838bd813fdf6a97D32781e011cce8D225d59",
 };
 
@@ -64,7 +64,7 @@ const DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS = {
   goerli: "0x263649785895386Fa0e1dABe3e56e45D2c060D3b", // Deployed on 18 May 2023
   sepolia: "0x978877CaBA44A866f286BaA44198e4D5e54D49f5", // Deployed on 18 May 2023
   mumbai: "0xD471407D1b014115b8c308fDB1EaF62449188251", // Deployed on 18 May 2023
-  chiado: "0xC59083deA1F64ec9AE140B66FCe4d7d2b2b2Aff6", // Deployed on 1 June 2023
+  chiado: "0xB6E4daf25Bf8dB68BAE27d6Ec25d50167C450F26", // Deployed on 1 June 2023
   arbitrumTestnet: "0xA9C31F20E32092b20a314f028f834c7e5034429E", // Deployed on 1 June 2023
 };
 
@@ -117,7 +117,7 @@ const TEN_MINS = 600;
 const ONE_HOUR = 3600;
 const ONE_DAY = 86400;
 
-const XDEPLOY_CHAINS = ["goerli", "mumbai", "sepolia"];
+const XDEPLOY_CHAINS = ["goerli", "sepolia", "mumbai", "chiado", "arbitrumTestnet"];
 
 exports.DIVA_ADDRESS = DIVA_ADDRESS;
 exports.BOND_FACTORY = BOND_FACTORY;

@@ -42,6 +42,7 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
+      ethMain: process.env.ETHERSCAN_API_KEY,
       sepolia: process.env.ETHERSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYGON_API_KEY || "",
@@ -50,8 +51,6 @@ module.exports = {
       arbitrumOne: process.env.ETHERSCAN_API_KEY || "",
       arbitrumGoerli: process.env.ETHERSCAN_API_KEY || "",
       arbitrumTestnet: process.env.ETHERSCAN_API_KEY || "",
-      optimisticEthereum: process.env.ETHERSCAN_API_KEY || "",
-      optimisticGoerli: process.env.ETHERSCAN_API_KEY || "",
     },
   },
   networks: {

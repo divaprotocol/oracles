@@ -34,7 +34,10 @@ async function main() {
   const tellorVersion = TELLOR_VERSION.PLAYGROUND;
 
   // Id of an existing pool
-  const poolId = "0x93604d7bfeeb6a5a36aad8bd8a037ba6e9c72c8b53af919a0b01a8537394626e";
+  const poolId = "0x2610b8617991b12848a9dda7b9efd0ac2cc3ceacda5a055d7ebbe8ca4f0e5b26";
+
+  // Set reporter account
+  const [reporter] = await ethers.getSigners();
 
 
   // ************************************
@@ -70,9 +73,6 @@ async function main() {
 
   // Get chain id
   const chainId = (await ethers.provider.getNetwork()).chainId;
-
-  // Get signer of reporter
-  const [,reporter] = await ethers.getSigners();
 
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);

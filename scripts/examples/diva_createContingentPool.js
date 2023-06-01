@@ -27,13 +27,15 @@ async function main() {
   const capInput = "3000"; // floorInput <= inflectionInput <= capInput
   const gradientInput = "0.5"; // 0 <= gradientInput <= 1
   const collateralAmountInput = "100"; // collateralAmountInput <= capacityInput
-  const collateralTokenSymbol = "dUSD"; // see `addresses.ts` for available tokens
+  const collateralTokenSymbol = "dUSD"; // see `constants.js` for available tokens
   const dataProvider = DIVA_TELLOR_PLAYGROUND_ORACLE_ADDRESS[network.name];
   const capacityInput = "200"; // collateralAmountInput <= capacityInput
   const longRecipient = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
   const shortRecipient = "0x9AdEFeb576dcF52F5220709c1B267d89d5208D78";
   const permissionedERC721Token = ethers.constants.AddressZero;
 
+  // Set pool creator account
+  const [creator] = await ethers.getSigners();
   
   // ************************************
   //              EXECUTION
@@ -42,9 +44,6 @@ async function main() {
   // Set ERC20 collateral token address
   const erc20CollateralTokenAddress =
     COLLATERAL_TOKENS[network.name][collateralTokenSymbol];
-
-  // Get signer of pool creator
-  const [creator] = await ethers.getSigners();
 
   // Connect to ERC20 token that will be used as collateral when creating a contingent pool
   const erc20Contract = await ethers.getContractAt(
