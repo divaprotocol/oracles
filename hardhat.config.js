@@ -48,9 +48,9 @@ module.exports = {
       polygon: process.env.POLYGON_API_KEY || "",
       polygonMumbai: process.env.POLYGON_API_KEY || "",
       gnosis: process.env.GNOSISSCAN_API_KEY || "",
-      arbitrumOne: process.env.ETHERSCAN_API_KEY || "",
-      arbitrumGoerli: process.env.ETHERSCAN_API_KEY || "",
-      arbitrumTestnet: process.env.ETHERSCAN_API_KEY || "",
+      arbitrumOne: process.env.ARBISCAN_API_KEY || "",
+      arbitrumGoerli: process.env.ARBISCAN_API_KEY || "",
+      arbitrumTestnet: process.env.ARBISCAN_API_KEY || "",
     },
   },
   networks: {
