@@ -33,7 +33,8 @@ const main = async () => {
     throw new Error("The length of xdeploy chains is zero");
   }
 
-  // Choose a default chain to run commands against (doesn't really matter which one to use).
+  // Choose a default chain to run commands against. Doesn't matter which one to use as long
+  // as all the chains in the list have the same Tellor protocol address.
   const defaultChain = XDEPLOY_CHAINS[0];
 
   // Generate the constructor args file `deploy-args.js` for `DIVAOracleTellor` contract required for the xdeployer process.

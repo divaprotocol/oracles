@@ -42,7 +42,7 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      ethMain: process.env.ETHERSCAN_API_KEY,
+      mainnet: process.env.ETHERSCAN_API_KEY,
       sepolia: process.env.ETHERSCAN_API_KEY,
       goerli: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYGON_API_KEY || "",

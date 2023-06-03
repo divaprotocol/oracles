@@ -10,7 +10,7 @@
     "c": "yarn hardhat compile",
     "size": "yarn hardhat size-contracts",
     "coverage": "npx hardhat coverage",
-    "deploy:divaTellor:ethMain": "yarn hardhat run scripts/deploy/deployTellor.js --network ethMain && yarn verify:divaTellor",
+    "deploy:divaTellor:ethereum": "yarn hardhat run scripts/deploy/deployTellor.js --network ethMain && yarn verify:divaTellor",
     "deploy:divaTellor:polygon": "yarn hardhat run scripts/deploy/deployTellor.js --network polygon && yarn verify:divaTellor",
     "deploy:divaTellor:gnosis": "yarn hardhat run scripts/deploy/deployTellor.js --network gnosis && yarn verify:divaTellor",
     "deploy:divaTellor:arbitrumMainnet": "yarn hardhat run scripts/deploy/deployTellor.js --network arbitrumMainnet && yarn verify:divaTellor",
@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^0.2.2",
-    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@openzeppelin/contracts": "^4.8.3",
     "dotenv": "^10.0.0",
     "usingtellor": "^4.0.1"

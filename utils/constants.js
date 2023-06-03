@@ -3,13 +3,13 @@
 const DIVA_ADDRESS = {
   ethMain: "",
   polygon: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
-  gnosis: "",
+  gnosis: "0x27FaBaed614059b98e7f1e79D872e13aa65640a8",
   arbitrumMainnet: "", // Arbitrum One
-  goerli: "0x131e157322b3DDaE6eF28a124f566bC9c177De69", // 17.05.2023 (main version)
-  sepolia: "0x8ca8dE48c4507fa54a83Dde7ac68097e87520eEc", // 17.05.2023 (main version)
-  mumbai: "0x05029c04AFB6cf53Ef0af7af7e970E53A7143bD3", // 17.05.2023 (secondary version)
-  chiado: "0x05029c04AFB6cf53Ef0af7af7e970E53A7143bD3", // 17.05.2023 (secondary version)
-  arbitrumTestnet: "0x93640bd8fEa53919A102ad2EEA4c503E640eDDAd", // 01.06.2023 (secondary version)
+  goerli: "0x18B6219454C5c14738d67431b1ECaC252aD577cB",
+  sepolia: "0x8ca8dE48c4507fa54a83Dde7ac68097e87520eEc",
+  mumbai: "0x18B6219454C5c14738d67431b1ECaC252aD577cB",
+  chiado: "0x18B6219454C5c14738d67431b1ECaC252aD577cB",
+  arbitrumTestnet: "0x93640bd8fEa53919A102ad2EEA4c503E640eDDAd",
 };
 
 // Used for deployment of `DIVAPorterModule` contract and tests.
@@ -117,7 +117,7 @@ const TEN_MINS = 600;
 const ONE_HOUR = 3600;
 const ONE_DAY = 86400;
 
-const XDEPLOY_CHAINS = ["goerli", "sepolia", "mumbai", "chiado", "arbitrumTestnet"];
+const XDEPLOY_CHAINS = ["goerli", "mumbai", "chiado"];
 
 exports.DIVA_ADDRESS = DIVA_ADDRESS;
 exports.BOND_FACTORY = BOND_FACTORY;
