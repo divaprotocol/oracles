@@ -13,7 +13,7 @@
     "deploy:divaTellor:ethereum": "yarn hardhat run scripts/deploy/deployTellor.js --network ethMain && yarn verify:divaTellor",
     "deploy:divaTellor:polygon": "yarn hardhat run scripts/deploy/deployTellor.js --network polygon && yarn verify:divaTellor",
     "deploy:divaTellor:gnosis": "yarn hardhat run scripts/deploy/deployTellor.js --network gnosis && yarn verify:divaTellor",
-    "deploy:divaTellor:arbitrumMainnet": "yarn hardhat run scripts/deploy/deployTellor.js --network arbitrumMainnet && yarn verify:divaTellor",
+    "deploy:divaTellor:arbitrumMain": "yarn hardhat run scripts/deploy/deployTellor.js --network arbitrumMain && yarn verify:divaTellor",
     "deploy:divaTellor:goerli": "yarn hardhat run scripts/deploy/deployTellor.js --network goerli && yarn verify:divaTellor",
     "deploy:divaTellor:sepolia": "yarn hardhat run scripts/deploy/deployTellor.js --network sepolia && yarn verify:divaTellor",
     "deploy:divaTellor:mumbai": "yarn hardhat run scripts/deploy/deployTellor.js --network mumbai && yarn verify:divaTellor",

@@ -24,8 +24,13 @@ const { writeFileSync } = require("../../utils/utils");
 // Load relevant variable from `.env` file
 const EXCESS_DIVA_REWARD_RECIPIENT = process.env.EXCESS_DIVA_REWARD_RECIPIENT || "";
 const MAX_DIVA_REWARD_AMOUNT_USD = process.env.MAX_DIVA_REWARD_AMOUNT_USD || "";
+const PRIVATE_KEY =
+  process.env.PRIVATE_KEY || "";
 
 async function main() {
+  const deployer = new ethers.Wallet(PRIVATE_KEY, ethers.provider);
+  console.log("Deployer address: " + deployer.address);
+
   // INPUT: Tellor version
   const tellorVersion = TELLOR_VERSION.ACTUAL;
 
@@ -51,7 +56,7 @@ async function main() {
   const divaOracleTellorFactory = await ethers.getContractFactory(
     "DIVAOracleTellor"
   );
-  const divaOracleTellor = await divaOracleTellorFactory.deploy(
+  const divaOracleTellor = await divaOracleTellorFactory.connect(deployer).deploy(
     divaOwnershipAddress,
     tellorAddress,
     EXCESS_DIVA_REWARD_RECIPIENT,

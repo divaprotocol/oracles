@@ -91,7 +91,6 @@ module.exports = {
       accounts: {
         mnemonic: MNEMONIC,
       },
-      gasPrice: 160000000000,
     },
     mumbai: {
       url: process.env.RPC_URL_MUMBAI,
