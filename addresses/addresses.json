@@ -1,0 +1,35 @@
+{
+    "name": "DIVA Protocol V1 Oracles",
+    "1": {
+        "divaOracleTellor": "0x7950DB13cc37774614B0AA406e42a4C4f0BF26a6"
+    },
+    "100": {
+        "divaOracleTellor": "0x7950DB13cc37774614B0AA406e42a4C4f0BF26a6"
+    },
+    "137": {
+        "divaOracleTellor": "0x7950DB13cc37774614B0AA406e42a4C4f0BF26a6"
+    },
+    "42161": {
+        "divaOracleTellor": "0x7950DB13cc37774614B0AA406e42a4C4f0BF26a6"
+    },
+    "11155111": {
+        "divaOracleTellor": "0x7950db13cc37774614b0aa406e42a4c4f0bf26a6",
+        "divaOracleTellorPlayground": "0x0625855A4D292216ADEFA8043cDc69a6c99724C9"
+    },
+    "5": {
+        "divaOracleTellor": "0x7950DB13cc37774614B0AA406e42a4C4f0BF26a6",
+        "divaOracleTellorPlayground": "0x0625855A4D292216ADEFA8043cDc69a6c99724C9"
+    },
+    "10200": {
+        "divaOracleTellor": "0x7950DB13cc37774614B0AA406e42a4C4f0BF26a6",
+        "divaOracleTellorPlayground": "0x0625855A4D292216ADEFA8043cDc69a6c99724C9"
+    },
+    "80001": {
+        "divaOracleTellor": "0x7950DB13cc37774614B0AA406e42a4C4f0BF26a6",
+        "divaOracleTellorPlayground": "0x0625855A4D292216ADEFA8043cDc69a6c99724C9"
+    },
+    "421613": {
+        "divaOracleTellor": "0x7950DB13cc37774614B0AA406e42a4C4f0BF26a6",
+        "divaOracleTellorPlayground": "0x0625855A4D292216ADEFA8043cDc69a6c99724C9"
+    }
+}

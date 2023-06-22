@@ -1,6 +1,6 @@
 /**
  * Script to claim tips. Make sure you run this script after set finial reference value.
- * Run `yarn divaTellor:claimReward`
+ * Run: `yarn divaTellor:claimReward --network mumbai`
  */
 
 const { ethers } = require("hardhat");
@@ -33,12 +33,12 @@ async function main() {
   // Connect to DIVA contract
   const diva = await ethers.getContractAt(DIVA_ABI, divaAddress);
 
-  // Connect to DIVAOracleTellor contract
+  // Connect to Tellor adapter contract
   const divaOracleTellor = await ethers.getContractAt(
     "DIVAOracleTellor",
     divaOracleTellorAddress
   );
-  console.log("DIVAOracleTellor address: ", divaOracleTellor.address);
+  console.log("Tellor adapter address: ", divaOracleTellor.address);
 
   // Get reporter
   const reporter = (await divaOracleTellor.getReporters([poolId]))[0];
@@ -67,9 +67,9 @@ async function main() {
     })
   );
 
-  // Check tips on DIVAOracleTellor contract before reward claim
+  // Check tips on Tellor adapter contract before reward claim
   console.log("");
-  console.log("Tips on DIVAOracleTellor contract before reward claim");
+  console.log("Tips on Tellor adapter contract before reward claim");
   await Promise.all(
     tippingTokens.map(async (tippingToken, index) => {
       const tips = (
@@ -131,9 +131,9 @@ async function main() {
   const tx = await divaOracleTellor.claimReward(poolId, tippingTokens, true);
   await tx.wait();
 
-  // Check tips on DIVAOracleTellor contract after claim tips
+  // Check tips on Tellor adapter contract after claim tips
   console.log("");
-  console.log("Tips on DIVAOracleTellor contract after claim tips");
+  console.log("Tips on Tellor adapter contract after claim tips");
   await Promise.all(
     tippingTokens.map(async (tippingToken, index) => {
       const tips = (

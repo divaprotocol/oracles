@@ -11,7 +11,8 @@ This documentation outlines the functionality of the Tellor adapter for [DIVA Pr
 3. [System overview](#system-overview) \
    3.1 [Contract addresses and subgraphs](#contract-addresses-and-subgraphs) \
    3.2 [Ownership and privileges](#ownership-and-privileges) \
-   3.3 [Upgradeability](#upgradeability)
+   3.3 [Upgradeability](#upgradeability) \
+   3.4 [Audit](#audit)
 
 4. [Tellor contract](#tellor-contract) \
    4.1 [What is Tellor Protocol](#what-is-tellor-protocol) \
@@ -36,7 +37,7 @@ This documentation outlines the functionality of the Tellor adapter for [DIVA Pr
 
 # Introduction
 
-[DIVA Protocol](https://github.com/divaprotocol/diva-contracts) is a smart contract that allows its users to create derivative contracts on virtually any metric with pre-defined expiration times. To calculate the payouts for the long and short positions of the contract, an oracle input is required following the contract's expiration. 
+[DIVA Protocol](https://github.com/divaprotocol/diva-protocol-v1) is a smart contract that allows its users to create derivative contracts on virtually any metric with pre-defined expiration times. To calculate the payouts for the long and short positions of the contract, an oracle input is required following the derivative contract's expiration. 
 
 The [Tellor adapter][tellor-adapter-contract] offers DIVA Protocol users a **decentralized oracle solution** for outcome reporting. Using the Tellor adapter for outcome reporting is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool.
 
@@ -64,7 +65,7 @@ The DIVA Tellor integration is an interplay between three smart contracts:
 
 * **Tellor contract:** The contract where reporters submit their values.
 * **DIVA contract:** The contract that expects outcome reporting for expired pools.
-* **Tellor adapter contract:** The contract that passes valid values from Tellor contract to the DIVA contract for settlement.
+* **Tellor adapter contract:** The connector contract that passes valid values from Tellor contract to the DIVA contract for settlement.
 
 The interplay is visualized below. For the sake of simplicity, the reward claim process has been omitted from the illustration.
 
@@ -77,62 +78,120 @@ Relevant contract addresses and subgraphs are summarized below, grouped by netwo
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
 | Tellor contract              | Address of the contract where values are reported and TRB is staked.                                | 
-| Tellor adapter contract    | Address of the contract that connects the Tellor contract with the DIVA contract and is used as data provider when creating a pool.                                |
-| DIVA contract    | Address of the DIVA contract.                                |
+| Tellor adapter contract    | Address of the contract that connects the Tellor contract with the DIVA contract and **to be used as data provider when creating a pool on DIVA Protocol**.                                |
+| Tellor adapter playground contract    | Playground version of Tellor adapter contract without the need to stake for reporting and a 10 seconds dispute period. Only available on testnets.                                |
+| DIVA contract    | Address of the DIVA Protocol smart contract.                                |
 | TRB token                  | Address of the TRB token that needs to be staked in order to report values to the Tellor contract.                                | 
 | Tellor governance contract | Address of the contract that handles Tellor disputes.                                | 
-| DIVA subgraph              | Subgraph url containing DIVA pool related information. |   
+| DIVA subgraph explorer              | Subgraph url to query DIVA pool related information in the browser. |   
+| DIVA subgraph query API              | Subgraph url to query DIVA pool related information in scripts. |   
 
 ### Ethereum
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
-| Tellor contract              | `tbd`                                | 
-| Tellor adapter contract    | `tbd`                                |
-| DIVA contract    | `tbd`                                |
-| TRB token                  | `tbd`                                | 
-| Tellor governance contract | `tbd`                                | 
-| DIVA subgraph              | tbd |   
+| Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://etherscan.io/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://etherscan.io/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=mainnet)                                |
+| TRB token                  | [`0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0`](https://etherscan.io/address/0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0)                                | 
+| Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://etherscan.io/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                | 
+| DIVA subgraph explorer              | n/a |   
+| DIVA subgraph query API              | n/a |   
 
 
 ### Polygon
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
-| Tellor contract              | `tbd`                                | 
-| Tellor adapter contract    | `tbd`                                |
-| DIVA contract    | `tbd`                                |
-| TRB token                  | `tbd`                                | 
-| Tellor governance contract | `tbd`                                | 
-| DIVA subgraph              | tbd |   
+| Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://polygonscan.com/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://polygonscan.com/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=polygon)                                |
+| TRB token                  | [`0xe3322702bedaaed36cddab233360b939775ae5f1`](https://polygonscan.com/address/0xe3322702bedaaed36cddab233360b939775ae5f1)                                | 
+| Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://polygonscan.com/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                  | 
+| DIVA subgraph explorer              | https://thegraph.com/explorer/subgraph/divaprotocol/diva-protocol-v1-polygon |   
+| DIVA subgraph query API              | https://api.thegraph.com/subgraphs/name/divaprotocol/diva-protocol-v1-polygon |   
+
 
 ### Gnosis
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
-| Tellor contract              | `tbd`                                | 
-| Tellor adapter contract    | `tbd`                                |
-| DIVA contract    | `tbd`                                |
-| TRB token                  | `tbd`                                | 
-| Tellor governance contract | `tbd`                                | 
-| DIVA subgraph              | tbd |   
+| Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://gnosisscan.io/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://gnosisscan.io/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=xdai)                                |
+| TRB token                  | [`0xaad66432d27737ecf6ed183160adc5ef36ab99f2`](https://gnosisscan.io/address/0xaad66432d27737ecf6ed183160adc5ef36ab99f2)                                 | 
+| Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://gnosisscan.io/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                    | 
+| DIVA subgraph explorer             | https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-protocol-v1-gnosis |   
+| DIVA subgraph query API             | https://api.thegraph.com/subgraphs/name/divaprotocol/diva-protocol-v1-gnosis |   
 
-### Arbitrum
+### Arbitrum One
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
-| Tellor contract              | `tbd`                                | 
-| Tellor adapter contract    | `tbd`                                |
-| DIVA contract    | `tbd`                                |
-| TRB token                  | `tbd`                                | 
-| Tellor governance contract | `tbd`                                | 
-| DIVA subgraph              | tbd |   
+| Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://arbiscan.io/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://arbiscan.io/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=arbitrum)                                |
+| TRB token                  | [`0xd58D345Fd9c82262E087d2D0607624B410D88242`](https://arbiscan.io/address/0xd58D345Fd9c82262E087d2D0607624B410D88242)                                | 
+| Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://arbiscan.io/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                | 
+| DIVA subgraph explorer              | n/a |   
+| DIVA subgraph query API              | n/a |   
 
 ### Goerli
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
-| Tellor contract              | `tbd`                                | 
-| Tellor adapter contract    | `tbd`                                |
-| DIVA contract    | `tbd`                                |
-| TRB token                  | `tbd`                                | 
-| Tellor governance contract | `tbd`                                | 
-| DIVA subgraph              | tbd |   
+| Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://goerli.etherscan.io/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://goerli.etherscan.io/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| Tellor adapter playground contract    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://goerli.etherscan.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
+| DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=goerli)                                |
+| TRB token                  | [`0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2`](https://goerli.etherscan.io/address/0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2)                                 | 
+| Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://goerli.etherscan.io/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                  | 
+| DIVA subgraph explorer              | n/a |   
+| DIVA subgraph query API              | n/a |   
+
+### Sepolia
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | [`0x199839a4907ABeC8240D119B606C98c405Bb0B33`](https://sepolia.etherscan.io/address/0x199839a4907ABeC8240D119B606C98c405Bb0B33)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://sepolia.etherscan.io/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| Tellor adapter playground contract    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://sepolia.etherscan.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
+| DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=sepolia)                                |
+| TRB token                  | [`0x80fc34a2f9FfE86F41580F47368289C402DEc660`](https://sepolia.etherscan.io/address/0x80fc34a2f9FfE86F41580F47368289C402DEc660)                                | 
+| Tellor governance contract | [`0x8C9057FA16D3Debb703ADBac0A097d2E5577AA6b`](https://sepolia.etherscan.io/address/0x8C9057FA16D3Debb703ADBac0A097d2E5577AA6b)                                | 
+| DIVA subgraph explorer              | n/a |   
+| DIVA subgraph query API              | n/a |   
+
+### Mumbai
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://mumbai.polygonscan.com/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://mumbai.polygonscan.com/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| Tellor adapter playground contract    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://mumbai.polygonscan.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
+| DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=mumbai)                                |
+| TRB token                  | [`0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE`](https://mumbai.polygonscan.com/address/0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE)                                | 
+| Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://mumbai.polygonscan.com/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                | 
+| DIVA subgraph explorer              | https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-protocol-v1-mumbai |   
+| DIVA subgraph query API              | https://api.thegraph.com/subgraphs/name/divaprotocol/diva-protocol-v1-mumbai |   
+
+### Chiado
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://blockscout.chiadochain.net/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://blockscout.chiadochain.net/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| Tellor adapter playground contract    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://blockscout.chiadochain.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
+| DIVA contract    | `0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`                                |
+| TRB token                  | [`0xe7147C5Ed14F545B4B17251992D1DB2bdfa26B6d`](https://blockscout.chiadochain.net/address/0xe7147C5Ed14F545B4B17251992D1DB2bdfa26B6d)                                | 
+| Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://blockscout.chiadochain.net/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                | 
+| DIVA subgraph explorer              | n/a |   
+| DIVA subgraph query API              | n/a |   
+
+### Arbitrum Goerli
+| Name                       |                                                                             |                        
+| :------------------------- | :-------------------------------------------------------------------------- | 
+| Tellor contract              | [`0xb2CB696fE5244fB9004877e58dcB680cB86Ba444`](https://goerli.arbiscan.io/address/0xb2CB696fE5244fB9004877e58dcB680cB86Ba444)                                | 
+| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://goerli.arbiscan.io/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| Tellor adapter playground contract    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://goerli.arbiscan.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
+| DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=arbitrum_goerli)                                |
+| TRB token                  | [`0x8d1bB5eDdFce08B92dD47c9871d1805211C3Eb3C`](https://goerli.arbiscan.io/address/0x8d1bB5eDdFce08B92dD47c9871d1805211C3Eb3C)                                | 
+| Tellor governance contract | [`0xb55bB55f7D8b4F26Bd18198088C96488D95cab39`](https://goerli.arbiscan.io/address/0xb55bB55f7D8b4F26Bd18198088C96488D95cab39)                                | 
+| DIVA subgraph explorer              | https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-protocol-v1-arbitrum-test |   
+| DIVA subgraph query API              | https://api.thegraph.com/subgraphs/name/divaprotocol/diva-protocol-v1-arbitrum-test |   
+
 
 <!-- 
 Note that depositing a stake or or disputing a value requires prior approval for the TRB token for the corresponding contract to transfer the token. -->
@@ -146,6 +205,10 @@ The update process is the same as in DIVA Protocol. The owner initiates an updat
 ## Upgradeability
 
 The Tellor adapter contract is not upgradeable.
+
+## Audit
+
+The Tellor adapter contract was audited as part of the DIVA Protocol audit by six independent teams. The report is available in the [DIVA Protocol GitHub repository][tellor-adapter-audit].
 
 # Tellor contract
 
@@ -177,7 +240,7 @@ The [Tellor adapter contract][tellor-adapter-contract] serves as a bridge that r
 ## How to use the Tellor adapter
 
 Using the Tellor adapter for outcome reporting in DIVA Protocol is as simple as assigning its [contract address](#contract-addresses-and-subgraphs) as the data provider when creating a pool. The process of reporting outcomes for pools that use the Tellor adapter as the data provider consists of the following four elements: 
-1. **Monitoring:** To identify expired pools that require reporting, Tellor reporters monitor the [DIVA subgraph](#contract-addresses-and-subgraphs) or use DIVA Protocol's [`getPoolParameters`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#getpoolparameters) function.
+1. **Monitoring:** To identify expired pools that require reporting, Tellor reporters monitor the [DIVA subgraph](#contract-addresses-and-subgraphs) or use DIVA Protocol's [`getPoolParameters`](https://github.com/divaprotocol/diva-protocol-v1/blob/main/DOCUMENTATION.md#getpoolparameters) function.
 
 1. **Reporting to Tellor contract:** When a pool expires, reporters submit their values to the Tellor contract during the applicable submission period, which lasts between 3 and 15 days. It's important to note that the effective submission period is shorter by the 12-hour dispute period. This means that any submissions made within the last 12 hours of the submission period will not be accepted due to the dispute delay that has to be respected.
 
@@ -209,7 +272,7 @@ Reporters receive rewards from two different sources:
 
 DIVA rewards are derived from two different sources:
 * **Settlement fee:** DIVA Protocol pays a settlement fee of 0.05% (updateable by DIVA owner) of the gross collateral deposited into the pool over time to the data provider in the pool's collateral token. For example, reporting for a pool that has had USDC 100k in liquidity added over its lifetime would yield a settlement fee of USDC 50.
-* **Tips:** In addition to the settlement fee, users can add a tip using DIVA Protocol's [`addTip`](https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md#addtip) function to incentivize reporting. This can be particularly useful when the gross collateral of the pool is relatively small and the settlement fee alone would not justify the [gas cost for reporting](#reporting-costs). Note that in DIVA Protocol, the tip can only be given in the collateral token of the respective pool. Use the [tipping functionality inside the Tellor adapter](#tips) for more flexibility in that regard.
+* **Tips:** In addition to the settlement fee, users can add a tip using DIVA Protocol's [`addTip`](https://github.com/divaprotocol/diva-protocol-v1/blob/main/DOCUMENTATION.md#addtip) function to incentivize reporting. This can be particularly useful when the gross collateral of the pool is relatively small and the settlement fee alone would not justify the [gas cost for reporting](#reporting-costs). Note that in DIVA Protocol, the tip can only be given in the collateral token of the respective pool. Use the [tipping functionality inside the Tellor adapter](#tips) for more flexibility in that regard.
 
 >**Important:** The DIVA reward is **capped at USD 10 per pool**, with any excess fee going to the recipient specified by the contract owner. This measure was recommended by the Tellor team to prevent "dispute wars" where disputing valid submissions becomes a profitable strategy to receive an outsized reward.
 
@@ -813,7 +876,7 @@ Using the Tellor adapter as data provider for DIVA pools comes with the followin
 | No value is reported because the reward from reporting does not justify the associated cost (e.g., due to high gas price or small pool size).              | Add tips or report yourself.                                                      |
 | No value is reported because the data point is not available.                                                                               | Use publicly available and verifiable metrics as your reference asset. Additionally, when choosing pools, prioritize those with expiration dates that are not too far in the future to minimize the risk of data unavailability.  |
 | An inaccurate value submitted to the Tellor contract remains undisputed for more than 12h and is pushed into DIVA Protocol resulting in inaccurate payouts. | Use metrics that are closely monitored and accurately reported by many reporters.                                               |
-| Bug in Tellor adapter contract.                                                                                                                      | All three contracts involved in the DIVA Tellor integration, including the Tellor adapter contract, have been audited to reduce the likelihood of bugs. |
+| Bug in Tellor adapter contract.                                                                                                                      | All three contracts involved in the DIVA Tellor integration, including the Tellor adapter contract, have been [audited][tellor-adapter-audit] to reduce the likelihood of bugs. |
 
 
 # Links
@@ -822,9 +885,10 @@ Using the Tellor adapter as data provider for DIVA pools comes with the followin
 * [DIVA Protocol documentation][diva-protocol-docs]
 
 [openzeppelin-reentrancy-guard]: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/security/ReentrancyGuard.sol
-[diva-protocol-docs]: https://github.com/divaprotocol/diva-contracts/blob/main/DOCUMENTATION.md
+[diva-protocol-docs]: https://github.com/divaprotocol/diva-protocol-v1/blob/main/DOCUMENTATION.md
 [tellor-docs]: https://github.com/tellor-io/dataSpecs/blob/main/types/DIVAProtocol.md
 [tellor-protocol]: https://tellor.io/
 [tellor-adapter-contract]: https://github.com/divaprotocol/oracles/blob/update-documentation/contracts/DIVAOracleTellor.sol
 [interest-bearing-tokens]: https://edge.app/blog/company-news/interest-bearing-tokens-in-edge-atokens-ctokens/#:~:text=The%20interest%2Dbearing%20tokens%20have,from%20the%20Compound%20money%20market.
 [wsteth]: https://help.lido.fi/en/articles/5231836-what-is-wrapped-steth-wsteth
+[tellor-adapter-audit]: https://github.com/divaprotocol/diva-protocol-v1/blob/main/audits/Final%20April%202023/Summary.md#tellor-oracle-adapter
