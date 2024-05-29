@@ -148,27 +148,29 @@ Relevant contract addresses and subgraphs are summarized below, grouped by netwo
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
 | Tellor contract              | [`0x199839a4907ABeC8240D119B606C98c405Bb0B33`](https://sepolia.etherscan.io/address/0x199839a4907ABeC8240D119B606C98c405Bb0B33)                                | 
-| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://sepolia.etherscan.io/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
-| Tellor adapter playground contract    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://sepolia.etherscan.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
+| Tellor adapter contract (linked to Tellor contract)    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://sepolia.etherscan.io/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| Tellor playground contract              | [`0x3251838bd813fdf6a97D32781e011cce8D225d59`](https://sepolia.etherscan.io/address/0x3251838bd813fdf6a97D32781e011cce8D225d59)                                | 
+| Tellor adapter playground contract (linked to Tellor playground contract)    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://sepolia.etherscan.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
 | DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=sepolia)                                |
 | TRB token                  | [`0x80fc34a2f9FfE86F41580F47368289C402DEc660`](https://sepolia.etherscan.io/address/0x80fc34a2f9FfE86F41580F47368289C402DEc660)                                | 
 | Tellor governance contract | [`0x8C9057FA16D3Debb703ADBac0A097d2E5577AA6b`](https://sepolia.etherscan.io/address/0x8C9057FA16D3Debb703ADBac0A097d2E5577AA6b)                                | 
 | DIVA subgraph explorer              | n/a |   
 | DIVA subgraph query API              | n/a |   
 
-### Mumbai
+<!-- ### Mumbai
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
 | Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://mumbai.polygonscan.com/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
-| Tellor adapter contract    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://mumbai.polygonscan.com/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
-| Tellor adapter playground contract    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://mumbai.polygonscan.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
+| Tellor adapter contract (linked to Tellor contract)    | [`0x7950db13cc37774614b0aa406e42a4c4f0bf26a6`](https://mumbai.polygonscan.com/address/0x7950db13cc37774614b0aa406e42a4c4f0bf26a6)                                |
+| Tellor adapter playground contract    | [`0x3251838bd813fdf6a97D32781e011cce8D225d59`](https://mumbai.polygonscan.io/address/0x3251838bd813fdf6a97D32781e011cce8D225d59)                                |
+| Tellor adapter playground contract (linked to Tellor playground contract)    | [`0x0625855A4D292216ADEFA8043cDc69a6c99724C9`](https://mumbai.polygonscan.io/address/0x0625855A4D292216ADEFA8043cDc69a6c99724C9)                                |
 | DIVA contract    | [`0x2C9c47E7d254e493f02acfB410864b9a86c28e1D`](https://louper.dev/diamond/0x2C9c47E7d254e493f02acfB410864b9a86c28e1D?network=mumbai)                                |
 | TRB token                  | [`0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE`](https://mumbai.polygonscan.com/address/0xCE4e32fE9D894f8185271Aa990D2dB425DF3E6bE)                                | 
 | Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://mumbai.polygonscan.com/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                | 
 | DIVA subgraph explorer              | https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-protocol-v1-mumbai |   
-| DIVA subgraph query API              | https://api.thegraph.com/subgraphs/name/divaprotocol/diva-protocol-v1-mumbai |   
+| DIVA subgraph query API              | https://api.thegraph.com/subgraphs/name/divaprotocol/diva-protocol-v1-mumbai |    -->
 
-### Chiado
+<!-- ### Chiado
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
 | Tellor contract              | [`0xD9157453E2668B2fc45b7A803D3FEF3642430cC0`](https://blockscout.chiadochain.net/address/0xD9157453E2668B2fc45b7A803D3FEF3642430cC0)                                | 
@@ -178,9 +180,9 @@ Relevant contract addresses and subgraphs are summarized below, grouped by netwo
 | TRB token                  | [`0xe7147C5Ed14F545B4B17251992D1DB2bdfa26B6d`](https://blockscout.chiadochain.net/address/0xe7147C5Ed14F545B4B17251992D1DB2bdfa26B6d)                                | 
 | Tellor governance contract | [`0x46038969D7DC0b17BC72137D07b4eDe43859DA45`](https://blockscout.chiadochain.net/address/0x46038969D7DC0b17BC72137D07b4eDe43859DA45)                                | 
 | DIVA subgraph explorer              | n/a |   
-| DIVA subgraph query API              | n/a |   
+| DIVA subgraph query API              | n/a |    -->
 
-### Arbitrum Goerli
+<!-- ### Arbitrum Goerli
 | Name                       |                                                                             |                        
 | :------------------------- | :-------------------------------------------------------------------------- | 
 | Tellor contract              | [`0xb2CB696fE5244fB9004877e58dcB680cB86Ba444`](https://goerli.arbiscan.io/address/0xb2CB696fE5244fB9004877e58dcB680cB86Ba444)                                | 
@@ -190,7 +192,7 @@ Relevant contract addresses and subgraphs are summarized below, grouped by netwo
 | TRB token                  | [`0x8d1bB5eDdFce08B92dD47c9871d1805211C3Eb3C`](https://goerli.arbiscan.io/address/0x8d1bB5eDdFce08B92dD47c9871d1805211C3Eb3C)                                | 
 | Tellor governance contract | [`0xb55bB55f7D8b4F26Bd18198088C96488D95cab39`](https://goerli.arbiscan.io/address/0xb55bB55f7D8b4F26Bd18198088C96488D95cab39)                                | 
 | DIVA subgraph explorer              | https://thegraph.com/hosted-service/subgraph/divaprotocol/diva-protocol-v1-arbitrum-test |   
-| DIVA subgraph query API              | https://api.thegraph.com/subgraphs/name/divaprotocol/diva-protocol-v1-arbitrum-test |   
+| DIVA subgraph query API              | https://api.thegraph.com/subgraphs/name/divaprotocol/diva-protocol-v1-arbitrum-test |    -->
 
 
 <!-- 
